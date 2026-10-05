@@ -1,0 +1,15 @@
+{
+  "name": "Contrail",
+  "short_name": "Contrail",
+  "description": "Crew logbook with a 3D globe of your flights",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#07111D",
+  "theme_color": "#07111D",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

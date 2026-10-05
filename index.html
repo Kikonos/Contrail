@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Contrail">
+<title>Contrail</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="favicon-32.png">
+<meta name="theme-color" content="#07111D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#EEF2F7; --surface:#FFFFFF; --surface-2:#E3E9F1; --text:#0D1B2E; --muted:#5B6B80; --hair:rgba(13,27,46,.10);
+  --op:#1F7FD1; --dh:#D2851A; --pers:#7666C6; --x:#C9443B; --ok:#2E8B57;
+  --ocean-1:#E2ECF6; --ocean-2:#C7D8EA; --land:#FAFCFE; --land-edge:#AFC1D6; --night:rgba(20,40,70,.13); --grat:rgba(13,27,46,.06); --rim:rgba(31,127,209,.25);
+  --sheet-shadow:0 -10px 40px rgba(13,27,46,.18);
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;
+  --round:ui-rounded,"SF Pro Rounded","Nunito",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#07111D; --surface:#0E1C2E; --surface-2:#16283F; --text:#E8EFF7; --muted:#8A9DB5; --hair:rgba(232,239,247,.09);
+    --op:#4DA6EA; --dh:#F3A84A; --pers:#A896F2; --x:#EE6B61; --ok:#4FBF86;
+    --ocean-1:#0E2440; --ocean-2:#081629; --land:#1A3150; --land-edge:#2C4A6E; --night:rgba(0,4,12,.42); --grat:rgba(232,239,247,.05); --rim:rgba(77,166,234,.35);
+    --sheet-shadow:0 -10px 40px rgba(0,0,0,.5);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#07111D; --surface:#0E1C2E; --surface-2:#16283F; --text:#E8EFF7; --muted:#8A9DB5; --hair:rgba(232,239,247,.09);
+  --op:#4DA6EA; --dh:#F3A84A; --pers:#A896F2; --x:#EE6B61; --ok:#4FBF86;
+  --ocean-1:#0E2440; --ocean-2:#081629; --land:#1A3150; --land-edge:#2C4A6E; --night:rgba(0,4,12,.42); --grat:rgba(232,239,247,.05); --rim:rgba(77,166,234,.35);
+  --sheet-shadow:0 -10px 40px rgba(0,0,0,.5);
+  color-scheme:dark;
+}
+html{height:100%;background:var(--bg);scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;background:var(--bg);color:var(--text);font:15px/1.4 var(--sans);-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;overflow:hidden}
+*,*::before,*::after{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--op);outline-offset:2px}
+.num{font-family:var(--round);font-variant-numeric:tabular-nums;font-weight:700}
+#app{height:100%;display:flex;flex-direction:column}
+main{flex:1;min-height:0;position:relative}
+.tab{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;display:none}
+.tab.on{display:block}
+.wrap{max-width:720px;margin:0 auto;padding:12px 18px 40px}
+h1{font:800 34px/1.1 var(--round);letter-spacing:-.01em;margin:14px 0 4px}
+h2{font:700 20px/1.2 var(--round);margin:30px 0 10px}
+h3{font:600 15px/1.3 var(--sans);margin:0}
+.sub{color:var(--muted);margin:0 0 14px}
+.small{font-size:13px;color:var(--muted)}
+
+/* tab bar */
+nav.bar{flex:none;display:flex;justify-content:space-around;border-top:1px solid var(--hair);background:var(--bg);padding:6px 4px 4px}
+nav.bar button{flex:1;min-width:0;background:none;border:0;padding:4px 0 2px;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font-size:10px;font-weight:600;position:relative}
+nav.bar button svg{width:24px;height:24px}
+nav.bar button.on{color:var(--op)}
+.badge{position:absolute;top:0;left:calc(50% + 6px);background:var(--x);color:#fff;border-radius:9px;font-size:10.5px;min-width:17px;height:17px;line-height:17px;padding:0 5px;font-weight:700}
+
+/* globe */
+#t-globe{overflow:hidden;background:radial-gradient(120% 80% at 50% 40%,var(--surface) 0%,var(--bg) 70%)}
+#globe{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.g-top{position:absolute;left:0;right:0;top:0;padding:12px 14px 0;pointer-events:none;display:flex;flex-direction:column;gap:10px;max-width:560px}
+.g-top > *{pointer-events:auto}
+.flightcard{background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--hair);border-radius:18px;padding:12px 14px}
+.fc-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.fc-state{font-size:12.5px;font-weight:600;color:var(--muted)}
+.fc-state.live{color:var(--ok)}
+.fc-route{display:flex;align-items:center;gap:10px;margin:2px 0 6px}
+.fc-route .num{font-size:28px;line-height:1}
+.fc-line{flex:1;height:2px;background:var(--hair);position:relative;border-radius:2px}
+.fc-line i{position:absolute;left:0;top:0;bottom:0;background:var(--op);border-radius:2px}
+.fc-line b{position:absolute;top:50%;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;background:var(--op);border-radius:50%;box-shadow:0 0 0 4px color-mix(in srgb,var(--op) 25%,transparent)}
+.fc-meta{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.fc-actions{display:flex;gap:8px;margin-top:10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--hair);background:color-mix(in srgb,var(--surface) 85%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:999px;padding:6px 10px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+.chip .dot{width:8px;height:8px;border-radius:50%}
+.chip.on{color:var(--text);border-color:color-mix(in srgb,var(--text) 22%,transparent)}
+.chip select{background:none;border:0;font-weight:600;color:inherit;padding:0;appearance:none;-webkit-appearance:none}
+.g-legend{position:absolute;left:14px;bottom:12px;font-size:12px;color:var(--muted);pointer-events:none}
+.g-zoom{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:6px}
+.g-zoom button{width:38px;height:38px;border-radius:12px;border:1px solid var(--hair);background:color-mix(in srgb,var(--surface) 85%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font-size:20px;line-height:1;color:var(--text)}
+
+/* buttons */
+.btn{border:0;border-radius:12px;padding:10px 14px;font-weight:600;background:var(--surface-2);color:var(--text)}
+.btn.pri{background:var(--op);color:#fff}
+.btn.sm{padding:7px 11px;font-size:13.5px;border-radius:10px}
+.btn.ghost{background:none;color:var(--op);padding-left:0;padding-right:0}
+.btn:disabled{opacity:.45}
+
+/* segmented */
+.seg{display:flex;background:var(--surface-2);border-radius:11px;padding:2px;gap:2px;overflow-x:auto;scrollbar-width:none}
+.seg::-webkit-scrollbar{display:none}
+.seg button{flex:1 1 auto;border:0;background:none;border-radius:9px;padding:7px 7px;font-size:13px;font-weight:600;color:var(--muted);white-space:nowrap}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+/* logbook */
+.logtools{position:sticky;top:0;z-index:2;background:var(--bg);padding:8px 0 10px;display:flex;flex-direction:column;gap:8px}
+.search{width:100%;border:0;background:var(--surface-2);border-radius:11px;padding:10px 12px;font-size:15px}
+.month{display:flex;justify-content:space-between;align-items:baseline;margin:18px 2px 6px;font-weight:700;font-size:13.5px;color:var(--muted)}
+.list{background:var(--surface);border-radius:16px;overflow:hidden}
+.row{display:grid;grid-template-columns:4px 1fr auto;gap:0 12px;align-items:center;width:100%;border:0;background:none;text-align:left;padding:11px 14px 11px 0;border-bottom:1px solid var(--hair)}
+.row:last-child{border-bottom:0}
+.row .cb{align-self:stretch;border-radius:0 3px 3px 0}
+.row .rt{display:block;font:700 18px/1.15 var(--round);letter-spacing:.01em}
+.row .rr > *{display:block}
+.row .rt span{color:var(--muted);font-weight:600;margin:0 4px}
+.row .mt{font-size:13px;color:var(--muted);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
+.row .rr{text-align:right}
+.row .rr .num{font-size:16px}
+.row .flag{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--x);margin-left:6px;vertical-align:middle}
+.c-O{background:var(--op)} .c-D{background:var(--dh)} .c-P{background:var(--pers)} .c-X{background:var(--muted);opacity:.5}
+.t-O{color:var(--op)} .t-D{color:var(--dh)} .t-P{color:var(--pers)} .t-X{color:var(--muted)}
+.empty{padding:40px 10px;text-align:center;color:var(--muted)}
+
+/* stats */
+.hero{padding:6px 0 4px}
+.hero .big{font:800 64px/1 var(--round);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.hero .lbl{color:var(--muted);margin-top:4px}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:18px 14px;margin-top:20px}
+.kv div .num{font-size:26px;display:block;line-height:1.1}
+.kv div span{font-size:13px;color:var(--muted)}
+.kv div span.num{font-size:26px;color:var(--text)}
+.panel{background:var(--surface);border-radius:18px;padding:14px 16px}
+.bars .b{display:grid;grid-template-columns:118px 1fr 64px;gap:10px;align-items:center;padding:6px 0;font-size:14px}
+.bars .b .tr{height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden;display:flex}
+.bars .b .tr i{display:block;height:100%}
+.bars .b .v{text-align:right;font-family:var(--round);font-weight:700;font-variant-numeric:tabular-nums}
+.bars .b .k{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+svg.chart{width:100%;height:auto;display:block;overflow:visible}
+svg.chart text{fill:var(--muted);font:600 11px var(--sans)}
+.heat{display:grid;gap:3px;font-size:11px;color:var(--muted)}
+.heat .c{aspect-ratio:1/1;border-radius:4px;background:var(--surface-2)}
+.records{display:grid;grid-template-columns:1fr;gap:0}
+.records .r{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--hair)}
+.records .r:last-child{border-bottom:0}
+.records .r span:first-child{color:var(--muted)}
+.records .r b{font-weight:600;text-align:right}
+.split{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:6px 0 10px}
+.split i{display:block;height:100%}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:9px;height:9px;border-radius:3px;display:inline-block}
+
+/* review */
+.card{background:var(--surface);border-radius:16px;padding:14px 16px;margin-bottom:10px}
+.card .why{font-size:14px;margin:8px 0 12px}
+.card .acts{display:flex;gap:8px;flex-wrap:wrap}
+
+/* forms */
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 10px}
+.form label{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted);font-weight:600;min-width:0}
+.form label.full{grid-column:1/-1}
+.form input,.form select,.form textarea{border:0;background:var(--surface-2);border-radius:10px;padding:10px 11px;font-size:16px;color:var(--text);width:100%;min-width:0}
+.form input,.form select{height:44px}
+.form input[type=time],.form input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;height:44px;line-height:24px;text-align:left}
+.form input::-webkit-date-and-time-value{text-align:left;margin:0;min-height:24px}
+.form input::-webkit-datetime-edit{padding:0}
+/* settings */
+.set{background:var(--surface);border-radius:16px;padding:2px 16px}
+.set .it{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--hair);min-height:52px}
+.set .it:last-child{border-bottom:0}
+.set .it.col{flex-direction:column;align-items:stretch;gap:8px}
+.set .it .lab{display:flex;flex-direction:column}
+.set .it .lab small{color:var(--muted);font-size:12.5px;margin-top:1px}
+.set .it .val{font-family:var(--round);font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted)}
+.sw{position:relative;flex:none;width:51px;height:31px}
+.sw input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
+.sw span{position:absolute;inset:0;border-radius:16px;background:var(--surface-2);transition:background .2s}
+.sw span::after{content:"";position:absolute;left:2px;top:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.25);transition:transform .2s}
+.sw input:checked+span{background:var(--ok)}
+.sw input:checked+span::after{transform:translateX(20px)}
+.sw input:focus-visible+span{outline:2px solid var(--op);outline-offset:2px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:none;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;background:linear-gradient(90deg,var(--op) var(--p,50%),var(--surface-2) var(--p,50%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3);margin-top:-10.5px}
+input[type=range]::-moz-range-track{height:5px;border-radius:3px;background:var(--surface-2)}
+input[type=range]::-moz-range-progress{height:5px;border-radius:3px;background:var(--op)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border:0;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.lwprev{height:44px;border-radius:12px;background:var(--surface-2);display:flex;align-items:center;padding:0 14px}
+.lwprev i{display:block;flex:1;border-radius:4px;background:var(--op)}
+.drop{border:1.5px dashed color-mix(in srgb,var(--muted) 50%,transparent);border-radius:16px;padding:18px;text-align:center;color:var(--muted);display:block}
+.drop input{display:none}
+.preview{margin-top:12px}
+.prow{display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--hair);font-size:14px}
+.prow .st{font-size:12px;color:var(--muted)}
+.prow select{border:0;background:var(--surface-2);border-radius:8px;padding:5px 6px;font-size:13px}
+.note{font-size:13px;color:var(--muted);margin:8px 0 0}
+.live{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13.5px;margin:10px 2px 0;min-height:20px;font-variant-numeric:tabular-nums}
+.live::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;background:var(--muted);animation:pulse 1.2s ease-in-out infinite}
+.live.done::before{background:var(--ok);animation:none}
+.live.err{color:var(--x)}.live.err::before{background:var(--x);animation:none}
+.live:empty{display:none}
+@keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.live::before{animation:none}}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(5,12,22,.38);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--surface);border-radius:22px 22px 0 0;box-shadow:var(--sheet-shadow);max-height:86%;overflow-y:auto;transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);padding:8px 20px calc(22px + env(safe-area-inset-bottom,0px));max-width:720px;margin:0 auto}
+.sheet.on{transform:none}
+.grab{width:38px;height:5px;border-radius:3px;background:var(--hair);margin:4px auto 10px}
+.d-route{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:6px 0 2px}
+.d-route .num{font-size:40px;line-height:1}
+.d-route .mid{flex:1;text-align:center;color:var(--muted);font-size:13px;padding-bottom:6px}
+.d-city{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-bottom:14px}
+.d-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin:14px 0}
+.d-grid span{display:block;font-size:12.5px;color:var(--muted)}
+.d-grid b{font-weight:600}
+.d-note{background:var(--surface-2);border-radius:12px;padding:10px 12px;font-size:14px;margin:10px 0}
+.d-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;opacity:0;transition:.2s;z-index:30;pointer-events:none;max-width:90%}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.sheet,.scrim,.toast{transition:none}}
+@media (min-width:900px){.wrap{padding-top:24px}}
+</style>
+</head>
+<body>
+<div id="app">
+<main>
+  <section class="tab on" id="t-globe" aria-label="Globe">
+    <canvas id="globe" aria-label="Interactive globe of your routes. Drag to rotate, pinch to zoom, tap an airport for details."></canvas>
+    <div class="g-top">
+      <div class="flightcard" id="fc"></div>
+      <div class="chips" id="gchips"></div>
+    </div>
+    <div class="g-legend" id="glegend"></div>
+    <div class="g-zoom"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">&minus;</button></div>
+  </section>
+  <section class="tab" id="t-log" aria-label="Logbook"><div class="wrap">
+    <h1>Logbook</h1>
+    <div class="logtools">
+      <input class="search" id="q" type="search" placeholder="Search flight, airport, aircraft or year" autocomplete="off">
+      <div class="seg" id="lseg"></div>
+    </div>
+    <div id="loglist"></div>
+  </div></section>
+  <section class="tab" id="t-stats" aria-label="Statistics"><div class="wrap">
+    <h1>Statistics</h1>
+    <div class="seg" id="sseg" style="margin-top:10px"></div>
+    <div id="stats"></div>
+  </div></section>
+  <section class="tab" id="t-review" aria-label="Review"><div class="wrap">
+    <h1>Review</h1>
+    <p class="sub" id="revsub"></p>
+    <div id="revlist"></div>
+  </div></section>
+  <section class="tab" id="t-add" aria-label="Add and export"><div class="wrap" id="addwrap"></div></section>
+  <section class="tab" id="t-set" aria-label="Settings"><div class="wrap" id="setwrap"></div></section>
+</main>
+<nav class="bar" id="bar">
+  <button data-t="globe" class="on" aria-label="Globe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.9 5.6 3.9 9s-1.3 6.4-3.9 9c-2.6-2.6-3.9-5.6-3.9-9S9.4 5.6 12 3z"/></svg>Globe</button>
+  <button data-t="log" aria-label="Logbook"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Logbook</button>
+  <button data-t="stats" aria-label="Statistics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 20V11M10 20V5M15 20v-7M20 20V8"/></svg>Stats</button>
+  <button data-t="review" aria-label="Review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 12.5l4 4L19 7"/></svg>Review<span class="badge" id="rbadge" hidden></span></button>
+  <button data-t="add" aria-label="Add and export"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Add</button>
+  <button data-t="set" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.2"/><circle cx="10" cy="17" r="2.2"/></svg>Settings</button>
+</nav>
+</div>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="grab"></div><div id="sheetc"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+"use strict";
+const BUILD="github";
+const EMBED=[];
+let HIST=EMBED;
+if(!HIST.length){try{HIST=JSON.parse(localStorage.getItem("contrail.hist")||"[]")}catch(e){HIST=[]}}
+const EMBED_D=[];
+let HDUT=EMBED_D;
+if(!HDUT.length){try{HDUT=JSON.parse(localStorage.getItem("contrail.hduties")||"[]")}catch(e){HDUT=[]}}
+function allDuties(){const del=new Set(store.del||[]);return HDUT.filter(r=>!del.has(r[0])).map(r=>({id:r[0],date:r[1],code:r[2],src:"rb"})).concat(store.duties||[])}
+const AP0={"ABJ":["Abidjan","CI",5.261,-3.926,"Africa/Abidjan"],"ACC":["Accra","GH",5.605,-0.167,"Africa/Accra"],"ADB":["Izmir","TR",38.292,27.157,"Europe/Istanbul"],"AGP":["Malaga","ES",36.675,-4.499,"Europe/Madrid"],"AMM":["Amman","JO",31.723,35.993,"Asia/Amman"],"AMS":["Amsterdam","NL",52.31,4.768,"Europe/Amsterdam"],"APL":["Nampula","MZ",-15.106,39.282,"Africa/Maputo"],"ARN":["Stockholm","SE",59.652,17.919,"Europe/Stockholm"],"ATH":["Athens","GR",37.936,23.947,"Europe/Athens"],"AUH":["Abu Dhabi","AE",24.433,54.651,"Asia/Dubai"],"AYT":["Antalya","TR",36.899,30.8,"Europe/Istanbul"],"BCN":["Barcelona","ES",41.297,2.078,"Europe/Madrid"],"BEG":["Belgrade","RS",44.818,20.309,"Europe/Belgrade"],"BER":["Berlin","DE",52.366,13.503,"Europe/Berlin"],"BGF":["Bangui","CF",4.398,18.519,"Africa/Bangui"],"BGO":["Bergen","NO",60.294,5.218,"Europe/Oslo"],"BGY":["Bergamo","IT",45.674,9.704,"Europe/Rome"],"BHX":["Birmingham","GB",52.454,-1.748,"Europe/London"],"BKK":["Bangkok","TH",13.69,100.75,"Asia/Bangkok"],"BLR":["Bengaluru","IN",13.199,77.706,"Asia/Kolkata"],"BOS":["Boston","US",42.366,-71.01,"America/New_York"],"BRI":["Bari","IT",41.139,16.761,"Europe/Rome"],"BRU":["Brussels","BE",50.901,4.484,"Europe/Brussels"],"CAN":["Guangzhou","CN",23.392,113.299,"Asia/Shanghai"],"CCF":["Carcassonne","FR",43.216,2.306,"Europe/Paris"],"CCU":["Kolkata","IN",22.655,88.447,"Asia/Kolkata"],"CDG":["Paris","FR",49.01,2.548,"Europe/Paris"],"CGN":["Cologne","DE",50.866,7.143,"Europe/Berlin"],"CHQ":["Chania","GR",35.532,24.15,"Europe/Athens"],"CKY":["Conakry","GN",9.577,-13.612,"Africa/Conakry"],"CMB":["Colombo","LK",7.181,79.884,"Asia/Colombo"],"CMN":["Casablanca","MA",33.368,-7.59,"Africa/Casablanca"],"COK":["Kochi","IN",10.152,76.402,"Asia/Kolkata"],"CPH":["Copenhagen","DK",55.618,12.656,"Europe/Copenhagen"],"CPT":["Cape Town","ZA",-33.965,18.602,"Africa/Johannesburg"],"DEL":["Delhi","IN",28.556,77.1,"Asia/Kolkata"],"DMM":["Dammam","SA",26.471,49.798,"Asia/Riyadh"],"DPS":["Bali","ID",-8.748,115.167,"Asia/Makassar"],"DSS":["Dakar","SN",14.671,-17.067,"Africa/Dakar"],"DUB":["Dublin","IE",53.421,-6.27,"Europe/Dublin"],"DUS":["Dusseldorf","DE",51.289,6.767,"Europe/Berlin"],"DXB":["Dubai","AE",25.253,55.364,"Asia/Dubai"],"EDI":["Edinburgh","GB",55.95,-3.373,"Europe/London"],"EWR":["Newark","US",40.69,-74.175,"America/New_York"],"FCO":["Rome","IT",41.8,12.239,"Europe/Rome"],"FNC":["Funchal","PT",32.698,-16.775,"Atlantic/Madeira"],"FRA":["Frankfurt","DE",50.034,8.562,"Europe/Berlin"],"GYD":["Baku","AZ",40.468,50.047,"Asia/Baku"],"HAM":["Hamburg","DE",53.63,9.988,"Europe/Berlin"],"HEL":["Helsinki","FI",60.317,24.963,"Europe/Helsinki"],"IST":["Istanbul","TR",41.262,28.742,"Europe/Istanbul"],"JED":["Jeddah","SA",21.68,39.157,"Asia/Riyadh"],"JFK":["New York","US",40.64,-73.779,"America/New_York"],"JNB":["Johannesburg","ZA",-26.134,28.242,"Africa/Johannesburg"],"KEF":["Reykjavik","IS",63.985,-22.606,"Atlantic/Reykjavik"],"KUL":["Kuala Lumpur","MY",2.746,101.71,"Asia/Kuala_Lumpur"],"LAX":["Los Angeles","US",33.942,-118.408,"America/Los_Angeles"],"LCA":["Larnaca","CY",34.875,33.625,"Asia/Nicosia"],"LDE":["Lourdes","FR",43.179,-0.006,"Europe/Paris"],"LGW":["London Gatwick","GB",51.148,-0.19,"Europe/London"],"LHE":["Lahore","PK",31.522,74.404,"Asia/Karachi"],"LHR":["London Heathrow","GB",51.47,-0.454,"Europe/London"],"LIS":["Lisbon","PT",38.774,-9.134,"Europe/Lisbon"],"LPA":["Gran Canaria","ES",27.932,-15.387,"Atlantic/Canary"],"LPL":["Liverpool","GB",53.334,-2.85,"Europe/London"],"LYS":["Lyon","FR",45.726,5.091,"Europe/Paris"],"MAD":["Madrid","ES",40.494,-3.567,"Europe/Madrid"],"MBJ":["Montego Bay","JM",18.504,-77.913,"America/Jamaica"],"MED":["Madinah","SA",24.553,39.705,"Asia/Riyadh"],"MLA":["Malta","MT",35.857,14.477,"Europe/Malta"],"MPM":["Maputo","MZ",-25.921,32.573,"Africa/Maputo"],"MRS":["Marseille","FR",43.439,5.221,"Europe/Paris"],"MRU":["Mauritius","MU",-20.43,57.683,"Indian/Mauritius"],"MUC":["Munich","DE",48.354,11.786,"Europe/Berlin"],"MXP":["Milan","IT",45.63,8.723,"Europe/Rome"],"NBO":["Nairobi","KE",-1.319,36.928,"Africa/Nairobi"],"NCL":["Newcastle","GB",55.037,-1.692,"Europe/London"],"NDJ":["N'Djamena","TD",12.134,15.034,"Africa/Ndjamena"],"NOU":["Noumea","NC",-22.015,166.213,"Pacific/Noumea"],"NTE":["Nantes","FR",47.153,-1.611,"Europe/Paris"],"OPO":["Porto","PT",41.248,-8.681,"Europe/Lisbon"],"ORY":["Paris Orly","FR",48.723,2.379,"Europe/Paris"],"OSL":["Oslo","NO",60.194,11.1,"Europe/Oslo"],"OXB":["Bissau","GW",11.895,-15.654,"Africa/Bissau"],"PBM":["Paramaribo","SR",5.453,-55.188,"America/Paramaribo"],"PDL":["Ponta Delgada","PT",37.741,-25.698,"Atlantic/Azores"],"PER":["Perth","AU",-31.94,115.967,"Australia/Perth"],"PMI":["Palma","ES",39.552,2.739,"Europe/Madrid"],"PRG":["Prague","CZ",50.101,14.26,"Europe/Prague"],"PTP":["Pointe-a-Pitre","GP",16.265,-61.532,"America/Guadeloupe"],"PUJ":["Punta Cana","DO",18.567,-68.363,"America/Santo_Domingo"],"QIE":["Istres","FR",43.522,4.924,"Europe/Paris"],"REC":["Recife","BR",-8.126,-34.923,"America/Recife"],"RHO":["Rhodes","GR",36.405,28.086,"Europe/Athens"],"RIX":["Riga","LV",56.924,23.971,"Europe/Riga"],"RMU":["Murcia","ES",37.803,-1.125,"Europe/Madrid"],"RZE":["Rzeszow","PL",50.11,22.019,"Europe/Warsaw"],"SAN":["San Diego","US",32.734,-117.19,"America/Los_Angeles"],"SAW":["Istanbul Sabiha","TR",40.899,29.309,"Europe/Istanbul"],"SFO":["San Francisco","US",37.619,-122.375,"America/Los_Angeles"],"SID":["Sal","CV",16.741,-22.949,"Atlantic/Cape_Verde"],"SIN":["Singapore","SG",1.364,103.991,"Asia/Singapore"],"SKT":["Sialkot","PK",32.536,74.364,"Asia/Karachi"],"STN":["London Stansted","GB",51.885,0.235,"Europe/London"],"SVQ":["Seville","ES",37.418,-5.893,"Europe/Madrid"],"SZG":["Salzburg","AT",47.793,13.004,"Europe/Vienna"],"TFS":["Tenerife South","ES",28.044,-16.573,"Atlantic/Canary"],"TIA":["Tirana","AL",41.415,19.721,"Europe/Tirane"],"TLV":["Tel Aviv","IL",32.011,34.887,"Asia/Jerusalem"],"TMS":["Sao Tome","ST",0.378,6.712,"Africa/Sao_Tome"],"TSF":["Treviso","IT",45.648,12.194,"Europe/Rome"],"TUN":["Tunis","TN",36.851,10.227,"Africa/Tunis"],"VCP":["Campinas","BR",-23.007,-47.134,"America/Sao_Paulo"],"VLC":["Valencia","ES",39.489,-0.482,"Europe/Madrid"],"VLL":["Valladolid","ES",41.706,-4.852,"Europe/Madrid"],"VNO":["Vilnius","LT",54.634,25.286,"Europe/Vilnius"],"WAW":["Warsaw","PL",52.166,20.967,"Europe/Warsaw"],"WMI":["Warsaw Modlin","PL",52.451,20.652,"Europe/Warsaw"],"YUL":["Montreal","CA",45.47,-73.741,"America/Toronto"],"YVR":["Vancouver","CA",49.195,-123.184,"America/Vancouver"],"YYZ":["Toronto","CA",43.677,-79.631,"America/Toronto"],"ZAG":["Zagreb","HR",45.743,16.069,"Europe/Zagreb"],"ADD":["Addis Ababa","ET",8.978,38.799,"Africa/Addis_Ababa"],"AKL":["Auckland","NZ",-37.008,174.792,"Pacific/Auckland"],"BAH":["Bahrain","BH",26.271,50.634,"Asia/Bahrain"],"BEY":["Beirut","LB",33.821,35.488,"Asia/Beirut"],"BNE":["Brisbane","AU",-27.384,153.117,"Australia/Brisbane"],"BOM":["Mumbai","IN",19.089,72.866,"Asia/Kolkata"],"CAI":["Cairo","EG",30.122,31.406,"Africa/Cairo"],"CGK":["Jakarta","ID",-6.126,106.656,"Asia/Jakarta"],"DAR":["Dar es Salaam","TZ",-6.878,39.203,"Africa/Dar_es_Salaam"],"DFW":["Dallas","US",32.9,-97.04,"America/Chicago"],"DOH":["Doha","QA",25.273,51.608,"Asia/Qatar"],"EBB":["Entebbe","UG",0.042,32.444,"Africa/Kampala"],"EZE":["Buenos Aires","AR",-34.822,-58.536,"America/Argentina/Buenos_Aires"],"GLA":["Glasgow","GB",55.872,-4.433,"Europe/London"],"GRU":["Sao Paulo","BR",-23.435,-46.473,"America/Sao_Paulo"],"GVA":["Geneva","CH",46.238,6.109,"Europe/Zurich"],"HKG":["Hong Kong","HK",22.308,113.918,"Asia/Hong_Kong"],"HKT":["Phuket","TH",8.113,98.317,"Asia/Bangkok"],"HND":["Tokyo Haneda","JP",35.549,139.78,"Asia/Tokyo"],"NRT":["Tokyo Narita","JP",35.772,140.393,"Asia/Tokyo"],"HYD":["Hyderabad","IN",17.231,78.43,"Asia/Kolkata"],"IAD":["Washington","US",38.953,-77.456,"America/New_York"],"IAH":["Houston","US",29.99,-95.337,"America/Chicago"],"ICN":["Seoul","KR",37.46,126.441,"Asia/Seoul"],"ISB":["Islamabad","PK",33.549,72.825,"Asia/Karachi"],"KHI":["Karachi","PK",24.907,67.161,"Asia/Karachi"],"KIX":["Osaka","JP",34.427,135.244,"Asia/Tokyo"],"KWI":["Kuwait","KW",29.241,47.971,"Asia/Kuwait"],"LOS":["Lagos","NG",6.577,3.321,"Africa/Lagos"],"MAA":["Chennai","IN",12.99,80.169,"Asia/Kolkata"],"MAN":["Manchester","GB",53.354,-2.275,"Europe/London"],"MCO":["Orlando","US",28.429,-81.309,"America/New_York"],"MCT":["Muscat","OM",23.593,58.284,"Asia/Muscat"],"MEL":["Melbourne","AU",-37.673,144.843,"Australia/Melbourne"],"MEX":["Mexico City","MX",19.436,-99.072,"America/Mexico_City"],"MIA":["Miami","US",25.796,-80.287,"America/New_York"],"MLE":["Male","MV",4.192,73.529,"Indian/Maldives"],"MNL":["Manila","PH",14.509,121.02,"Asia/Manila"],"NCE":["Nice","FR",43.658,7.216,"Europe/Paris"],"ORD":["Chicago","US",41.979,-87.905,"America/Chicago"],"PEK":["Beijing","CN",40.08,116.585,"Asia/Shanghai"],"PVG":["Shanghai","CN",31.143,121.805,"Asia/Shanghai"],"RUH":["Riyadh","SA",24.958,46.699,"Asia/Riyadh"],"SEA":["Seattle","US",47.45,-122.309,"America/Los_Angeles"],"SEZ":["Seychelles","SC",-4.674,55.522,"Indian/Mahe"],"SGN":["Ho Chi Minh City","VN",10.819,106.652,"Asia/Ho_Chi_Minh"],"SYD":["Sydney","AU",-33.946,151.177,"Australia/Sydney"],"TPE":["Taipei","TW",25.078,121.233,"Asia/Taipei"],"VIE":["Vienna","AT",48.11,16.57,"Europe/Vienna"],"ZRH":["Zurich","CH",47.458,8.548,"Europe/Zurich"],"BUD":["Budapest","HU",47.439,19.262,"Europe/Budapest"],"AMD":["Ahmedabad","IN",23.077,72.635,"Asia/Kolkata"],"TRV":["Thiruvananthapuram","IN",8.482,76.92,"Asia/Kolkata"],"CCJ":["Kozhikode","IN",11.137,75.955,"Asia/Kolkata"],"KTM":["Kathmandu","NP",27.697,85.359,"Asia/Kathmandu"],"DAC":["Dhaka","BD",23.843,90.398,"Asia/Dhaka"],"ALG":["Algiers","DZ",36.691,3.215,"Africa/Algiers"],"ABV":["Abuja","NG",9.007,7.263,"Africa/Lagos"],"HRE":["Harare","ZW",-17.932,31.093,"Africa/Harare"],"LUN":["Lusaka","ZM",-15.331,28.453,"Africa/Lusaka"],"DUR":["Durban","ZA",-29.614,31.12,"Africa/Johannesburg"],"DME":["Moscow Domodedovo","RU",55.408,37.906,"Europe/Moscow"],"SVO":["Moscow","RU",55.973,37.415,"Europe/Moscow"],"LED":["St Petersburg","RU",59.8,30.262,"Europe/Moscow"],"VCE":["Venice","IT",45.505,12.352,"Europe/Rome"],"BLQ":["Bologna","IT",44.535,11.289,"Europe/Rome"],"TBS":["Tbilisi","GE",41.669,44.955,"Asia/Tbilisi"],"ALA":["Almaty","KZ",43.352,77.04,"Asia/Almaty"],"TAS":["Tashkent","UZ",41.258,69.281,"Asia/Tashkent"],"IKA":["Tehran","IR",35.416,51.152,"Asia/Tehran"],"BGW":["Baghdad","IQ",33.263,44.234,"Asia/Baghdad"],"BSR":["Basra","IQ",30.549,47.662,"Asia/Baghdad"],"EBL":["Erbil","IQ",36.238,43.963,"Asia/Baghdad"],"ZNZ":["Zanzibar","TZ",-6.222,39.225,"Africa/Dar_es_Salaam"],"GOI":["Goa","IN",15.381,73.831,"Asia/Kolkata"],"GOX":["Goa Mopa","IN",15.744,73.861,"Asia/Kolkata"],"PEW":["Peshawar","PK",33.994,71.515,"Asia/Karachi"],"MUX":["Multan","PK",30.203,71.419,"Asia/Karachi"],"CEB":["Cebu","PH",10.307,123.979,"Asia/Manila"],"CRK":["Clark","PH",15.186,120.56,"Asia/Manila"],"HAN":["Hanoi","VN",21.221,105.807,"Asia/Ho_Chi_Minh"],"PNH":["Phnom Penh","KH",11.547,104.844,"Asia/Phnom_Penh"],"CTU":["Chengdu","CN",30.578,103.947,"Asia/Shanghai"],"PKX":["Beijing Daxing","CN",39.509,116.411,"Asia/Shanghai"],"ADL":["Adelaide","AU",-34.945,138.531,"Australia/Adelaide"],"CHC":["Christchurch","NZ",-43.489,172.532,"Pacific/Auckland"],"GIG":["Rio de Janeiro","BR",-22.81,-43.251,"America/Sao_Paulo"],"BOG":["Bogota","CO",4.702,-74.147,"America/Bogota"]};
+const CN={AE:"United Arab Emirates",AL:"Albania",AR:"Argentina",AT:"Austria",AU:"Australia",AZ:"Azerbaijan",BD:"Bangladesh",BE:"Belgium",BH:"Bahrain",BR:"Brazil",CA:"Canada",CF:"Central African Republic",CH:"Switzerland",CI:"Cote d'Ivoire",CN:"China",CV:"Cape Verde",CY:"Cyprus",CZ:"Czechia",DE:"Germany",DK:"Denmark",DO:"Dominican Republic",DZ:"Algeria",EG:"Egypt",ES:"Spain",ET:"Ethiopia",FI:"Finland",FR:"France",GB:"United Kingdom",GH:"Ghana",GN:"Guinea",GP:"Guadeloupe",GR:"Greece",GW:"Guinea-Bissau",HK:"Hong Kong",HR:"Croatia",HU:"Hungary",RU:"Russia",GE:"Georgia",KZ:"Kazakhstan",UZ:"Uzbekistan",IR:"Iran",IQ:"Iraq",KH:"Cambodia",CO:"Colombia",ID:"Indonesia",IE:"Ireland",IL:"Israel",IN:"India",IS:"Iceland",IT:"Italy",JM:"Jamaica",JO:"Jordan",JP:"Japan",KE:"Kenya",KR:"South Korea",KW:"Kuwait",LB:"Lebanon",LK:"Sri Lanka",LT:"Lithuania",LV:"Latvia",MA:"Morocco",MT:"Malta",MU:"Mauritius",MV:"Maldives",MX:"Mexico",MY:"Malaysia",MZ:"Mozambique",NC:"New Caledonia",NG:"Nigeria",NL:"Netherlands",NO:"Norway",NP:"Nepal",NZ:"New Zealand",OM:"Oman",PH:"Philippines",PK:"Pakistan",PL:"Poland",PT:"Portugal",QA:"Qatar",RS:"Serbia",SA:"Saudi Arabia",SC:"Seychelles",SE:"Sweden",SG:"Singapore",SN:"Senegal",SR:"Suriname",ST:"Sao Tome and Principe",TD:"Chad",TH:"Thailand",TN:"Tunisia",TR:"Turkey",TW:"Taiwan",TZ:"Tanzania",UG:"Uganda",US:"United States",VN:"Vietnam",ZA:"South Africa",ZM:"Zambia",ZW:"Zimbabwe"};
+const REG={Europe:"AL AT BE CH CY CZ DE DK ES FI FR GB GR HR HU IE IS IT LT LV MT NL NO PL PT RS RU SE TR",
+ "Middle East":"AE BH IL IQ IR JO KW LB OM QA SA",
+ Africa:"CF CI CV DZ EG ET GH GN GW KE MA MU MZ NG SC SN ST TD TN TZ UG ZA ZM ZW",
+ Asia:"AZ BD CN GE HK ID IN JP KH KR KZ LK MV MY NP PH PK SG TH TW UZ VN",
+ "North America":"CA MX US","Caribbean":"DO GP JM","South America":"AR BR CO SR","Oceania":"AU NC NZ"};
+const REGION={};for(const k in REG)for(const c of REG[k].split(" "))REGION[c]=k;
+const CATN={O:"Operating",D:"Deadhead",P:"Personal",X:"Excluded"};
+const KINDN={free:"days without duty",off:"days off",rest:"rest days",sby:"standby days",avd:"available duty days",leave:"leave days",sick:"sick days",training:"training days",ground:"ground duties",other:"other duties"};
+const KINDS=[["off","Day off"],["free","No duty"],["rest","Rest"],["sby","Standby"],["avd","Available duty"],["leave","Leave"],["sick","Sick"],["training","Training"],["ground","Ground duty"],["other","Other"]];
+const KINDCOL={free:"var(--muted)",off:"var(--x)",rest:"color-mix(in srgb,var(--x) 55%,var(--muted))",sby:"var(--dh)",avd:"color-mix(in srgb,var(--dh) 60%,var(--op))",leave:"var(--ok)",sick:"var(--muted)",training:"var(--pers)",ground:"var(--pers)",other:"var(--muted)"};
+const CODES0={XX:["off","Day off"],OFF:["off","Day off"],DO:["off","Day off"],RDO:["off","Requested day off"],REST:["rest","Rest"],RST:["rest","Rest"],AVD:["avd","Available duty day"],SBY:["sby","Standby"],HSBY:["sby","Home standby"],ASBY:["sby","Airport standby"],RSV:["sby","Reserve"],LV:["leave","Leave"],AL:["leave","Annual leave"],LVE:["leave","Leave"],SL:["sick","Sick leave"],SICK:["sick","Sick"],TRG:["training","Training"],TRN:["training","Training"],SEP:["training","Safety training"],CRM:["training","CRM training"],GND:["ground","Ground duty"],OFC:["ground","Office duty"],NSD:["free","No duty"],BH:["off","Bank holiday"],PERS:["leave","Personal day"],MED:["ground","Medical"],INT:["ground","Interview"],SAFA:["training","SAFA training"],DG:["training","Dangerous goods"],FAID:["training","First aid"],FIRE:["training","Firefighting"],SEC:["training","Security"],SECY:["training","Security"],CBT:["training","Computer-based training"],SOP:["training","Procedures"],EQIP:["training","Equipment"],IFS:["training","In-flight service"],MKT:["training","Training, MKT"],CFM:["training","Training, CFM"],GS:["training","Training, GS"],SF:["training","Training, SF"],SFA:["training","Training, SFA"],EEP:["training","Training, EEP"]};
+function codeInfo(c){const u=(store.codes||{})[c];if(u)return{kind:u[0],label:u[1]};const b=CODES0[c];return b?{kind:b[0],label:b[1]}:{kind:"other",label:c}}
+const CATS=["O","D","P","X"];
+
+/* ---------- store ---------- */
+const LSKEY="contrail.v1";
+const DISP0={lw:1,freq:true,op:.85,glow:true,labels:"city",dens:"some",night:true,spin:true,dots:true};
+function blankStore(){return{v:1,ts:0,ov:{},add:[],del:[],ap:{},theme:"system",disp:Object.assign({},DISP0),duties:[],codes:{},recipes:[]}}
+let store=blankStore();
+try{const s=JSON.parse(localStorage.getItem(LSKEY)||"null");if(s&&s.v===1)store=Object.assign(store,s)}catch(e){}
+function disp(){return store.disp=Object.assign({},DISP0,store.disp||{})}
+function fixStore(){store.duties=store.duties||[];store.codes=store.codes||{};store.recipes=store.recipes||[];disp()}
+fixStore();
+let dbDoc=null,saveT=null;
+function save(){
+  store.ts=Date.now();
+  try{localStorage.setItem(LSKEY,JSON.stringify(store))}catch(e){}
+  if(dbDoc){clearTimeout(saveT);saveT=setTimeout(()=>{dbDoc.set({json:JSON.stringify(store),ts:store.ts}).catch(()=>{})},600)}
+}
+const CAP={sample:null,downloads:null};
+async function initCaps(){
+  if(!(window.claude&&typeof window.claude.use==="function"))return;
+  try{
+    const [db,user,sample,downloads]=await Promise.all(["db","user","sample","downloads"].map(n=>window.claude.use(n).catch(()=>null)));
+    CAP.sample=sample;CAP.downloads=downloads;
+    if(sample&&AddUI.rendered)AddUI.render();
+    if(db&&user){
+      const id=await user.id().catch(()=>null);
+      if(id){
+        dbDoc=db.doc("data/users/"+id+"/contrail/state");
+        const snap=await dbDoc.get().catch(()=>null);
+        if(snap&&snap.exists){
+          const d=snap.data();
+          try{const s=JSON.parse(d.json);if(s&&s.v===1&&(s.ts||0)>(store.ts||0)){store=Object.assign(blankStore(),s);fixStore();applyTheme();try{localStorage.setItem(LSKEY,JSON.stringify(store))}catch(e){}refreshAll()}}catch(e){}
+        }else if(store.ts){dbDoc.set({json:JSON.stringify(store),ts:store.ts}).catch(()=>{})}
+      }
+    }
+  }catch(e){}
+}
+function applyTheme(){const r=document.documentElement;if(store.theme==="light"||store.theme==="dark")r.setAttribute("data-theme",store.theme);else r.removeAttribute("data-theme")}
+applyTheme();
+
+/* ---------- airports & geo ---------- */
+function ap(c){return store.ap[c]||AP0[c]||null}
+const R_KM=6371.0088;
+function hav(a,b){const A=ap(a),B=ap(b);if(!A||!B)return null;const r=Math.PI/180,la1=A[2]*r,la2=B[2]*r,dl=(B[3]-A[3])*r,dp=la2-la1;const h=Math.sin(dp/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dl/2)**2;return 2*R_KM*Math.asin(Math.min(1,Math.sqrt(h)))}
+function ll(c){const A=ap(c);return A?[A[3],A[2]]:null}
+function sunPos(t){ // subsolar point
+  const d=(t-Date.UTC(2000,0,1,12))/864e5,r=Math.PI/180;
+  const g=(357.529+0.98560028*d)*r,q=280.459+0.98564736*d;
+  const L=(q+1.915*Math.sin(g)+0.020*Math.sin(2*g))*r,e=(23.439-0.00000036*d)*r;
+  const ra=Math.atan2(Math.cos(e)*Math.sin(L),Math.cos(L)),dec=Math.asin(Math.sin(e)*Math.sin(L));
+  const gmst=((18.697374558+24.06570982441908*d)%24+24)%24;
+  let lon=(ra/r/15-gmst)*15;lon=((lon+540)%360)-180;
+  return [lon,dec/r];
+}
+function sunAlt(lat,lon,sp){const r=Math.PI/180;return Math.asin(Math.sin(lat*r)*Math.sin(sp[1]*r)+Math.cos(lat*r)*Math.cos(sp[1]*r)*Math.cos((lon-sp[0])*r))/r}
+function nightMin(f){
+  if(!f.out||!f.inn)return null;const A=ll(f.dep),B=ll(f.arr);if(!A||!B)return null;
+  const dur=(f.inn-f.out)/6e4;if(dur<=0)return null;const ip=d3.geoInterpolate(A,B);let n=0;const step=5;
+  for(let m=step/2;m<dur;m+=step){const p=ip(m/dur);const s=sunPos(f.out.getTime()+m*6e4);if(sunAlt(p[1],p[0],s)<-6)n+=Math.min(step,dur-m+step/2)}
+  return n;
+}
+/* time zones */
+const dtfCache={};
+function dtf(tz,opt){const k=tz+JSON.stringify(opt);return dtfCache[k]||(dtfCache[k]=new Intl.DateTimeFormat("en-GB",Object.assign({timeZone:tz},opt)))}
+function tzOf(c){const A=ap(c);return A?A[4]:"UTC"}
+function hm(d,tz){return dtf(tz,{hour:"2-digit",minute:"2-digit",hour12:false}).format(d)}
+function dayStr(d,tz){return dtf(tz,{day:"numeric",month:"short"}).format(d)}
+function fullDate(d,tz){return dtf(tz,{weekday:"short",day:"numeric",month:"short",year:"numeric"}).format(d)}
+function ymdIn(d,tz){const p=dtf(tz,{year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(d);const g=t=>p.find(x=>x.type===t).value;return g("year")+"-"+g("month")+"-"+g("day")}
+function tzOffsetMin(utcMs,tz){const p=dtf(tz,{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).formatToParts(new Date(utcMs));const g=t=>+p.find(x=>x.type===t).value;let h=g("hour");if(h===24)h=0;return (Date.UTC(g("year"),g("month")-1,g("day"),h,g("minute"),g("second"))-utcMs)/6e4}
+function zonedToUtc(ymd,hhmm,tz){const[y,m,d]=ymd.split("-").map(Number);const[h,mi]=hhmm.split(":").map(Number);const guess=Date.UTC(y,m-1,d,h,mi);let off=tzOffsetMin(guess,tz);let t=guess-off*6e4;const off2=tzOffsetMin(t,tz);if(off2!==off)t=guess-off2*6e4;return new Date(t)}
+
+/* ---------- flights ---------- */
+let FL=[],BYID={};const derived={};
+function rowToF(r){const[id,d,f,a,b,o,i,c,e,t,reg,s,k,n,tb,rp,ra]=r;return{id,date:d,flt:f,dep:a,arr:b,out:o?new Date(o+":00Z"):null,inn:i?new Date(i+":00Z"):null,rep:rp?new Date(rp+":00Z"):null,repAt:ra||a,cat:c,emp:e,ac:t,reg,src:s,check:!!k,note:n,tb,user:false}}
+function objToF(o){return Object.assign({},o,{out:o.out?new Date(o.out):null,inn:o.inn?new Date(o.inn):null,rep:o.rep?new Date(o.rep):null,user:true})}
+function build(){
+  const del=new Set(store.del);FL=[];BYID={};
+  for(const r of HIST){if(del.has(r[0]))continue;FL.push(rowToF(r))}
+  for(const o of store.add){if(del.has(o.id))continue;FL.push(objToF(o))}
+  for(const f of FL){
+    const ov=store.ov[f.id];
+    if(ov){if(ov.c)f.cat=ov.c;if(ov.ac)f.ac=ov.ac;if(ov.reg)f.reg=ov.reg;if(ov.emp)f.emp=ov.emp;if(ov.out)f.out=new Date(ov.out);if(ov.inn)f.inn=new Date(ov.inn);if(ov.rep){f.rep=new Date(ov.rep);f.repAt=ov.repAt||f.dep}f.ok=!!ov.ok}
+    f.t=f.out?f.out.getTime():Date.parse(f.date+"T12:00:00Z");
+    const key=f.id+"|"+f.t+"|"+(f.inn?f.inn.getTime():0)+"|"+f.dep+f.arr;
+    let dv=derived[f.id];
+    if(!dv||dv.key!==key){dv=derived[f.id]={key,km:hav(f.dep,f.arr),night:nightMin(f)};}
+    f.km=dv.km;f.nightH=dv.night==null?null:dv.night/60;
+    f.bh=(f.out&&f.inn)?(f.inn-f.out)/36e5:null;
+    f.year=(f.out?f.out.toISOString():f.date).slice(0,4);
+    BYID[f.id]=f;
+  }
+  FL.sort((a,b)=>a.t-b.t);
+}
+function needsReview(f){return (f.check&&!f.ok)||!ap(f.dep)||!ap(f.arr)}
+
+/* ---------- formatting ---------- */
+const nf0=new Intl.NumberFormat("en-GB",{maximumFractionDigits:0}),nf1=new Intl.NumberFormat("en-GB",{maximumFractionDigits:1,minimumFractionDigits:1});
+function HM(h){if(h==null||isNaN(h))return"–";const m=Math.round(h*60);return nf0.format(Math.floor(m/60))+":"+String(m%60).padStart(2,"0")}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function city(c){const A=ap(c);return A?A[0]:c}
+function shortCity(c){const n=city(c);const m={"London Heathrow":"London","London Gatwick":"Gatwick","London Stansted":"Stansted","Paris Orly":"Orly","Istanbul Sabiha":"Sabiha","Warsaw Modlin":"Modlin","Tenerife South":"Tenerife","Tokyo Haneda":"Tokyo","Tokyo Narita":"Narita","Ho Chi Minh City":"Saigon","Thiruvananthapuram":"Trivandrum"};return m[n]||n}
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("on"),2600)}
+function catColor(c){return getComputedStyle(document.documentElement).getPropertyValue({O:"--op",D:"--dh",P:"--pers",X:"--muted"}[c]).trim()}
+function cssv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+
+/* ---------- sheet ---------- */
+const Sheet={open(html,onMount){document.getElementById("sheetc").innerHTML=html;document.getElementById("sheet").classList.add("on");document.getElementById("scrim").classList.add("on");document.getElementById("sheet").scrollTop=0;onMount&&onMount(document.getElementById("sheetc"))},
+ close(){document.getElementById("sheet").classList.remove("on");document.getElementById("scrim").classList.remove("on")}};
+document.getElementById("scrim").onclick=()=>Sheet.close();
+document.addEventListener("keydown",e=>{if(e.key==="Escape")Sheet.close()});
+
+function flightLine(f){
+  const tzA=tzOf(f.dep),tzB=tzOf(f.arr);
+  if(!f.out)return esc(f.date);
+  const plus=f.inn&&ymdIn(f.inn,tzB)!==ymdIn(f.out,tzA)?"+1":"";
+  return esc(hm(f.out,tzA))+"–"+(f.inn?esc(hm(f.inn,tzB))+plus:"");
+}
+function openFlight(id){
+  const f=BYID[id];if(!f)return;
+  const tzA=tzOf(f.dep),tzB=tzOf(f.arr);
+  const segs=CATS.map(c=>`<button data-c="${c}" class="${f.cat===c?"on":""}">${CATN[c]}</button>`).join("");
+  const srcN={RF:"Roster and Flighty",R:"Roster",F:"Flighty",M:"Added by you",I:"Imported"}[f.src]||f.src;
+  const tb={r:"roster block times",g:"Flighty gate times",a:"Flighty airborne times, approximate",m:"entered by you",i:"from the import"}[f.tb]||"";
+  Sheet.open(`
+  <div class="d-route"><span class="num">${esc(f.dep)}</span><div class="mid">${f.km?nf0.format(f.km)+" km":""}<br>${f.bh!=null?HM(f.bh)+" block":""}</div><span class="num">${esc(f.arr)}</span></div>
+  <div class="d-city"><span>${esc(city(f.dep))}</span><span>${esc(city(f.arr))}</span></div>
+  <div class="seg" id="dseg">${segs}</div>
+  <div class="d-grid">
+   <div><span>Flight</span><b>${esc(f.flt)}</b></div>
+   <div><span>Date</span><b>${f.out?esc(fullDate(f.out,tzA)):esc(f.date)}</b></div>
+   <div><span>Out, local</span><b>${f.out?esc(hm(f.out,tzA)):"–"}</b></div>
+   <div><span>In, local</span><b>${f.inn?esc(hm(f.inn,tzB))+(ymdIn(f.inn,tzB)!==ymdIn(f.out,tzA)?" ("+esc(dayStr(f.inn,tzB))+")":""):"–"}</b></div>
+   ${f.rep?`<div><span>Report${f.repAt&&f.repAt!==f.dep?", "+esc(f.repAt):""}, local</span><b>${esc(hm(f.rep,tzOf(f.repAt||f.dep)))}${ymdIn(f.rep,tzOf(f.repAt||f.dep))!==ymdIn(f.out,tzA)?" ("+esc(dayStr(f.rep,tzOf(f.repAt||f.dep)))+")":""}</b></div><div><span>Duty starts, UTC</span><b>${esc(hm(f.rep,"UTC"))}</b></div>`:""}
+   <div><span>Out, UTC</span><b>${f.out?esc(hm(f.out,"UTC")):"–"}</b></div>
+   <div><span>In, UTC</span><b>${f.inn?esc(hm(f.inn,"UTC")):"–"}</b></div>
+   <div><span>Night</span><b>${f.nightH!=null?HM(f.nightH):"–"}</b></div>
+   <div><span>Employer</span><b>${esc(f.emp||"–")}</b></div>
+   <div><span>Aircraft</span><b>${esc(f.ac||"–")}</b></div>
+   <div><span>Registration</span><b>${esc(f.reg||"–")}</b></div>
+  </div>
+  <p class="small">Source: ${esc(srcN)}${tb?". Times: "+esc(tb):""}.</p>
+  ${f.note?`<div class="d-note">${esc(f.note)}</div>`:""}
+  <div class="d-acts">
+   <button class="btn pri sm" id="dglobe">Show on globe</button>
+   ${f.check&&!f.ok?`<button class="btn sm" id="dok">Mark as checked</button>`:""}
+   <button class="btn sm" id="dedit">Edit details</button>
+   ${f.user?`<button class="btn sm" id="ddel" style="color:var(--x)">Delete flight</button>`:""}
+  </div>`,el=>{
+    el.querySelectorAll("#dseg button").forEach(b=>b.onclick=()=>{setOv(f.id,{c:b.dataset.c});openFlight(f.id)});
+    el.querySelector("#dglobe").onclick=()=>{Sheet.close();go("globe");Globe.select(f.id,true)};
+    const ok=el.querySelector("#dok");if(ok)ok.onclick=()=>{setOv(f.id,{ok:true});openFlight(f.id);toast("Marked as checked")};
+    el.querySelector("#dedit").onclick=()=>editFlight(f.id);
+    const dl=el.querySelector("#ddel");if(dl)dl.onclick=()=>{store.add=store.add.filter(x=>x.id!==f.id);save();refreshAll();Sheet.close();toast("Flight deleted")};
+  });
+}
+function editFlight(id){
+  const f=BYID[id];
+  Sheet.open(`<h2 style="margin-top:6px">Edit ${esc(f.flt)}</h2>
+  <div class="form">
+   <label>Aircraft<input id="e-ac" value="${esc(f.ac)}" placeholder="Boeing 777-300ER"></label>
+   <label>Registration<input id="e-reg" value="${esc(f.reg)}" placeholder="A6-EGA"></label>
+   <label class="full">Employer<input id="e-emp" value="${esc(f.emp)}" placeholder="Emirates"></label>
+  </div>
+  <div class="d-acts"><button class="btn pri" id="e-save">Save changes</button><button class="btn" id="e-cancel">Cancel</button></div>`,el=>{
+    el.querySelector("#e-cancel").onclick=()=>openFlight(id);
+    el.querySelector("#e-save").onclick=()=>{setOv(id,{ac:el.querySelector("#e-ac").value.trim(),reg:el.querySelector("#e-reg").value.trim().toUpperCase(),emp:el.querySelector("#e-emp").value.trim()});openFlight(id);toast("Changes saved")};
+  });
+}
+function setOv(id,patch){store.ov[id]=Object.assign({},store.ov[id]||{},patch);save();refreshAll()}
+
+/* ---------- navigation ---------- */
+let CUR="globe";
+function go(t){CUR=t;document.querySelectorAll(".tab").forEach(s=>s.classList.toggle("on",s.id==="t-"+t));document.querySelectorAll("#bar button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+  if(t==="globe"&&Globe.ctx)Globe.resize();if(t==="log")Log.render();if(t==="stats")Stats.render();if(t==="review")Review.render();if(t==="add")AddUI.render();if(t==="set")Settings.render();Globe.active(t==="globe")}
+document.querySelectorAll("#bar button").forEach(b=>b.onclick=()=>go(b.dataset.t));
+function refreshAll(){build();if(Globe.ctx)Globe.rebuild();updateBadge();if(CUR==="log")Log.render();if(CUR==="stats")Stats.render();if(CUR==="review")Review.render();if(CUR==="set")Settings.render()}
+function updateBadge(){const n=FL.filter(needsReview).length;const b=document.getElementById("rbadge");b.hidden=!n;b.textContent=n}
+
+/* ---------- globe ---------- */
+const Globe={
+ cv:null,ctx:null,proj:null,path:null,w:0,h:0,dpr:1,zoom:1,rot:[-28,-30,0],vel:[0,0],raf:0,on:true,land:null,
+ filt:{O:true,D:true,P:false},year:"all",routes:[],aps:[],sel:null,replay:null,lastInt:0,spin:!matchMedia("(prefers-reduced-motion: reduce)").matches,
+ init(){
+  this.cv=document.getElementById("globe");this.ctx=this.cv.getContext("2d");
+  this.proj=d3.geoOrthographic().clipAngle(90).precision(0.6);this.path=d3.geoPath(this.proj,this.ctx);
+  new ResizeObserver(()=>this.resize()).observe(this.cv);
+  this.bind();this.chips();this.rebuild();this.resize();this.loadLand();
+  document.getElementById("zin").onclick=()=>{this.zoom=Math.min(8,this.zoom*1.4);this.kick()};
+  document.getElementById("zout").onclick=()=>{this.zoom=Math.max(.75,this.zoom/1.4);this.kick()};
+  document.addEventListener("visibilitychange",()=>this.kick());
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{this._C=null;this.kick()});
+  setInterval(()=>{if(this.on&&!document.hidden){this.card();this.kick()}},30000);
+ },
+ active(v){this.on=v;if(v)this.kick()},
+ resize(){const r=this.cv.getBoundingClientRect();if(!r.width)return;this.dpr=Math.min(2.5,window.devicePixelRatio||1);this.w=r.width;this.h=r.height;this.cv.width=Math.round(r.width*this.dpr);this.cv.height=Math.round(r.height*this.dpr);this.kick()},
+ loadLand(){
+  // world outline from echarts' map package; page works without it
+  if(this.land)return;
+  window.echarts={registerMap:(n,g)=>{try{this.land=decodeGeo(g);this.kick()}catch(e){}}};
+  const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/js/world.js";s.async=true;document.head.appendChild(s);
+ },
+ chips(){
+  const el=document.getElementById("gchips");
+  const years=[...new Set(HIST.map(r=>(r[5]||r[1]).slice(0,4)).concat(store.add.map(a=>(a.out||a.date).slice(0,4))))].sort();
+  el.innerHTML=["O","D","P"].map(c=>`<button class="chip ${this.filt[c]?"on":""}" data-c="${c}" aria-pressed="${this.filt[c]}"><i class="dot c-${c}"></i>${CATN[c]}</button>`).join("")+
+   `<label class="chip on"><select id="gyear" aria-label="Period"><option value="all">All time</option>${years.map(y=>`<option ${this.year===y?"selected":""}>${y}</option>`).join("")}</select></label>`;
+  el.querySelectorAll("button").forEach(b=>b.onclick=()=>{this.filt[b.dataset.c]=!this.filt[b.dataset.c];this.chips();this.rebuild()});
+  el.querySelector("#gyear").onchange=e=>{this.year=e.target.value;this.rebuild()};
+ },
+ rebuild(){
+  const fs=FL.filter(f=>this.filt[f.cat]&&(this.year==="all"||f.year===this.year));
+  const rm=new Map(),am=new Map();
+  for(const f of fs){
+   const A=ll(f.dep),B=ll(f.arr);if(!A||!B)continue;
+   const k=[f.dep,f.arr].sort().join("-")+f.cat;
+   const r=rm.get(k)||{a:A,b:B,cat:f.cat,n:0};r.n++;rm.set(k,r);
+   for(const c of[f.dep,f.arr]){const x=am.get(c)||{code:c,p:ll(c),n:0};x.n++;am.set(c,x)}
+  }
+  const order={P:0,D:1,O:2};
+  this.routes=[...rm.values()].sort((x,y)=>order[x.cat]-order[y.cat]||x.n-y.n);
+  this.aps=[...am.values()].sort((x,y)=>x.n-y.n);
+  const ops=fs.filter(f=>f.cat==="O").length;
+  document.getElementById("glegend").textContent=`${nf0.format(this.routes.length)} routes, ${nf0.format(this.aps.length)} airports${ops?", "+nf0.format(ops)+" operating sectors":""}`;
+  this.card();this.kick();
+ },
+ cur(){ // live, next or last
+  const now=Date.now();let live=null,next=null,last=null;
+  for(const f of FL){if(f.cat==="X"||f.cat==="P"||!f.out||!f.inn)continue;if(f.out<=now&&f.inn>=now)live=f;else if(f.out>now){if(!next||f.out<next.out)next=f}else last=f}
+  return {live,next,last};
+ },
+ card(){
+  const el=document.getElementById("fc");const {live,next,last}=this.cur();const now=Date.now();
+  const f=live||next||last;if(!f){el.innerHTML=`<div class="fc-state">No flights yet</div><p class="small" style="margin:4px 0 8px">Restore your Contrail backup to bring in your history, or add a roster.</p><div class="fc-actions" style="margin-top:0"><button class="btn sm pri" id="fcrest">Restore backup</button><button class="btn sm" id="fcadd">Add a roster</button></div>`;el.querySelector("#fcrest").onclick=()=>go("set");el.querySelector("#fcadd").onclick=()=>go("add");return}
+  const tzA=tzOf(f.dep),tzB=tzOf(f.arr);let state,prog=0,meta;
+  if(f===live){prog=(now-f.out)/(f.inn-f.out);const rem=(f.inn-now)/36e5;state=`<span class="fc-state live">In the air now</span>`;meta=`<span>${HM((now-f.out)/36e5)} flown</span><span>${HM(rem)} to go</span>`}
+  else if(f===next){const d=Math.max(0,(f.out-now)/864e5);state=`<span class="fc-state">Next flight, ${d<1?"in "+HM((f.out-now)/36e5)+" h":"in "+Math.ceil(d)+" days"}</span>`;meta=`<span>${esc(dayStr(f.out,tzA))}, ${f.rep&&(!f.repAt||f.repAt===f.dep)?"report "+esc(hm(f.rep,tzA))+", ":""}departs ${esc(hm(f.out,tzA))}</span><span>${HM(f.bh)} block</span>`}
+  else{const d=Math.floor((now-f.inn)/864e5);prog=this.replay&&this.replay.id===f.id?this.replay.p:1;state=`<span class="fc-state">Last flight, ${d===0?"today":d===1?"yesterday":d+" days ago"}</span>`;meta=`<span>${esc(dayStr(f.out,tzA))}, ${flightLine(f)}</span><span>${HM(f.bh)} block</span>`}
+  el.innerHTML=`<div class="fc-head">${state}<span class="small">${esc(f.flt)}</span></div>
+   <div class="fc-route"><span class="num">${esc(f.dep)}</span><div class="fc-line"><i style="width:${(prog*100).toFixed(1)}%"></i>${f===next?"":`<b style="left:${(prog*100).toFixed(1)}%"></b>`}</div><span class="num">${esc(f.arr)}</span></div>
+   <div class="fc-meta">${meta}</div>
+   <div class="fc-actions"><button class="btn sm pri" id="fcshow">Show</button>${f===last?`<button class="btn sm" id="fcplay">Replay</button>`:""}<button class="btn sm" id="fcopen">Details</button></div>`;
+  el.querySelector("#fcshow").onclick=()=>this.select(f.id,true);
+  el.querySelector("#fcopen").onclick=()=>openFlight(f.id);
+  const pl=el.querySelector("#fcplay");if(pl)pl.onclick=()=>this.play(f.id);
+ },
+ select(id,fly){const f=BYID[id];if(!f)return;this.sel=id;const A=ll(f.dep),B=ll(f.arr);if(fly&&A&&B){const mid=d3.geoInterpolate(A,B)(.5);const dist=d3.geoDistance(A,B);this.flyTo(mid,Math.max(1,Math.min(4,2.2/(dist+.35))))}this.kick()},
+ play(id){this.select(id,true);this.replay={id,p:0,t0:performance.now()+700};this.kick()},
+ flyTo(p,z){const r0=this.rot.slice(),r1=[-p[0],-p[1],0];if(r1[0]-r0[0]>180)r1[0]-=360;if(r0[0]-r1[0]>180)r1[0]+=360;const z0=this.zoom,z1=z||this.zoom;const ir=d3.interpolate(r0,r1),t0=performance.now(),D=matchMedia("(prefers-reduced-motion: reduce)").matches?1:900;this.anim={step:t=>{const k=Math.min(1,(t-t0)/D),e=d3.easeCubicInOut(k);this.rot=ir(e);this.zoom=z0+(z1-z0)*e;return k<1}};this.vel=[0,0];this.lastInt=performance.now();this.kick()},
+ bind(){
+  const cv=this.cv,ptrs=new Map();let start=null,pinch=null,lastMove=0;
+  cv.addEventListener("pointerdown",e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});this.anim=null;this.vel=[0,0];this.lastInt=performance.now();
+   if(ptrs.size===1)start={x:e.clientX,y:e.clientY,t:performance.now(),moved:0};
+   if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:this.zoom}}});
+  cv.addEventListener("pointermove",e=>{if(!ptrs.has(e.pointerId))return;const p=ptrs.get(e.pointerId),dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+   if(ptrs.size===2&&pinch){const[a,b]=[...ptrs.values()];this.zoom=Math.max(.75,Math.min(8,pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d));this.kick();return}
+   if(ptrs.size===1){if(start)start.moved+=Math.abs(dx)+Math.abs(dy);const k=90/this.proj.scale();this.rot[0]+=dx*k;this.rot[1]=Math.max(-89,Math.min(89,this.rot[1]-dy*k));const now=performance.now(),dt=Math.max(8,now-lastMove);lastMove=now;this.vel=[dx*k/dt*16,-dy*k/dt*16];this.lastInt=now;this.kick()}});
+  const end=e=>{if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;
+   if(ptrs.size===0&&start){if(start.moved<8&&performance.now()-start.t<450)this.tap(e.clientX,e.clientY);if(performance.now()-lastMove>60)this.vel=[0,0];start=null;this.kick()}};
+  cv.addEventListener("pointerup",end);cv.addEventListener("pointercancel",end);
+  cv.addEventListener("wheel",e=>{e.preventDefault();this.zoom=Math.max(.75,Math.min(8,this.zoom*Math.exp(-e.deltaY*.0015)));this.lastInt=performance.now();this.kick()},{passive:false});
+ },
+ tap(x,y){const r=this.cv.getBoundingClientRect();x-=r.left;y-=r.top;let best=null,bd=22;
+  for(const a of this.aps){if(d3.geoDistance(a.p,this.center())>Math.PI/2-.02)continue;const q=this.proj(a.p);const d=Math.hypot(q[0]-x,q[1]-y);if(d<bd){bd=d;best=a}}
+  if(best)openAirport(best.code);else if(this.sel){this.sel=null;this.replay=null;this.kick()}},
+ center(){return[-this.rot[0],-this.rot[1]]},
+ kick(){if(!this.raf)this.raf=requestAnimationFrame(t=>this.frame(t))},
+ frame(t){this.raf=0;if(!this.on||document.hidden)return;let more=false;
+  if(this.anim){if(!this.anim.step(t))this.anim=null;more=true}
+  else if(Math.abs(this.vel[0])+Math.abs(this.vel[1])>.01){this.rot[0]+=this.vel[0];this.rot[1]=Math.max(-89,Math.min(89,this.rot[1]+this.vel[1]));this.vel[0]*=.93;this.vel[1]*=.93;more=true}
+  else if(this.spin&&disp().spin&&!this.sel&&t-this.lastInt>5000){this.rot[0]+=.04;more=true}
+  if(this.replay){const p=(t-this.replay.t0)/6000;this.replay.p=Math.max(0,Math.min(1,p));if(p<1.15)more=true;else this.replay=null;this.card()}
+  this.draw();if(more)this.kick()},
+ draw(){
+  const ctx=this.ctx,w=this.w,h=this.h,dpr=this.dpr;if(!w)return;
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+  const base=Math.min(w*.49,h*.4),cy=h*0.6,cx=w/2,r=base*this.zoom;
+  this.proj.translate([cx,cy]).scale(r).rotate(this.rot);
+  const C=this.colors();
+  // halo
+  const halo=ctx.createRadialGradient(cx,cy,r*.96,cx,cy,r*1.16);halo.addColorStop(0,C.rim);halo.addColorStop(1,"rgba(0,0,0,0)");ctx.fillStyle=halo;ctx.beginPath();ctx.arc(cx,cy,r*1.16,0,7);ctx.fill();
+  const g=ctx.createRadialGradient(cx-r*.35,cy-r*.4,r*.05,cx,cy,r);g.addColorStop(0,C.o1);g.addColorStop(1,C.o2);
+  ctx.beginPath();this.path({type:"Sphere"});ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();this.path(d3.geoGraticule10());ctx.strokeStyle=C.grat;ctx.lineWidth=1;ctx.stroke();
+  if(this.land){ctx.beginPath();this.path(this.land);ctx.fillStyle=C.land;ctx.fill();ctx.strokeStyle=C.edge;ctx.lineWidth=.6;ctx.stroke()}
+  const sp=sunPos(Date.now());const anti=[sp[0]+180,-sp[1]];
+  const S=disp();
+  if(S.night){ctx.beginPath();this.path(d3.geoCircle().center(anti).radius(90)());ctx.fillStyle=C.night;ctx.fill();
+  ctx.beginPath();this.path(d3.geoCircle().center(anti).radius(84)());ctx.fillStyle=C.night;ctx.fill()}
+  // routes
+  const dark=document.documentElement.getAttribute("data-theme")==="dark"||(!document.documentElement.getAttribute("data-theme")&&matchMedia("(prefers-color-scheme: dark)").matches);
+  ctx.lineCap="round";
+  const dimSel=!!this.sel;
+  for(const rt of this.routes){
+   const lw=(S.freq?(.5+Math.log2(rt.n+1)*.45):1)*S.lw;
+   ctx.beginPath();this.path({type:"LineString",coordinates:[rt.a,rt.b]});
+   const al=dimSel?.2:S.op*(rt.cat==="P"?.7:1);
+   if(S.glow&&dark&&rt.cat==="O"&&!dimSel){ctx.save();ctx.globalAlpha=.16*S.op;ctx.strokeStyle=C.O;ctx.lineWidth=lw+3*Math.min(1.5,S.lw);ctx.stroke();ctx.restore()}
+   ctx.globalAlpha=al;
+   ctx.setLineDash(rt.cat==="D"?[4,4]:[]);ctx.strokeStyle=C[rt.cat];ctx.lineWidth=lw;ctx.stroke();
+  }
+  ctx.setLineDash([]);ctx.globalAlpha=1;
+  // airports
+  const ctr=this.center();
+  const D3={few:[3,12,30],some:[1,6,20],many:[1,2,6]}[S.dens]||[1,6,20];
+  const labelMin=this.zoom>3?D3[0]:this.zoom>1.8?D3[1]:D3[2];
+  ctx.font=`600 11.5px ${C.sans}`;ctx.textBaseline="middle";
+  const placed=[];
+  for(const a of this.aps){if(!S.dots)break;if(d3.geoDistance(a.p,ctr)>Math.PI/2-.03)continue;const q=this.proj(a.p);const rr=Math.min(5,1.6+Math.sqrt(a.n)*.28)*Math.min(1.4,Math.sqrt(this.zoom));
+   ctx.beginPath();ctx.arc(q[0],q[1],rr,0,7);ctx.fillStyle=C.text;ctx.globalAlpha=dimSel?.5:.9;ctx.fill();ctx.globalAlpha=1}
+  ctx.lineJoin="round";
+  for(let i=this.aps.length-1;i>=0&&S.labels!=="off";i--){const a=this.aps[i];if(a.n<labelMin)break;if(d3.geoDistance(a.p,ctr)>Math.PI/2-.1)continue;const q=this.proj(a.p);
+   const txt=S.labels==="city"?shortCity(a.code):a.code;const tw=ctx.measureText(txt).width;
+   const bx=[q[0]+4,q[1]-8,q[0]+8+tw,q[1]+8];
+   if(placed.some(b=>!(bx[2]<b[0]||bx[0]>b[2]||bx[3]<b[1]||bx[1]>b[3])))continue;placed.push(bx);
+   ctx.strokeStyle=C.halo;ctx.lineWidth=3.2;ctx.globalAlpha=.85;ctx.strokeText(txt,q[0]+6,q[1]);ctx.globalAlpha=1;ctx.fillStyle=C.text;ctx.fillText(txt,q[0]+6,q[1])}
+  // selected flight
+  if(this.sel){const f=BYID[this.sel];if(f){const A=ll(f.dep),B=ll(f.arr);if(A&&B){
+   ctx.beginPath();this.path({type:"LineString",coordinates:[A,B]});ctx.strokeStyle=C[f.cat==="X"?"muted":f.cat]||C.O;ctx.lineWidth=3.2;ctx.globalAlpha=1;ctx.stroke();
+   for(const c of[A,B]){if(d3.geoDistance(c,ctr)>Math.PI/2)continue;const q=this.proj(c);ctx.beginPath();ctx.arc(q[0],q[1],5,0,7);ctx.fillStyle=C.surf;ctx.fill();ctx.lineWidth=2.4;ctx.strokeStyle=C[f.cat]||C.O;ctx.stroke()}
+   let p=null;const now=Date.now();
+   if(this.replay&&this.replay.id===f.id)p=this.replay.p;else if(f.out&&f.inn&&f.out<=now&&f.inn>=now)p=(now-f.out)/(f.inn-f.out);
+   if(p!=null)this.plane(A,B,p,C)}}}
+  else{const L=this.cur().live;if(L){const A=ll(L.dep),B=ll(L.arr);if(A&&B)this.plane(A,B,(Date.now()-L.out)/(L.inn-L.out),C)}}
+ },
+ colors(){const n=performance.now();if(this._C&&n-this._Ct<1500)return this._C;this._Ct=n;return this._C={o1:cssv("--ocean-1"),o2:cssv("--ocean-2"),land:cssv("--land"),edge:cssv("--land-edge"),night:cssv("--night"),grat:cssv("--grat"),rim:cssv("--rim"),O:cssv("--op"),D:cssv("--dh"),P:cssv("--pers"),text:cssv("--text"),muted:cssv("--muted"),surf:cssv("--surface"),sans:cssv("--sans"),halo:cssv("--ocean-2")}},
+ plane(A,B,p,C){const ip=d3.geoInterpolate(A,B),pos=ip(Math.min(.999,p)),ahead=ip(Math.min(1,p+.01));if(d3.geoDistance(pos,this.center())>Math.PI/2)return;
+  const q=this.proj(pos),q2=this.proj(ahead);const ang=Math.atan2(q2[1]-q[1],q2[0]-q[0]);const ctx=this.ctx;
+  ctx.save();ctx.translate(q[0],q[1]);ctx.rotate(ang+Math.PI/2);ctx.scale(1.15,1.15);
+  ctx.beginPath();ctx.arc(0,0,13,0,7);ctx.fillStyle=C.O;ctx.globalAlpha=.18;ctx.fill();ctx.globalAlpha=1;
+  ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(1.4,-6);ctx.lineTo(1.4,-2);ctx.lineTo(8,2.5);ctx.lineTo(8,4.2);ctx.lineTo(1.4,2.3);ctx.lineTo(1.2,6.4);ctx.lineTo(3.3,8);ctx.lineTo(3.3,9.2);ctx.lineTo(0,8.3);ctx.lineTo(-3.3,9.2);ctx.lineTo(-3.3,8);ctx.lineTo(-1.2,6.4);ctx.lineTo(-1.4,2.3);ctx.lineTo(-8,4.2);ctx.lineTo(-8,2.5);ctx.lineTo(-1.4,-2);ctx.lineTo(-1.4,-6);ctx.closePath();
+  ctx.fillStyle=C.text;ctx.fill();ctx.restore()}
+};
+function decodeGeo(g){
+  const scale=g.UTF8Scale||1024;
+  function dec(c,off){const res=[];let px=off[0],py=off[1];for(let i=0;i<c.length;i+=2){let x=c.charCodeAt(i)-64,y=c.charCodeAt(i+1)-64;x=(x>>1)^(-(x&1));y=(y>>1)^(-(y&1));x+=px;y+=py;px=x;py=y;res.push([x/scale,y/scale])}return res}
+  const feats=[];
+  for(const f of g.features){const geo=f.geometry;if(!geo)continue;let polys;
+   if(g.UTF8Encoding){if(geo.type==="Polygon")polys=[geo.coordinates.map((r,i)=>dec(r,geo.encodeOffsets[i]))];else if(geo.type==="MultiPolygon")polys=geo.coordinates.map((p,j)=>p.map((r,i)=>dec(r,geo.encodeOffsets[j][i])));else continue}
+   else{polys=geo.type==="Polygon"?[geo.coordinates]:geo.type==="MultiPolygon"?geo.coordinates:[]}
+   for(let p of polys){p=p.map(r=>{const rr=r.slice();if(rr.length&&(rr[0][0]!==rr[rr.length-1][0]||rr[0][1]!==rr[rr.length-1][1]))rr.push(rr[0]);return rr});
+    const poly={type:"Polygon",coordinates:p};if(d3.geoArea(poly)>2*Math.PI)poly.coordinates=p.map(r=>r.slice().reverse());feats.push({type:"Feature",geometry:poly})}}
+  return {type:"FeatureCollection",features:feats};
+}
+function openAirport(code){
+  const A=ap(code);const fs=FL.filter(f=>(f.dep===code||f.arr===code)&&f.cat!=="X");
+  const op=fs.filter(f=>f.cat==="O");const dests=new Map();for(const f of fs){const o=f.dep===code?f.arr:f.dep;dests.set(o,(dests.get(o)||0)+1)}
+  const top=[...dests.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const first=fs[0],last=fs[fs.length-1];
+  Sheet.open(`<div class="d-route"><span class="num">${esc(code)}</span></div>
+  <div class="d-city"><span>${esc(A?A[0]:"")}${A?", "+esc(CN[A[1]]||A[1]):""}</span></div>
+  <div class="d-grid">
+   <div><span>Operating sectors</span><b>${op.length}</b></div>
+   <div><span>All flights</span><b>${fs.length}</b></div>
+   <div><span>First visit</span><b>${first?esc(fullDate(new Date(first.t),"UTC")):"–"}</b></div>
+   <div><span>Last visit</span><b>${last?esc(fullDate(new Date(last.t),"UTC")):"–"}</b></div>
+  </div>
+  <h3 style="margin:6px 0 6px">Flown to and from</h3>
+  <div class="records">${top.map(([c,n])=>`<div class="r"><span>${esc(c)} ${esc(city(c))}</span><b>${n}</b></div>`).join("")}</div>
+  <div class="d-acts"><button class="btn pri sm" id="aplog">See these flights</button></div>`,el=>{el.querySelector("#aplog").onclick=()=>{Sheet.close();Log.q=code;document.getElementById("q").value=code;go("log")}});
+}
+
+/* ---------- logbook ---------- */
+const Log={q:"",cat:"all",
+ renderDuties(){
+  const q=this.q.toUpperCase();let ds=allDuties().sort((a,b)=>b.date.localeCompare(a.date));
+  if(q)ds=ds.filter(d=>(d.code+" "+codeInfo(d.code).label+" "+d.date).toUpperCase().includes(q));
+  if(!ds.length){document.getElementById("loglist").innerHTML=`<div class="empty">No duties yet. Days off, standby and training come in with your rosters and the RosterBuster file.</div>`;return}
+  const groups=new Map();for(const d of ds){const k=d.date.slice(0,7);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(d)}
+  const mf=new Intl.DateTimeFormat("en-GB",{month:"long",year:"numeric",timeZone:"UTC"}),df=new Intl.DateTimeFormat("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"});let h="";
+  for(const[k,list]of groups){const off=list.filter(d=>codeInfo(d.code).kind==="off").length;
+   h+=`<div class="month"><span>${mf.format(new Date(k+"-01T00:00:00Z"))}</span><span>${off?off+" days off":""}</span></div><div class="list">`+list.map(d=>{const c=codeInfo(d.code);return`<div class="row" style="cursor:default"><span class="cb" style="background:${KINDCOL[c.kind]||"var(--muted)"}"></span><span><span class="rt" style="font-size:16px">${esc(c.label)}</span><span class="mt"><span>${esc(d.code)}</span></span></span><span class="rr"><span class="small">${esc(df.format(new Date(d.date+"T12:00:00Z")))}</span></span></div>`}).join("")+`</div>`}
+  document.getElementById("loglist").innerHTML=h;
+ },
+ init(){const s=document.getElementById("lseg");s.innerHTML=[["all","All"],["O","Operating"],["D","Deadhead"],["P","Personal"],["duty","Duties"],["X","Excluded"]].map(([k,n])=>`<button data-k="${k}" class="${k===this.cat?"on":""}">${n}</button>`).join("");
+  s.querySelectorAll("button").forEach(b=>b.onclick=()=>{this.cat=b.dataset.k;s.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));this.render()});
+  let t;document.getElementById("q").addEventListener("input",e=>{clearTimeout(t);t=setTimeout(()=>{this.q=e.target.value.trim();this.render()},120)});
+  document.getElementById("loglist").addEventListener("click",e=>{const b=e.target.closest(".row");if(b)openFlight(b.dataset.id)})},
+ render(){
+  if(this.cat==="duty")return this.renderDuties();
+  const q=this.q.toUpperCase();let fs=FL.filter(f=>this.cat==="all"||f.cat===this.cat);
+  if(q)fs=fs.filter(f=>(f.flt+" "+f.dep+" "+f.arr+" "+(f.ac||"")+" "+(f.reg||"")+" "+(f.emp||"")+" "+f.year+" "+city(f.dep)+" "+city(f.arr)).toUpperCase().includes(q));
+  fs=fs.slice().reverse();
+  if(!fs.length){document.getElementById("loglist").innerHTML=`<div class="empty">No flights match. Try another search or filter.</div>`;return}
+  const groups=new Map();for(const f of fs){const k=(f.out?f.out.toISOString():f.date).slice(0,7);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(f)}
+  let h="";const mf=new Intl.DateTimeFormat("en-GB",{month:"long",year:"numeric",timeZone:"UTC"});
+  for(const[k,list]of groups){const bh=list.filter(f=>f.cat==="O").reduce((s,f)=>s+(f.bh||0),0);
+   h+=`<div class="month"><span>${mf.format(new Date(k+"-01T00:00:00Z"))}</span><span>${bh?HM(bh)+" block":""}</span></div><div class="list">`;
+   for(const f of list){const tz=tzOf(f.dep);
+    h+=`<button class="row" data-id="${f.id}"><span class="cb c-${f.cat}"></span><span><span class="rt">${esc(f.dep)}<span>–</span>${esc(f.arr)}${needsReview(f)?'<i class="flag" title="Needs a check"></i>':""}</span><span class="mt"><span>${esc(f.flt)}</span><span>${flightLine(f)}</span>${f.ac?`<span>${esc(f.ac)}</span>`:""}</span></span><span class="rr"><span class="num">${f.bh!=null?HM(f.bh):"–"}</span><span class="small">${f.out?esc(dayStr(f.out,tz)):esc(f.date.slice(5))}</span></span></button>`}
+   h+=`</div>`}
+  document.getElementById("loglist").innerHTML=h;
+ }};
+
+/* ---------- stats ---------- */
+const Stats={scope:"all",
+ render(){
+  const years=[...new Set(FL.map(f=>f.year))].sort();const emps=[...new Set(FL.filter(f=>f.cat==="O"&&f.emp).map(f=>f.emp))];
+  const opts=[["all","All time"],...years.map(y=>[y,y]),...emps.map(e=>["e:"+e,e])];
+  const seg=document.getElementById("sseg");seg.innerHTML=opts.map(([k,n])=>`<button data-k="${esc(k)}" class="${k===this.scope?"on":""}">${esc(n)}</button>`).join("");
+  seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{this.scope=b.dataset.k;this.render()});
+  const sel=f=>this.scope==="all"||(this.scope.startsWith("e:")?f.emp===this.scope.slice(2):f.year===this.scope);
+  const nowT=Date.now(),today=new Date().toISOString().slice(0,10);
+  const ahead=FL.filter(f=>f.cat==="O"&&f.out&&f.out.getTime()>nowT&&sel(f));
+  const all=FL.filter(f=>f.cat!=="X"&&sel(f)&&(!f.out||f.out.getTime()<=nowT));const O=all.filter(f=>f.cat==="O"),D=all.filter(f=>f.cat==="D"),P=all.filter(f=>f.cat==="P");
+  const sum=(a,k)=>a.reduce((s,f)=>s+(f[k]||0),0);
+  const bh=sum(O,"bh"),km=sum(O,"km"),night=sum(O,"nightH");
+  const apsO=new Set(O.flatMap(f=>[f.dep,f.arr]));const ctryO=new Set([...apsO].map(c=>ap(c)&&ap(c)[1]).filter(Boolean));const regO=new Set([...ctryO].map(c=>REGION[c]).filter(Boolean));
+  const apsAll=new Set(all.flatMap(f=>[f.dep,f.arr]));const ctryAll=new Set([...apsAll].map(c=>ap(c)&&ap(c)[1]).filter(Boolean));
+  let h=`<div class="hero" style="margin-top:22px"><div class="big">${HM(bh)}</div><div class="lbl">block hours operating, ${nf0.format(O.length)} sectors${ahead.length?`. ${ahead.length} more rostered, ${HM(ahead.reduce((s,f)=>s+(f.bh||0),0))} block`:""}</div></div>
+  <div class="kv">
+   <div><span class="num">${nf0.format(km)}</span><span>kilometres flown</span></div>
+   <div><span class="num">${nf1.format(km/40075)}</span><span>times around the Earth</span></div>
+   <div><span class="num">${HM(night)}</span><span>night hours</span></div>
+   <div><span class="num">${O.length?HM(bh/O.length):"–"}</span><span>average sector</span></div>
+   <div><span class="num">${apsO.size}</span><span>airports operated</span></div>
+   <div><span class="num">${ctryO.size}</span><span>countries, ${regO.size} regions</span></div>
+  </div>`;
+  // split
+  const tot=bh+sum(D,"bh")+sum(P,"bh");
+  if(tot){h+=`<h2>Time in the air</h2><div class="panel"><div class="split">${[["O",bh],["D",sum(D,"bh")],["P",sum(P,"bh")]].map(([c,v])=>`<i class="c-${c}" style="width:${(v/tot*100).toFixed(2)}%"></i>`).join("")}</div>
+   <div class="legend"><span><i class="c-O"></i>Operating ${HM(bh)}</span><span><i class="c-D"></i>Deadhead ${HM(sum(D,"bh"))}</span><span><i class="c-P"></i>Personal ${HM(sum(P,"bh"))}</span></div></div>`}
+  // by year chart
+  if(this.scope==="all"||this.scope.startsWith("e:")){
+   const ys=[...new Set(O.concat(D).map(f=>f.year))].sort();const data=ys.map(y=>({y,o:sum(O.filter(f=>f.year===y),"bh"),d:sum(D.filter(f=>f.year===y),"bh")}));
+   const mx=Math.max(1,...data.map(d=>d.o+d.d));const W=360,H=150,bw=Math.min(64,(W-20)/data.length*.6),gap=(W-20)/data.length;
+   h+=`<h2>Block hours by year</h2><div class="panel"><svg class="chart" viewBox="0 0 ${W} ${H+28}" role="img" aria-label="Block hours by year">`+
+    data.map((d,i)=>{const x=10+i*gap+(gap-bw)/2,ho=d.o/mx*H,hd=d.d/mx*H;return`<rect x="${x}" y="${H-ho}" width="${bw}" height="${ho}" rx="4" fill="var(--op)"><title>${d.y}: ${HM(d.o)} operating</title></rect><rect x="${x}" y="${H-ho-hd}" width="${bw}" height="${Math.max(0,hd-1)}" rx="4" fill="var(--dh)" opacity=".85"><title>${d.y}: ${HM(d.d)} deadhead</title></rect><text x="${x+bw/2}" y="${H-ho-hd-6}" text-anchor="middle" style="fill:var(--text);font-family:var(--round);font-weight:700">${d.o?nf0.format(d.o):""}</text><text x="${x+bw/2}" y="${H+18}" text-anchor="middle">${d.y}</text>`}).join("")+`</svg>
+    <div class="legend"><span><i class="c-O"></i>Operating</span><span><i class="c-D"></i>Deadhead</span></div></div>`;
+  }
+  // heat map months
+  {const ys=[...new Set(O.map(f=>f.year))].sort();const m=new Map();for(const f of O){const k=(f.out?f.out.toISOString():f.date).slice(0,7);m.set(k,(m.get(k)||0)+(f.bh||0))}
+   const mx=Math.max(1,...m.values());const mn=["J","F","M","A","M","J","J","A","S","O","N","D"];
+   if(ys.length){h+=`<h2>Month by month</h2><div class="panel"><div class="heat" style="grid-template-columns:40px repeat(12,1fr)"><span></span>${mn.map(x=>`<span style="text-align:center">${x}</span>`).join("")}`+
+    ys.map(y=>`<span style="align-self:center">${y}</span>`+Array.from({length:12},(_,i)=>{const k=y+"-"+String(i+1).padStart(2,"0");const v=m.get(k)||0;return`<div class="c" style="${v?`background:color-mix(in srgb,var(--op) ${Math.round(18+v/mx*82)}%,var(--surface-2))`:""}" title="${k}: ${HM(v)}"></div>`}).join("")).join("")+
+    `</div><p class="note">Darker means more block hours that month. Busiest: ${(()=>{const b=[...m.entries()].sort((a,b)=>b[1]-a[1])[0];return b?new Intl.DateTimeFormat("en-GB",{month:"long",year:"numeric",timeZone:"UTC"}).format(new Date(b[0]+"-01T00:00:00Z"))+", "+HM(b[1])+" h":"–"})()}</p></div>`}}
+  // employers
+  const byE=new Map();for(const f of O){const k=f.emp||"Unknown";const x=byE.get(k)||{n:0,h:0};x.n++;x.h+=f.bh||0;byE.set(k,x)}
+  if(byE.size>1)h+=this.bars("Airlines",[...byE.entries()].sort((a,b)=>b[1].h-a[1].h).map(([k,v])=>[k,v.h,HM(v.h),v.n+" sectors"]),"var(--op)");
+  // aircraft
+  const fam=t=>{if(!t)return null;t=t.replace(/Airbus |Boeing /,"");if(/^A38/.test(t))return"Airbus A380";if(/^777/.test(t))return"Boeing 777";if(/^767/.test(t))return"Boeing 767";if(/^737 MAX/.test(t))return"Boeing 737 MAX";if(/^737/.test(t))return"Boeing 737";if(/^A33/.test(t))return"Airbus A330";if(/^A32|^A31/.test(t))return"A320 family";if(/^A35/.test(t))return"Airbus A350";if(/^787/.test(t))return"Boeing 787";return t};
+  const byA=new Map();let unk=0;for(const f of O){const k=fam(f.ac);if(!k){unk++;continue}const x=byA.get(k)||{n:0,h:0};x.n++;x.h+=f.bh||0;byA.set(k,x)}
+  if(byA.size)h+=this.bars("Aircraft",[...byA.entries()].sort((a,b)=>b[1].n-a[1].n).map(([k,v])=>[k,v.n,v.n+"",HM(v.h)+" h"]),"var(--op)",unk?`${unk} operating sectors have no aircraft type yet. The RosterBuster file should fill most of them.`:"");
+  // airports & routes
+  const byAp=new Map();for(const f of O)for(const c of[f.dep,f.arr])byAp.set(c,(byAp.get(c)||0)+1);
+  h+=this.bars("Airports",[...byAp.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>[k+" "+city(k),v,v+""]),"var(--op)");
+  const byR=new Map();for(const f of O){const k=[f.dep,f.arr].sort().join("–");byR.set(k,(byR.get(k)||0)+1)}
+  h+=this.bars("Routes",[...byR.entries()].sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k,v])=>[k,v,v+""]),"var(--op)","Counted both directions.");
+  // local departure hour
+  {const hrs=new Array(24).fill(0);for(const f of O){if(!f.out)continue;hrs[+hm(f.out,tzOf(f.dep)).slice(0,2)]++}const mx=Math.max(1,...hrs);const W=360,H=90,gw=W/24;
+   const red=hrs.slice(0,6).reduce((a,b)=>a+b,0);
+   h+=`<h2>When you take off</h2><div class="panel"><svg class="chart" viewBox="0 0 ${W} ${H+22}" role="img" aria-label="Departures by local hour">${hrs.map((v,i)=>`<rect x="${i*gw+1}" y="${H-v/mx*H}" width="${gw-2}" height="${v/mx*H}" rx="3" fill="var(--op)" opacity="${i<6?1:.6}"><title>${String(i).padStart(2,"0")}:00 local: ${v}</title></rect>`).join("")}${[0,6,12,18].map(i=>`<text x="${i*gw+gw/2}" y="${H+16}" text-anchor="middle">${String(i).padStart(2,"0")}:00</text>`).join("")}</svg>
+   <p class="note">Local time at the departure airport. ${red} departures between midnight and 06:00.</p></div>`}
+  // records
+  const withB=O.filter(f=>f.bh!=null);const longest=withB.slice().sort((a,b)=>b.bh-a.bh)[0],shortest=withB.slice().sort((a,b)=>a.bh-b.bh)[0],farthest=O.filter(f=>f.km).sort((a,b)=>b.km-a.km)[0];
+  const days=new Map();for(const f of O){const k=f.out?ymdIn(f.out,tzOf(f.dep)):f.date;days.set(k,(days.get(k)||0)+1)}const busy=[...days.entries()].sort((a,b)=>b[1]-a[1])[0];
+  const R=(f)=>f?`${esc(f.dep)}–${esc(f.arr)}, ${HM(f.bh)}, ${esc(f.out?dayStr(f.out,tzOf(f.dep))+" "+f.year:f.date)}`:"–";
+  h+=`<h2>Records</h2><div class="panel records">
+   <div class="r"><span>Longest sector</span><b>${R(longest)}</b></div>
+   <div class="r"><span>Shortest sector</span><b>${R(shortest)}</b></div>
+   <div class="r"><span>Farthest</span><b>${farthest?esc(farthest.dep)+"–"+esc(farthest.arr)+", "+nf0.format(farthest.km)+" km":"–"}</b></div>
+   <div class="r"><span>Most sectors in a day</span><b>${busy?busy[1]+" on "+esc(new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"}).format(new Date(busy[0]+"T12:00:00Z"))):"–"}</b></div>
+   <div class="r"><span>Countries, any flight</span><b>${ctryAll.size}</b></div>
+  </div>`;
+  // countries
+  const cs=[...ctryAll].map(c=>CN[c]||c).sort();
+  if(cs.length)h+=`<h2>Countries</h2><div class="panel"><p style="margin:0;line-height:1.7">${cs.map(esc).join(", ")}</p></div>`;
+  // deadhead & personal
+  const sec=(t,arr,col,desc)=>{if(!arr.length)return"";const top=new Map();for(const f of arr){const k=[f.dep,f.arr].sort().join("–");top.set(k,(top.get(k)||0)+1)}const tr=[...top.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]+(x[1]>1?" ("+x[1]+")":"")).join(", ");
+   return`<h2>${t}</h2><div class="panel"><div class="kv" style="margin-top:0"><div><span class="num" style="color:${col}">${arr.length}</span><span>flights</span></div><div><span class="num" style="color:${col}">${HM(sum(arr,"bh"))}</span><span>hours in the air</span></div><div><span class="num" style="color:${col}">${nf0.format(sum(arr,"km"))}</span><span>kilometres</span></div></div><p class="note">${desc} Most flown: ${esc(tr)}.</p></div>`};
+  // layovers
+  {const BASE={Emirates:"DXB",Ryanair:"DUB",euroAtlantic:"LIS"};const L=[];const ops=O.filter(f=>f.out&&f.inn);
+   for(let i=0;i<ops.length-1;i++){const a=ops[i],b=ops[i+1];const base=BASE[a.emp];if(!base||a.arr===base||a.arr!==b.dep)continue;const hrs=(b.out-a.inn)/36e5;if(hrs>=8&&hrs<240)L.push({st:a.arr,h:hrs,t:a.inn})}
+   if(L.length){const by=new Map();for(const l of L)by.set(l.st,(by.get(l.st)||0)+1);const fav=[...by.entries()].sort((a,b)=>b[1]-a[1])[0];const lo=L.slice().sort((a,b)=>b.h-a.h)[0];
+    h+=`<h2>Layovers</h2><div class="panel"><div class="kv" style="margin-top:0"><div><span class="num">${L.length}</span><span>layovers</span></div><div><span class="num">${HM(L.reduce((s,l)=>s+l.h,0)/L.length)}</span><span>average length</span></div><div><span class="num">${esc(shortCity(fav[0]))}</span><span>most often, ${fav[1]} times</span></div><div><span class="num">${Math.round(lo.h)} h</span><span>longest, ${esc(shortCity(lo.st))}</span></div></div><p class="note">Time on the ground away from base between operating sectors, for Emirates, Ryanair and euroAtlantic.</p></div>`}}
+  // duties
+  {const ds=allDuties().filter(d=>d.date<=today).filter(d=>this.scope==="all"||(this.scope.startsWith("e:")?true:d.date.slice(0,4)===this.scope));
+   const kinds={};for(const d of ds){const k=codeInfo(d.code).kind;kinds[k]=(kinds[k]||0)+1}
+   const groups=[];for(const f of O.concat(D)){if(!f.rep||!f.inn)continue;const g=groups[groups.length-1];if(g&&g.rep===f.rep.getTime())g.end=f.inn.getTime();else groups.push({rep:f.rep.getTime(),end:f.inn.getTime()})}
+   const dutyH=groups.reduce((s,g)=>s+(g.end-g.rep)/36e5+0.5,0);
+   if(ds.length||groups.length){h+=`<h2>Duties</h2><div class="panel"><div class="kv" style="margin-top:0">
+    ${groups.length?`<div><span class="num">${HM(dutyH)}</span><span>duty hours, ${groups.length} duties</span></div><div><span class="num">${HM(dutyH/groups.length)}</span><span>average duty</span></div>`:""}
+    ${Object.entries(kinds).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<div><span class="num" style="color:${KINDCOL[k]||"var(--text)"}">${n}</span><span>${esc(KINDN[k]||k)}</span></div>`).join("")}
+   </div><p class="note">Duty hours run from report time to 30 minutes after the last landing, for rosters that include report times. Duty days come from your imported rosters.</p></div>`}}
+  h+=sec("Deadheading",D,"var(--dh)","Positioning to and from trips. Not counted in block hours.");
+  h+=sec("Personal travel",P,"var(--pers)","Commutes, leave and holidays you logged in Flighty.");
+  document.getElementById("stats").innerHTML=h;
+ },
+ bars(title,rows,col,note){if(!rows.length)return"";const mx=Math.max(...rows.map(r=>r[1]));
+  return`<h2>${esc(title)}</h2><div class="panel bars">${rows.map(r=>`<div class="b"><span class="k">${esc(r[0])}</span><span class="tr"><i style="width:${(r[1]/mx*100).toFixed(1)}%;background:${col}"></i></span><span class="v">${esc(r[2])}${r[3]?`<div class="small" style="font-family:var(--sans);font-weight:400">${esc(r[3])}</div>`:""}</span></div>`).join("")}${note?`<p class="note">${esc(note)}</p>`:""}</div>`}
+};
+
+/* ---------- review ---------- */
+const Review={render(){
+  const items=FL.filter(needsReview);
+  document.getElementById("revsub").textContent=items.length?`${items.length} flight${items.length>1?"s":""} where your roster and Flighty disagree or something looks off. Choose how each should count.`:"Everything is checked. New conflicts from imports will show up here.";
+  document.getElementById("revlist").innerHTML=items.map(f=>{const unknown=[f.dep,f.arr].filter(c=>!ap(c));return`<div class="card" data-id="${f.id}">
+   <div class="fc-head"><div class="rt num" style="font-size:22px">${esc(f.dep)}–${esc(f.arr)}</div><span class="small">${esc(f.flt)}, ${f.out?esc(fullDate(f.out,tzOf(f.dep))):esc(f.date)}</span></div>
+   <div class="why">${unknown.length?`Location of ${unknown.map(esc).join(" and ")} is unknown, so this flight is missing from the globe and distance totals.`:esc(f.note||"Please confirm this flight.")}</div>
+   ${unknown.length?`<div class="acts">${unknown.map(c=>`<button class="btn sm pri" data-ap="${esc(c)}">Add ${esc(c)}</button>`).join("")}</div>`:
+   `<div class="seg" style="margin-bottom:10px">${CATS.map(c=>`<button data-c="${c}" class="${f.cat===c?"on":""}">${CATN[c]}</button>`).join("")}</div>
+   <div class="acts"><button class="btn sm pri" data-ok="1">Looks right</button><button class="btn sm" data-open="1">Details</button></div>`}</div>`}).join("");
+  document.querySelectorAll("#revlist .card").forEach(card=>{const id=card.dataset.id;
+   card.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{setOv(id,{c:b.dataset.c})});
+   const ok=card.querySelector("[data-ok]");if(ok)ok.onclick=()=>{setOv(id,{ok:true});toast("Marked as checked")};
+   const op=card.querySelector("[data-open]");if(op)op.onclick=()=>openFlight(id);
+   card.querySelectorAll("[data-ap]").forEach(b=>b.onclick=()=>addAirport(b.dataset.ap));});
+}};
+function addAirport(code,after){
+  Sheet.open(`<h2 style="margin-top:6px">Add ${esc(code)}</h2><p class="small">Latitude and longitude in decimal degrees, and the airport's time zone, for example Asia/Dubai.</p>
+  <div class="form"><label class="full">City<input id="a-c"></label><label>Latitude<input id="a-la" inputmode="decimal"></label><label>Longitude<input id="a-lo" inputmode="decimal"></label><label>Country code<input id="a-cc" maxlength="2" placeholder="AE"></label><label>Time zone<input id="a-tz" placeholder="Asia/Dubai"></label></div>
+  <div class="d-acts"><button class="btn pri" id="a-save">Save airport</button>${CAP.sample?`<button class="btn" id="a-look">Look it up</button>`:""}</div><p class="note" id="a-msg"></p>`,el=>{
+   const fill=o=>{el.querySelector("#a-c").value=o.city||"";el.querySelector("#a-la").value=o.lat??"";el.querySelector("#a-lo").value=o.lon??"";el.querySelector("#a-cc").value=o.country||"";el.querySelector("#a-tz").value=o.tz||""};
+   const lk=el.querySelector("#a-look");if(lk)lk.onclick=async()=>{el.querySelector("#a-msg").textContent="Looking up "+code+"…";try{const o=await CAP.sample.json(`Give details for the airport with IATA code ${code}. Reply with JSON only: {"city":string,"lat":number,"lon":number,"country":ISO 3166-1 alpha-2 string,"tz":IANA time zone string}.`,{modelTier:"quick"});fill(o);el.querySelector("#a-msg").textContent="Check the details, then save."}catch(e){el.querySelector("#a-msg").textContent="Lookup failed. Enter the details by hand."}};
+   el.querySelector("#a-save").onclick=()=>{const la=parseFloat(el.querySelector("#a-la").value),lo=parseFloat(el.querySelector("#a-lo").value),tz=el.querySelector("#a-tz").value.trim()||"UTC";
+    if(isNaN(la)||isNaN(lo)||Math.abs(la)>90||Math.abs(lo)>180){el.querySelector("#a-msg").textContent="Latitude must be between -90 and 90 and longitude between -180 and 180.";return}
+    try{new Intl.DateTimeFormat("en",{timeZone:tz})}catch(e){el.querySelector("#a-msg").textContent=tz+" is not a valid time zone name.";return}
+    store.ap[code]=[el.querySelector("#a-c").value.trim()||code,el.querySelector("#a-cc").value.trim().toUpperCase(),la,lo,tz];for(const k in derived)delete derived[k];save();refreshAll();Sheet.close();toast(code+" added");if(after)after()};
+  });
+}
+
+/* ---------- settings ---------- */
+const Settings={render(){
+  const S=disp();const n=FL.length,u=store.add.length;
+  const sw=(k,t,sub)=>`<div class="it"><span class="lab">${t}${sub?`<small>${sub}</small>`:""}</span><label class="sw"><input type="checkbox" data-k="${k}" ${S[k]?"checked":""} aria-label="${t}"><span></span></label></div>`;
+  const sg=(k,t,opts)=>`<div class="it col"><span class="lab">${t}</span><div class="seg" data-k="${k}">${opts.map(([v,l])=>`<button data-v="${v}" class="${S[k]===v?"on":""}">${l}</button>`).join("")}</div></div>`;
+  const rg=(k,t,sub,min,max,step,fmt)=>`<div class="it col"><span class="lab" style="flex-direction:row;justify-content:space-between">${t}<span class="val" id="v-${k}">${fmt(S[k])}</span></span><input type="range" data-k="${k}" min="${min}" max="${max}" step="${step}" value="${S[k]}" aria-label="${t}">${sub?`<small class="small">${sub}</small>`:""}</div>`;
+  const pct=v=>Math.round(v*100)+"%";
+  document.getElementById("setwrap").innerHTML=`<h1>Settings</h1>
+  <h2>Routes on the globe</h2>
+  <div class="set">
+   ${rg("lw","Line thickness","Thinner lines make busy areas like Europe and the Gulf easier to read.",.3,2.5,.05,v=>v.toFixed(2).replace(/0$/,"")+"×")}
+   <div class="it"><div class="lwprev" style="flex:1"><i id="lwp"></i></div></div>
+   ${rg("op","Line opacity","",.25,1,.05,pct)}
+   ${sw("freq","Thicker for routes flown more","Off draws every route the same width")}
+   ${sw("glow","Glow in dark mode")}
+  </div>
+  <h2>Labels and markers</h2>
+  <div class="set">
+   ${sg("labels","Airport labels",[["city","City names"],["code","Airport codes"],["off","Off"]])}
+   ${sg("dens","How many labels",[["few","Fewer"],["some","Balanced"],["many","More"]])}
+   ${sw("dots","Airport dots")}
+  </div>
+  <h2>Globe</h2>
+  <div class="set">
+   ${sw("night","Day and night shading","Shows where it's dark right now")}
+   ${sw("spin","Turn slowly when idle")}
+   <div class="it"><span class="lab">Reset display settings</span><button class="btn sm" id="s-reset">Reset</button></div>
+  </div>
+  <h2>Roster formats</h2>
+  <div class="set">${allRecipes().map(r=>`<div class="it"><span class="lab">${esc(r.name)}<small>${r.builtin?"Built in":"Learned from your roster"}</small></span>${r.builtin?"":`<button class="btn sm" data-delrec="${esc(r.id)}">Forget</button>`}</div>`).join("")}</div>
+  <p class="note">When a roster arrives in a format Contrail doesn't know, Claude reads it once and writes down how. After that it's read on your phone.</p>
+  <h2>Duty codes</h2>
+  <div class="set" id="codes">${[...new Set(Object.keys(CODES0).concat(Object.keys(store.codes)).concat(allDuties().map(d=>d.code)))].sort().map(c=>{const ci=codeInfo(c);return`<div class="it"><span class="lab">${esc(c)}<small>${esc(ci.label)}</small></span><select data-code="${esc(c)}" style="border:0;background:var(--surface-2);border-radius:9px;padding:7px 8px;font-size:14px">${KINDS.map(([k,n])=>`<option value="${k}" ${ci.kind===k?"selected":""}>${n}</option>`).join("")}</select></div>`}).join("")}
+   <div class="it"><input id="code-new" placeholder="New code, e.g. BLOCK" style="border:0;background:var(--surface-2);border-radius:9px;padding:9px 10px;font-size:15px;flex:1;min-width:0;text-transform:uppercase"><input id="code-lab" placeholder="Meaning" style="border:0;background:var(--surface-2);border-radius:9px;padding:9px 10px;font-size:15px;flex:1;min-width:0"><button class="btn sm pri" id="code-add">Add</button></div></div>
+  <h2>Appearance</h2>
+  <div class="seg" id="theme">${[["system","Match iPhone"],["light","Light"],["dark","Dark"]].map(([k,l])=>`<button data-k="${k}" class="${store.theme===k?"on":""}">${l}</button>`).join("")}</div>
+  <h2>Backup</h2>
+  <div class="panel">
+   <p style="margin:0 0 10px">${nf0.format(n)} flights in your logbook, ${u} added since the first import.</p>
+   <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
+  </div>
+  <p class="note" style="margin-top:30px">Contrail. Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  const W=document.getElementById("setwrap");
+  const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
+  const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
+  W.querySelectorAll(".sw input").forEach(c=>c.onchange=()=>{store.disp[c.dataset.k]=c.checked;upd()});
+  W.querySelectorAll("input[type=range]").forEach(r=>{const paint=()=>r.style.setProperty("--p",((r.value-r.min)/(r.max-r.min)*100)+"%");paint();
+   r.oninput=()=>{const k=r.dataset.k;store.disp[k]=parseFloat(r.value);paint();document.getElementById("v-"+k).textContent=k==="op"?pct(store.disp[k]):store.disp[k].toFixed(2).replace(/0$/,"")+"×";lwp();Globe.kick()};
+   r.onchange=upd});
+  W.querySelectorAll(".seg[data-k] button").forEach(b=>b.onclick=()=>{const k=b.parentElement.dataset.k;store.disp[k]=b.dataset.v;b.parentElement.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));upd()});
+  document.getElementById("s-reset").onclick=()=>{store.disp=Object.assign({},DISP0);upd();this.render();toast("Display settings reset")};
+  document.getElementById("theme").querySelectorAll("button").forEach(b=>b.onclick=()=>{store.theme=b.dataset.k;save();applyTheme();this.render();Globe._C=null;if(Globe.ctx)Globe.kick()});
+  W.querySelectorAll("[data-delrec]").forEach(b=>b.onclick=()=>{store.recipes=store.recipes.filter(r=>r.id!==b.dataset.delrec);save();this.render();toast("Format forgotten")});
+  W.querySelectorAll("#codes select").forEach(sl=>sl.onchange=()=>{const c=sl.dataset.code;store.codes[c]=[sl.value,codeInfo(c).label];save();toast(c+" saved")});
+  document.getElementById("code-add").onclick=()=>{const c=document.getElementById("code-new").value.trim().toUpperCase(),l=document.getElementById("code-lab").value.trim();if(!/^[A-Z0-9]{1,6}$/.test(c)){toast("Codes are up to 6 letters or numbers");return}store.codes[c]=[codeInfo(c).kind,l||c];save();this.render();toast(c+" added")};
+  document.getElementById("bk-json").onclick=()=>saveFile("contrail-backup-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify({app:"contrail",v:2,exported:new Date().toISOString(),hist:HIST,hduties:HDUT,store}),"application/json");
+  document.getElementById("bk-csv").onclick=()=>exportCsv();
+  document.getElementById("bk-in").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());if(j.app!=="contrail"||!j.store)throw 0;if(Array.isArray(j.hist)&&j.hist.length&&!EMBED.length){HIST=j.hist;try{localStorage.setItem("contrail.hist",JSON.stringify(HIST))}catch(e){}}
+   if(Array.isArray(j.hduties)&&j.hduties.length&&!EMBED_D.length){HDUT=j.hduties;try{localStorage.setItem("contrail.hduties",JSON.stringify(HDUT))}catch(e){}}store=Object.assign(blankStore(),j.store);fixStore();save();applyTheme();Globe.chips&&Globe.ctx&&Globe.chips();refreshAll();this.render();toast("Backup restored, "+FL.length+" flights")}catch(_){toast("That file is not a Contrail backup")}};
+}};
+
+/* ---------- add, import, export ---------- */
+const AddUI={rendered:false,pending:null,
+ render(){this.rendered=true;const n=FL.length,u=store.add.length;
+  document.getElementById("addwrap").innerHTML=`
+  <h1>Add</h1>
+  <h2>Import a roster</h2>
+  <label class="drop" id="dropr"><input type="file" id="froster" accept="application/pdf,image/*" multiple><b style="color:var(--text)">Choose a roster PDF or photos</b><br><span class="small">Emirates rosters are read on your phone, even offline. ${CAP.sample?"A new format is read by Claude once, then learned.":"New formats and photos are learned in the Claude version of Contrail."} You confirm everything before it's added.</span></label>
+  <div id="rstat" class="live" aria-live="polite"></div><div id="rprev" class="preview"></div>
+  <h2>Import a file</h2>
+  <label class="drop"><input type="file" id="fcsv" accept=".csv,.txt,.ics,text/csv,text/calendar"><b style="color:var(--text)">Choose a RosterBuster, Flighty or calendar file</b><br><span class="small">RosterBuster and Flighty CSV exports and .ics calendar files. Flights and duty days you already have are matched, not doubled.</span></label>
+  <div id="cstat" class="live" aria-live="polite"></div><div id="cprev" class="preview"></div>
+  <h2>Add a flight</h2>
+  <div class="form" id="mform">
+   <label>Date<input type="date" id="m-date"></label><label>Flight<input id="m-flt" placeholder="EK031" autocapitalize="characters"></label>
+   <label>From<input id="m-dep" placeholder="DXB" maxlength="3" autocapitalize="characters"></label><label>To<input id="m-arr" placeholder="LHR" maxlength="3" autocapitalize="characters"></label>
+   <label>Out, local<input type="time" id="m-out"></label><label>In, local<input type="time" id="m-in"></label>
+   <label>Counts as<select id="m-cat"><option value="O">Operating</option><option value="D">Deadhead</option><option value="P">Personal</option></select></label><label>Employer<input id="m-emp" value="Emirates"></label>
+   <label>Aircraft<input id="m-ac" placeholder="Boeing 777-300ER"></label><label>Registration<input id="m-reg" placeholder="A6-EGA" autocapitalize="characters"></label>
+  </div>
+  <div class="d-acts"><button class="btn pri" id="m-add">Add flight</button></div><p class="note" id="m-msg"></p>
+  <h2>Calendar</h2>
+  <div class="panel">
+   <p style="margin:0 0 10px">Save your flights as a calendar file and open it on your iPhone to add them to Apple Calendar.</p>
+   <div class="form"><label>Which flights<select id="ics-range"><option value="future">From today on</option><option value="90">Last 90 days and later</option><option value="all">Everything</option></select></label><label>Include<select id="ics-cats"><option value="OD">Operating and deadhead</option><option value="O">Operating only</option><option value="ODP">All flights</option></select></label></div>
+   <div class="d-acts"><button class="btn pri" id="ics-save">Save calendar file</button></div>
+   <p class="note">To subscribe instead, so Apple Calendar refreshes by itself: upload this file to your GitHub site next to the app, then add a subscribed calendar in Calendar settings with the file's link. Re-upload it whenever your roster changes.</p>
+  </div>
+  <p class="note" style="margin-top:30px">History from your RosterBuster calendar and Flighty, cross-checked ${esc("4 Oct 2026")}.</p>`;
+  const $=s=>document.getElementById(s);
+  $("froster").onchange=e=>this.roster([...e.target.files]);
+  $("fcsv").onchange=e=>this.file(e.target.files[0]);
+  $("m-add").onclick=()=>this.manual();
+  $("ics-save").onclick=()=>exportIcs($("ics-range").value,$("ics-cats").value);
+  $("m-date").value=new Date().toISOString().slice(0,10);
+  Job.restore();
+ },
+ manual(){
+  const v=id=>document.getElementById(id).value.trim();const msg=document.getElementById("m-msg");
+  const date=v("m-date"),flt=v("m-flt").toUpperCase().replace(/\s+/g,""),dep=v("m-dep").toUpperCase(),arr=v("m-arr").toUpperCase(),to=v("m-out"),ti=v("m-in");
+  if(!date||!/^[A-Z]{3}$/.test(dep)||!/^[A-Z]{3}$/.test(arr)){msg.textContent="Enter a date and three-letter airport codes for From and To.";return}
+  if(!to||!ti){msg.textContent="Enter the out and in times, in local time at each airport.";return}
+  const out=zonedToUtc(date,to,tzOf(dep));let inn=zonedToUtc(date,ti,tzOf(arr));while(inn<=out)inn=new Date(inn.getTime()+864e5);
+  if((inn-out)/36e5>20){msg.textContent="That block time is over 20 hours. Check the times.";return}
+  const nf={flt:flt||"—",dep,arr,out,inn,cat:v("m-cat"),emp:v("m-emp"),ac:v("m-ac"),reg:v("m-reg").toUpperCase(),src:"M",tb:"m"};
+  const m=findMatch(nf);if(m){msg.textContent=`You already have ${m.flt} ${m.dep}–${m.arr} at that time, so nothing was added.`;return}
+  addFlights([nf]);msg.textContent="";toast(`${dep}–${arr} added`);
+  ["m-flt","m-dep","m-arr","m-out","m-in","m-ac","m-reg"].forEach(i=>document.getElementById(i).value="");
+ },
+ async roster(files){
+  if(!files.length)return;if(Job.busy()){toast("Still reading the last file");return}
+  Job.start("roster");
+  try{
+   let items=[],text="",images=[];
+   for(const[n,f]of files.entries()){
+    if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)){Job.say(`Opening ${f.name}`);const r=await pdfItems(f,items.length?Math.max(...items.map(i=>i.p)):0,(p,t)=>Job.say(`Reading page ${p} of ${t} in ${f.name}`));items.push(...r.items);text+=r.text+"\n";images.push(...r.images)}
+    else if(f.type.startsWith("image/")){Job.say(`Preparing photo ${n+1} of ${files.length}`);images.push(await shrink(f))}
+   }
+   if(items.length){
+    Job.say("Looking for a roster format Contrail knows");await tick();
+    for(const Rc of allRecipes()){if(!recipeDetects(Rc,text))continue;
+     Job.say(`Recognised the ${Rc.name} format, reading flights and duty days`);await tick();
+     let res=null;try{res=runRecipe(Rc,items)}catch(e){}
+     if(res&&(res.flights.length||res.duties.length)){await this.prepare("roster",res.flights,"roster",{duties:res.duties,period:res.period,how:`Read on your phone using the ${Rc.name} format.`});return}}
+   }
+   if(!CAP.sample){
+    if(!items.length)throw new Error("Reading photos needs Contrail opened inside Claude. Use the roster PDF instead.");
+    throw new Error("This roster format is new to Contrail. Open Contrail inside Claude once to teach it this format, or send the roster to Claude to have it built in.");
+   }
+   const lim=await CAP.sample.limits().catch(()=>({}));const useImg=(!text.trim()||text.trim().length<200)&&images.length&&lim&&lim.images;
+   if(!text.trim()&&!useImg)throw new Error("Photos can't be read here. Try the PDF instead.");
+   const res=await Job.claude("Claude is reading this new roster format",()=>CAP.sample.json(`You read airline crew rosters. Extract every flight sector (operating or deadhead/positioning, often marked DH, PAX, POS) and every non-flight duty day (day off, standby, available duty, leave, sick, training, ground duty).
+Return JSON only: {"airline":string,"time_basis":"local"|"utc","period":{"start":"YYYY-MM-DD","end":"YYYY-MM-DD"},"flights":[{"date":"YYYY-MM-DD local departure date","flight":"EK0031","from":"IATA","to":"IATA","report":"HH:MM or empty","dep":"HH:MM","arr":"HH:MM","deadhead":false}],"duties":[{"date":"YYYY-MM-DD","code":"as printed"}],"codes":{"CODE":{"kind":"off|rest|sby|avd|leave|sick|training|ground|other","label":"plain English"}}}
+Use 3-letter IATA codes (convert ICAO). Prefix flight numbers with the airline's IATA code if the roster omits it. Use the roster's own legend to explain codes when it has one.
+${text.trim()?"Roster text, one printed line per row:\n"+text.slice(0,60000):"The roster is in the attached image(s)."}`,{images:useImg?images.slice(0,(lim.images&&lim.images.maxCount)||5):undefined,modelTier:"complex"}));
+   const basis=res.time_basis==="utc"?"utc":"local";
+   const rows=(res.flights||[]).map(x=>{const r=mkImported(x.date,x.flight,x.from,x.to,x.dep,x.arr,basis,x.deadhead?"D":"O",{emp:res.airline||""});if(r&&x.report&&r.out){let rp=basis==="utc"?new Date(x.date+"T"+x.report.padStart(5,"0")+":00Z"):zonedToUtc(x.date,x.report,tzOf(r.dep));if(rp>r.out)rp=new Date(rp-864e5);r.rep=rp;r.repAt=r.dep}return r}).filter(Boolean);
+   const duties=(res.duties||[]).filter(d=>d&&/^\d{4}-\d{2}-\d{2}$/.test(d.date)&&d.code).map(d=>({date:d.date,code:String(d.code).toUpperCase().trim()}));
+   for(const[c,v]of Object.entries(res.codes||{})){if(!CODES0[c]&&!store.codes[c]&&v&&v.kind)store.codes[c]=[KINDN[v.kind]?v.kind:"other",String(v.label||c)]}
+   let how="Read by Claude.";
+   if(items.length&&rows.length){const learned=await Job.claude("Teaching Contrail this format so the next one is read on your phone",()=>learnRecipe(items,text,rows,res)).catch(()=>null);if(learned)how=`Read by Claude. Contrail learned this format (${learned.name}), so the next one is read on your phone, even offline.`}
+   if(!rows.length&&!duties.length)throw new Error("No flights or duty days found in the roster.");
+   await this.prepare("roster",rows,"roster",{duties,period:res.period&&res.period.start?res.period:null,how});
+  }catch(e){Job.fail((e&&e.message)?e.message:"The roster could not be read.")}
+ },
+ async file(f){
+  if(!f)return;if(Job.busy()){toast("Still reading the last file");return}
+  Job.start("file");
+  try{Job.say(`Opening ${f.name}`);const txt=await f.text();
+   if(/BEGIN:VCALENDAR/.test(txt)){const rows=parseIcs(txt);if(!rows.length)throw new Error("No flights recognised in this calendar file.");await this.prepare("file",rows,"file",{});return}
+   const head=txt.slice(0,400);
+   if(/Subject/.test(head)&&/Start date/.test(head)&&/Location/.test(head)){const r=await parseRBCsv(txt);if(!r.flights.length&&!r.duties.length)throw new Error("No flights or duty days found in this RosterBuster file.");
+    await this.prepare("file",r.flights,"rb",{duties:r.duties,addOnly:true,how:`RosterBuster export, ${nf0.format(r.total)} entries from ${r.from} to ${r.to}.`});return}
+   Job.say("Reading the CSV file");await tick();
+   const rows=parseCsvFlights(txt);if(!rows.length)throw new Error("No flights recognised in this file. Send it to Claude so the importer can learn its format.");
+   await this.prepare("file",rows,"file",{});
+  }catch(e){Job.fail(e.message||"This file could not be read.")}
+ },
+ async prepare(area,rows,kind,extra){
+  // match every new row against the logbook, in small steps so the screen keeps updating
+  const n=rows.length;
+  for(let i=0;i<n;i++){const r=rows[i];r.match=findMatch(r);
+   if(i%20===0||i===n-1){Job.say(`Checking against your logbook: ${nf0.format(i+1)} of ${nf0.format(n)}, ${r.flt||""} ${r.dep}–${r.arr}${r.out?", "+dayStr(r.out,tzOf(r.dep))+" "+r.out.getUTCFullYear():""}`);await tick()}}
+  const ds=extra.duties||[];if(ds.length){Job.say(`Checking ${nf0.format(ds.length)} duty days`);await tick()}
+  Job.ready(area,rows,kind,extra);
+ },
+ preview(el,rows,kind,extra){
+  extra=extra||{};const duties=extra.duties||[],period=extra.period;
+  rows.forEach(r=>{if(r.match===undefined)r.match=findMatch(r)});
+  const stale=(period&&!extra.addOnly)?store.add.filter(a=>a.src==="I"&&a.date>=period.start&&a.date<=(period.end||period.start)&&!rows.some(r=>r.match&&r.match.id===a.id)):[];
+  const fresh=rows.map((r,i)=>[r,i]).filter(([r])=>!r.match),known=rows.filter(r=>r.match);
+  const have=new Set(allDuties().map(d=>d.date+d.code));
+  const replaceable=new Set(period&&!extra.addOnly?store.duties.filter(d=>d.src==="roster"&&d.date>=period.start&&d.date<=(period.end||period.start)).map(d=>d.date+d.code):[]);
+  const newD=duties.filter(d=>!have.has(d.date+d.code)||replaceable.has(d.date+d.code));
+  const kinds={};for(const d of newD){const k=codeInfo(d.code).kind;kinds[k]=(kinds[k]||0)+1}
+  const unknown=[...new Set(duties.map(d=>d.code).filter(c=>!CODES0[c]&&!store.codes[c]))];
+  const unk=[...new Set(fresh.flatMap(([r])=>[r.dep,r.arr]).filter(c=>!ap(c)))];
+  const upd=known.filter(r=>{const m=r.match;return (r.rep&&!m.rep)||(!m.ac&&r.ac)||(!m.reg&&r.reg)||(kind==="roster"&&r.out&&m.out&&Math.abs(r.out-m.out)>6e4)}).length;
+  el.innerHTML=`<div class="panel">${extra.how?`<p class="small" style="margin:0 0 8px">${esc(extra.how)}</p>`:""}
+   <p style="margin:0 0 6px"><b>${nf0.format(rows.length)} flights found.</b> ${nf0.format(fresh.length)} new, ${nf0.format(known.length)} already in your logbook.</p>
+   ${unk.length?`<div class="d-note">Contrail doesn't know ${unk.map(esc).join(", ")} yet, so those flights' times can't be worked out. Add ${unk.length>1?"them":"it"} first: ${unk.map(c=>`<button class="btn sm pri" data-addap="${esc(c)}" style="margin:4px 4px 0 0">Add ${esc(c)}</button>`).join("")}</div>`:""}
+   ${fresh.map(([r,i])=>`<div class="prow"><input type="checkbox" data-i="${i}" ${(!ap(r.dep)||!ap(r.arr))?"disabled":"checked"} aria-label="Include"><div><b>${esc(r.dep)}–${esc(r.arr)}</b> <span class="small">${esc(r.flt)}, ${r.out?esc(fullDate(r.out,tzOf(r.dep))+" "+hm(r.out,tzOf(r.dep))):esc(r.date)}${r.rep&&(!r.repAt||r.repAt===r.dep)?", report "+esc(hm(r.rep,tzOf(r.dep))):""}</span><div class="st">${(!ap(r.dep)||!ap(r.arr))?"Unknown airport":"New"}</div></div>
+    <select data-i="${i}">${["O","D","P"].map(c=>`<option value="${c}" ${r.cat===c?"selected":""}>${CATN[c]}</option>`).join("")}</select></div>`).join("")}
+   ${known.length?`<div class="prow"><input type="checkbox" id="imp-known" checked aria-label="Update flights already logged"><div><b>${nf0.format(known.length)} already logged</b><div class="st">${upd?nf0.format(upd)+" get "+(kind==="roster"?"updated times or report times":"report times or missing details"):"Nothing to change, they match"}. How each one counts stays as you set it.</div></div><span></span></div>`:""}
+   ${duties.length?`<div class="prow"><input type="checkbox" id="imp-duties" ${newD.length?"checked":"disabled"} aria-label="Include duty days"><div><b>${nf0.format(newD.length)} new duty days</b><div class="st">${newD.length?Object.entries(kinds).sort((a,b)=>b[1]-a[1]).map(([k,n])=>n+" "+esc(KINDN[k]||k)).join(", "):"All "+nf0.format(duties.length)+" are already in your logbook"}${unknown.length?". New codes: "+unknown.map(esc).join(", ")+", you can name them in Settings":""}</div></div><span></span></div>`:""}
+   ${stale.length?`<div class="prow"><input type="checkbox" id="imp-stale" checked aria-label="Remove flights no longer on the roster"><div><b>Remove ${stale.length} flight${stale.length>1?"s":""} no longer on this roster</b><div class="st">${stale.map(a=>esc(a.flt+" "+a.dep+"–"+a.arr+" "+a.date.slice(5))).join(", ")}</div></div><span></span></div>`:""}
+   <div class="d-acts"><button class="btn pri" id="imp-go">Import</button><button class="btn" id="imp-x">Cancel</button></div></div>`;
+  el.querySelectorAll("select").forEach(s=>s.onchange=()=>{rows[+s.dataset.i].cat=s.value;Job.persist()});
+  el.querySelectorAll("[data-addap]").forEach(b=>b.onclick=()=>addAirport(b.dataset.addap,()=>{rows.forEach(r=>delete r.match);if(extra.rerun)extra.rerun();else this.preview(el,rows,kind,extra)}));
+  el.querySelector("#imp-x").onclick=()=>{el.innerHTML="";Job.clear()};
+  el.querySelector("#imp-go").onclick=()=>{
+   const sel=[...el.querySelectorAll("input[type=checkbox][data-i]")].filter(c=>c.checked).map(c=>rows[+c.dataset.i]);
+   const kc=el.querySelector("#imp-known");const doKnown=!kc||kc.checked;
+   let added=0,merged=0,removed=0,dn=0;
+   if(doKnown)for(const r of known){const m=r.match;
+    if(m.user){const a=store.add.find(x=>x.id===m.id);if(a){let ch=false;if(kind==="roster"&&r.out){a.out=r.out.toISOString();a.inn=r.inn&&r.inn.toISOString();a.date=a.out.slice(0,10);ch=true}if(r.rep){a.rep=r.rep.toISOString();a.repAt=r.repAt||a.dep;ch=true}if(!a.ac&&r.ac){a.ac=r.ac;ch=true}if(!a.reg&&r.reg){a.reg=r.reg;ch=true}if(ch)merged++}}
+    else{const p={};if(!m.ac&&r.ac)p.ac=r.ac;if(!m.reg&&r.reg)p.reg=r.reg;if(!m.out&&r.out){p.out=r.out.toISOString();p.inn=r.inn&&r.inn.toISOString()}if(r.rep&&!m.rep){p.rep=r.rep.toISOString();p.repAt=r.repAt||m.dep}if(Object.keys(p).length){store.ov[m.id]=Object.assign({},store.ov[m.id]||{},p);merged++}}}
+   const sc=el.querySelector("#imp-stale");if(sc&&sc.checked){const ids=new Set(stale.map(a=>a.id));store.add=store.add.filter(a=>!ids.has(a.id));removed=ids.size}
+   const dc=el.querySelector("#imp-duties");if(dc&&dc.checked){
+    if(period&&!extra.addOnly)store.duties=store.duties.filter(d=>!(d.src==="roster"&&d.date>=period.start&&d.date<=(period.end||period.start)));
+    const now=new Set(allDuties().map(d=>d.date+d.code));
+    for(const d of duties){if(now.has(d.date+d.code))continue;now.add(d.date+d.code);store.duties.push({id:"d"+Math.random().toString(36).slice(2,9),date:d.date,code:d.code,src:kind==="rb"?"rb":"roster"});dn++}}
+   addFlights(sel,true);added=sel.length;save();refreshAll();const area=Job.cur?Job.cur.area:"file";Job.clear();
+   el.innerHTML="";Job.done(area,[added+" flights added",merged?merged+" updated":"",removed?removed+" removed":"",dn?dn+" duty days added":""].filter(Boolean).join(", ")+".");toast(`${added} flights added`)};
+ }};
+/* ---------- background reading job ---------- */
+const tick=()=>new Promise(r=>setTimeout(r,0));
+const Job={cur:null,lock:null,
+ busy(){return !!(this.cur&&this.cur.state==="run")},
+ el(){return this.cur&&document.getElementById(this.cur.area==="roster"?"rstat":"cstat")},
+ pv(){return this.cur&&document.getElementById(this.cur.area==="roster"?"rprev":"cprev")},
+ start(area){for(const id of["rstat","cstat","rprev","cprev"]){const e=document.getElementById(id);if(e){e.innerHTML="";e.className=id.endsWith("stat")?"live":"preview"}}this.cur={area,state:"run",status:""};this.wake(true)},
+ paint(){const e=this.el();if(!e||!this.cur)return;e.textContent=this.cur.status;e.className="live"+(this.cur.state==="done"?" done":this.cur.state==="err"?" err":"")},
+ say(t){if(!this.cur)return;this.cur.status=t;this.paint()},
+ done(area,t){this.cur={area,state:"done",status:""};this.cur.status=t;this.paint();this.wake(false)},
+ fail(t){if(!this.cur)return;this.cur.state="err";this.cur.status=t;this.paint();this.wake(false)},
+ ready(area,rows,kind,extra){this.cur=Object.assign(this.cur||{area},{state:"ready",status:"",preview:{rows,kind,extra}});this.paint();this.persist();this.wake(false);const pv=this.pv();if(pv)AddUI.preview(pv,rows,kind,extra);
+  if(document.hidden||CUR!=="add")toast("Import ready to review in Add")},
+ persist(){try{if(!this.cur||!this.cur.preview){localStorage.removeItem("contrail.job");return}const{rows,kind,extra}=this.cur.preview;
+  const ser=r=>({date:r.date,flt:r.flt,dep:r.dep,arr:r.arr,out:r.out&&r.out.toISOString(),inn:r.inn&&r.inn.toISOString(),rep:r.rep&&r.rep.toISOString(),repAt:r.repAt,cat:r.cat,emp:r.emp,ac:r.ac,reg:r.reg,src:r.src,tb:r.tb});
+  localStorage.setItem("contrail.job",JSON.stringify({area:this.cur.area,kind,rows:rows.map(ser),extra:{duties:extra.duties,period:extra.period,how:extra.how,addOnly:extra.addOnly}}))}catch(e){}},
+ clear(){this.cur=null;try{localStorage.removeItem("contrail.job")}catch(e){}this.wake(false)},
+ restore(){
+  if(!this.cur){try{const j=JSON.parse(localStorage.getItem("contrail.job")||"null");if(j&&j.rows){const de=r=>Object.assign({},r,{out:r.out?new Date(r.out):null,inn:r.inn?new Date(r.inn):null,rep:r.rep?new Date(r.rep):null});this.cur={area:j.area,state:"ready",status:"",preview:{rows:j.rows.map(de),kind:j.kind,extra:j.extra||{}}}}}catch(e){}}
+  if(!this.cur)return;this.paint();if(this.cur.preview){const{rows,kind,extra}=this.cur.preview;const pv=this.pv();if(pv)AddUI.preview(pv,rows,kind,extra)}},
+ async wake(on){try{if(on&&"wakeLock" in navigator&&!this.lock&&!document.hidden){this.lock=await navigator.wakeLock.request("screen");this.lock.addEventListener("release",()=>{this.lock=null})}else if(!on&&this.lock){await this.lock.release();this.lock=null}}catch(e){}},
+ async claude(msg,fn){const t0=Date.now();const iv=setInterval(()=>this.say(`${msg}, ${Math.round((Date.now()-t0)/1000)} s`),1000);this.say(msg);
+  try{for(let a=0;;a++){try{return await fn()}catch(e){if(a<2&&(document.hidden||e&&(e.code==="upstream_error"||e.code==="session_expired"))){this.say(`${msg}, waiting for the app to be open again`);await whenVisible();continue}throw e}}}finally{clearInterval(iv)}}
+};
+function whenVisible(){return document.hidden?new Promise(r=>{const f=()=>{if(!document.hidden){document.removeEventListener("visibilitychange",f);r()}};document.addEventListener("visibilitychange",f)}):Promise.resolve()}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Job.busy())Job.wake(true)});
+/* RosterBuster CSV export: Subject, Location, Start date, Start time, End date, End time, All day event, ..., For Info Timezone, Block Time */
+function rbDutyCode(s){const u=String(s||"").trim().toUpperCase();
+  if(/^[A-Z]{3} - [A-Z]{3}$/.test(u)||u.startsWith("POSITIONING"))return null;
+  if(["REPORT","CHECK_IN","CHECK_OUT","DEBRIEF","LAYOVER","HOTEL","UNKNOWN","INFO",""].includes(u))return null;
+  if(["DAY OFF","OFF","OFF DAY","CONTRACTUAL OFF","VACATION DAY OFF"].includes(u))return"OFF";
+  if(u==="DAY OFF (R)"||u==="REQUESTED DAY OFF")return"RDO";
+  if(u==="INTERVIEW")return"INT";
+  if(/FATIGUE|AB INITIO|AB-INITIO|ABINITIO|GRADUATION/.test(u))return"TRG";
+  if(u==="BANK HOLIDAY")return"BH";
+  if(u==="POST-FLIGHT REST/DAY OFF"||u==="REST DAY")return"REST";
+  if(["NO SCHEDULED DUTY","NO DUTY","NO ALLOCATED DUTY"].includes(u))return"NSD";
+  if(u==="RESERVE")return"RSV";
+  if(/^(STANDBY|STANBY|STAND BY)/.test(u)||/^\d\dZN$/.test(u)||u.startsWith("HSBY"))return"SBY";
+  if(u==="AVAILABLE DUTY DAY")return"AVD";
+  if(["NORMAL ANNUAL LEAVE","ANNUAL LEAVE","LEAVE","HOLIDAYS","LIVE LEAVE"].includes(u))return"AL";
+  if(u==="PERSONAL")return"PERS";if(u==="ILLNESS")return"SICK";
+  if(u==="CRM"||u==="CREW RESOURCE MANAGEMENT")return"CRM";
+  if(u==="SAFETY ASSESMENT OF FOREIGN AIRCRAFT")return"SAFA";if(u==="WORK MEDICAL INSPECTION")return"MED";
+  if(["DG","FAID","MKT","CFM","GS","CBT","FIRE","SEC","SFA","SECY","SF","EEP","SOP","IFS","EQIP"].includes(u))return u;
+  return u.replace(/[^A-Z0-9]/g,"").slice(0,8)||null}
+async function parseRBCsv(txt){
+  const rows=parseCsv(txt);const H=rows[0].map(h=>h.trim());const I=n=>H.indexOf(n);
+  const cS=I("Subject"),cL=I("Location"),cSD=I("Start date"),cST=I("Start time"),cED=I("End date"),cET=I("End time"),cAD=I("All day event"),cTZ=I("For Info Timezone");
+  if(cS<0||cSD<0)throw new Error("This doesn't look like a RosterBuster export.");
+  const md=s=>{const m=String(s).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);return m?m[3]+"-"+m[1].padStart(2,"0")+"-"+m[2].padStart(2,"0"):normDate(s)};
+  const flights=[],duties=[],reps=[];const seen=new Set();const body=rows.slice(1);let from=null,to=null;
+  for(let i=0;i<body.length;i++){const r=body[i];const subj=(r[cS]||"").trim(),loc=(r[cL]||"").trim();const d=md(r[cSD]);if(!d)continue;
+   if(!from||d<from)from=d;if(!to||d>to)to=d;
+   const tz=(r[cTZ]||"").trim()||"UTC";const allDay=String(r[cAD]).toUpperCase()==="TRUE";
+   const t=(dd,tt)=>zonedToUtc(dd,String(tt).slice(0,5),tz);
+   if(i%40===0){Job.say(`Reading entry ${nf0.format(i+1)} of ${nf0.format(body.length)}: ${subj} ${d.slice(8)}/${d.slice(5,7)}/${d.slice(0,4)}`);await tick()}
+   let m=subj.match(/^([A-Z]{3}) - ([A-Z]{3})$/),p=subj.match(/^Positioning\s*([A-Z0-9]*)\s*:\s*([A-Z]{3})\s*-\s*([A-Z]{3})$/i);
+   if((m||p)&&!allDay){
+    const dep=m?m[1]:p[2].toUpperCase(),arr=m?m[2]:p[3].toUpperCase();let flt=m?loc.replace(/^\(\d{4}Z-\d{4}Z\)\s*/,"").trim():(p[1]||"");
+    if(/^TAXI|^BUS|^CAR/i.test(flt))continue;
+    const out=t(d,r[cST]),inn=t(md(r[cED])||d,r[cET]);const k=dep+arr+out.getTime();if(seen.has(k))continue;seen.add(k);
+    flights.push({date:out.toISOString().slice(0,10),flt,dep,arr,out,inn:inn>out?inn:null,rep:null,cat:p?"D":"O",emp:/^EK/.test(flt)?"Emirates":"",ac:"",reg:"",src:"R",tb:"r"});continue}
+   const U=subj.toUpperCase();
+   if((U==="REPORT"||U==="CHECK_IN")&&!allDay){reps.push(t(d,r[cST]));continue}
+   const code=rbDutyCode(subj);if(code)duties.push({date:d,code});
+  }
+  Job.say("Linking report times to flights");await tick();
+  flights.sort((a,b)=>a.out-b.out);
+  for(const rp of reps){const f=flights.find(f=>f.out>rp&&f.out-rp<=4*36e5);if(!f||f.rep)continue;f.rep=rp;f.repAt=f.dep;
+   let i=flights.indexOf(f);while(flights[i+1]&&flights[i+1].dep===flights[i].arr&&flights[i].inn&&flights[i+1].out-flights[i].inn<4*36e5&&!flights[i+1].rep){flights[i+1].rep=rp;flights[i+1].repAt=f.dep;i++}}
+  const ds=new Set();const dd=duties.filter(x=>{const k=x.date+x.code;if(ds.has(k))return false;ds.add(k);return true});
+  return {flights,duties:dd,total:body.length,from,to};
+}
+function mkImported(date,flt,dep,arr,t1,t2,basis,cat,extra){
+  if(!date||!dep||!arr)return null;dep=String(dep).toUpperCase().trim();arr=String(arr).toUpperCase().trim();if(!/^[A-Z]{3}$/.test(dep)||!/^[A-Z]{3}$/.test(arr))return null;
+  let out=null,inn=null;const ok=s=>/^\d{1,2}:\d{2}$/.test(s||"");
+  if(ok(t1)){out=basis==="utc"?new Date(date+"T"+t1.padStart(5,"0")+":00Z"):zonedToUtc(date,t1,tzOf(dep));
+   if(ok(t2)){inn=basis==="utc"?new Date(date+"T"+t2.padStart(5,"0")+":00Z"):zonedToUtc(date,t2,tzOf(arr));while(inn<=out)inn=new Date(inn.getTime()+864e5)}}
+  return Object.assign({date,flt:String(flt||"").toUpperCase().replace(/\s+/g,""),dep,arr,out,inn,cat:cat||"O",emp:/^EK|^UAE/.test(String(flt||"").toUpperCase())?"Emirates":"",ac:"",reg:"",src:"I",tb:"i"},extra||{});
+}
+function digits(s){return String(s||"").replace(/\D/g,"").replace(/^0+/,"")}
+function findMatch(r){
+  const t=r.out?r.out.getTime():Date.parse(r.date+"T12:00:00Z");
+  let best=null,bs=1e9;
+  for(const f of FL){if(f.dep!==r.dep||f.arr!==r.arr)continue;
+   const same=digits(f.flt)&&digits(r.flt)&&digits(f.flt)===digits(r.flt);
+   let s;if(r.out&&f.out){s=Math.abs(f.out-r.out)/36e5;if(s>4){if(!same||s>40)continue;s+=10}}else{s=Math.abs(f.t-t)/36e5;if(s>36)continue;if(digits(f.flt)&&digits(r.flt)&&!same)continue}
+   if(s<bs){bs=s;best=f}}
+  if(best||r.cat!=="D")return best;
+  // a positioning trip may be logged as a direct flight at a different time, or as two connecting flights
+  for(const f of FL){if(f.dep!==r.dep||!f.out)continue;const dt=Math.abs(f.out-t)/36e5;if(dt>12)continue;
+   if(f.arr===r.arr)return f;
+   const g=FL.find(x=>x.dep===f.arr&&x.arr===r.arr&&x.out&&f.inn&&x.out>=f.inn&&x.out-f.inn<14*36e5);if(g)return f}
+  return null;
+}
+function addFlights(list,quiet){
+  for(const r of list){const id="u"+Math.random().toString(36).slice(2,9);store.add.push({id,date:r.out?r.out.toISOString().slice(0,10):r.date,flt:r.flt,dep:r.dep,arr:r.arr,out:r.out?r.out.toISOString():null,inn:r.inn?r.inn.toISOString():null,cat:r.cat,emp:r.emp||"",ac:r.ac||"",reg:r.reg||"",src:r.src||"M",tb:r.tb||"m",check:false,note:"",rep:r.rep?r.rep.toISOString():null,repAt:r.repAt||r.dep})}
+  if(!quiet){save();refreshAll()}
+}
+/* CSV */
+function parseCsv(txt){
+  const first=txt.split(/\r?\n/,1)[0];const delim=(first.match(/;/g)||[]).length>(first.match(/,/g)||[]).length?";":(first.match(/\t/g)||[]).length>(first.match(/,/g)||[]).length?"\t":",";
+  const rows=[];let row=[],cell="",q=false;
+  for(let i=0;i<txt.length;i++){const c=txt[i];
+   if(q){if(c==='"'){if(txt[i+1]==='"'){cell+='"';i++}else q=false}else cell+=c}
+   else if(c==='"')q=true;else if(c===delim){row.push(cell);cell=""}else if(c==="\n"||c==="\r"){if(c==="\r"&&txt[i+1]==="\n")i++;row.push(cell);rows.push(row);row=[];cell=""}else cell+=c}
+  if(cell||row.length){row.push(cell);rows.push(row)}
+  return rows.filter(r=>r.some(x=>x.trim()));
+}
+function normDate(s){s=String(s||"").trim();let m;
+  if(m=s.match(/^(\d{4})-(\d{2})-(\d{2})/))return m[1]+"-"+m[2]+"-"+m[3];
+  if(m=s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/)){let y=m[3].length===2?"20"+m[3]:m[3];return y+"-"+m[2].padStart(2,"0")+"-"+m[1].padStart(2,"0")}
+  const d=Date.parse(s);return isNaN(d)?null:new Date(d).toISOString().slice(0,10)}
+function hhmm(s){s=String(s||"").trim();let m=s.match(/(\d{1,2}):(\d{2})/);if(m)return m[1].padStart(2,"0")+":"+m[2];m=s.match(/^(\d{2})(\d{2})$/);return m?m[1]+":"+m[2]:""}
+function parseCsvFlights(txt){
+  const rows=parseCsv(txt);if(rows.length<2)return[];const H=rows[0].map(h=>h.trim().toLowerCase());const col=(...re)=>H.findIndex(h=>re.some(r=>r.test(h)));
+  const out=[];
+  if(H.includes("flight flighty id")||(H.includes("airline")&&H.includes("from")&&H.some(h=>h.startsWith("gate departure")))){
+   const I=n=>H.indexOf(n.toLowerCase());
+   for(const r of rows.slice(1)){if(String(r[I("Canceled")]).toLowerCase()==="true")continue;
+    const dep=r[I("From")],arr=r[I("To")];const pick=(...ns)=>{for(const n of ns){const v=r[I(n)];if(v)return v}return""};
+    const o=pick("Gate Departure (Actual)","Take off (Actual)","Gate Departure (Scheduled)","Take off (Scheduled)"),i=pick("Gate Arrival (Actual)","Landing (Actual)","Gate Arrival (Scheduled)","Landing (Scheduled)");
+    let x=mkImported(r[I("Date")],(r[I("Airline")]||"")+(r[I("Flight")]||""),dep,arr,"","", "local",r[I("Flight Reason")]==="CREW"?"D":"P",{ac:r[I("Aircraft Type Name")]||"",reg:r[I("Tail Number")]||"",src:"F",tb:"g"});
+    if(!x)continue;
+    if(o&&i){x.out=zonedToUtc(o.slice(0,10),o.slice(11,16),tzOf(x.dep));x.inn=zonedToUtc(i.slice(0,10),i.slice(11,16),tzOf(x.arr));if(x.inn<=x.out)x.inn=null}
+    out.push(x)}
+   return out;
+  }
+  const cD=col(/^date$/,/date/),cF=col(/flight ?n/,/^flight$/,/flt/,/^flightnr$/),cA=col(/^from$/,/dep(arture)? ?(airport|stn|station)?$/,/origin/,/^departure$/),cB=col(/^to$/,/^dest/,/arr(ival)? ?(airport|stn|station)?$/,/destination/,/^arrival$/);
+  const cO=col(/time_?depart/,/^std$/,/^atd$/,/off ?block/,/block ?out/,/dep(arture)? ?time/,/^out$/,/start/),cI=col(/time_?arrive/,/^sta$/,/^ata$/,/on ?block/,/block ?in/,/arr(ival)? ?time/,/^in$/,/end/);
+  const cT=col(/aircraft ?type/,/^type$/,/^ac/),cR=col(/tail/,/reg/),cDty=col(/dutyid/,/duty ?type/);
+  if(cA<0||cB<0||cD<0)throw new Error("This CSV doesn't have date, from and to columns I recognise. Send it to Claude so the importer can learn its format.");
+  const utc=H.some(h=>/utc|gmt|\bz\b/.test(h));
+  for(const r of rows.slice(1)){if(cDty>=0&&r[cDty]&&r[cDty].trim())continue;const d=normDate(r[cD]);if(!d)continue;
+   const x=mkImported(d,cF>=0?r[cF]:"",r[cA],r[cB],hhmm(cO>=0?r[cO]:""),hhmm(cI>=0?r[cI]:""),utc?"utc":"local","O",{ac:cT>=0?r[cT]:"",reg:cR>=0?r[cR]:""});if(x)out.push(x)}
+  return out;
+}
+/* ICS import (RosterBuster style: "✈️ DXB - LHR", location "(0810Z-1610Z) EK031") */
+function parseIcs(txt){
+  const un=txt.replace(/\r?\n[ \t]/g,"");const evs=un.split("BEGIN:VEVENT").slice(1);const out=[];
+  const get=(e,k)=>{const m=e.match(new RegExp("^"+k+"(;[^:]*)?:(.*)$","m"));return m?m[2].replace(/\\,/g,",").replace(/\\n/g,"\n").trim():""};
+  const dt=s=>{const m=s.match(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})?(Z?)/);return m?new Date(Date.UTC(+m[1],m[2]-1,+m[3],+m[4],+m[5])):null};
+  for(const e of evs){const sum=get(e,"SUMMARY"),loc=get(e,"LOCATION");const m=sum.match(/\b([A-Z]{3})\s*[-–]\s*([A-Z]{3})\b/);if(!m)continue;
+   const fl=(loc.match(/\b([A-Z0-9]{2}\d{1,4}[A-Z]?)\b/)||[])[1]||"";const s=dt(get(e,"DTSTART")),en=dt(get(e,"DTEND"));if(!s)continue;
+   out.push({date:s.toISOString().slice(0,10),flt:fl,dep:m[1],arr:m[2],out:s,inn:en,cat:/deadhead|\bDH\b|\(P\)/i.test(e)?"D":"O",emp:/^EK/.test(fl)?"Emirates":"",ac:"",reg:"",src:"I",tb:"i"})}
+  return out;
+}
+/* PDF */
+let pdfReady=null;
+function loadPdfJs(){if(pdfReady)return pdfReady;pdfReady=new Promise((res,rej)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";s.onload=()=>{try{window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"}catch(e){}res(window.pdfjsLib)};s.onerror=()=>{pdfReady=null;rej(new Error("The PDF reader couldn't load. Check your connection and try again."))};document.head.appendChild(s)});return pdfReady}
+async function pdfItems(file,pageOffset,onPage){
+  const lib=await loadPdfJs();const doc=await lib.getDocument({data:await file.arrayBuffer()}).promise;const items=[],images=[];
+  for(let p=1;p<=Math.min(doc.numPages,8);p++){if(onPage)onPage(p,Math.min(doc.numPages,8));await tick();const page=await doc.getPage(p);const vp=page.getViewport({scale:1});const tc=await page.getTextContent();
+   for(const it of tc.items){if(!it.str||!it.str.trim())continue;items.push({s:it.str,x:+it.transform[4].toFixed(1),y:+(vp.height-it.transform[5]).toFixed(1),p:p+pageOffset})}
+   if(CAP.sample&&p<=3){const v2=page.getViewport({scale:1.6});const c=document.createElement("canvas");c.width=v2.width;c.height=v2.height;await page.render({canvasContext:c.getContext("2d"),viewport:v2}).promise;images.push(await new Promise(r=>c.toBlob(r,"image/jpeg",.85)))}}
+  const text=linesFromItems(items).map(l=>l.text).join("\n");
+  return {items,text,images};
+}
+/* ---------- roster formats ---------- */
+const BUILTIN_RECIPES=[{id:"ek-myroster",name:"Emirates crew roster",builtin:true,airline:"Emirates",flightPrefix:"EK",
+ detect:["My Roster","Rep. time"],timeBasis:"local",
+ period:{regex:"(\\d{1,2})-(\\d{1,2})-(\\d{4})\\s+to\\s+(\\d{1,2})-(\\d{1,2})-(\\d{4})",order:"dmy"},
+ date:{regex:"^(\\d{1,2}) (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\b",day:1},dateAssign:"nearest",
+ flight:{regex:"(?:(\\d{1,2}:\\d{2})\\s+)?(\\d{1,4}[A-Z]?)\\s+([A-Z]{3})\\s+(\\d{1,2}:\\d{2})\\s+([A-Z]{3})\\s+(\\d{1,2}:\\d{2})(?:\\s+(\\d{1,2}:\\d{2}))?",groups:{report:1,flight:2,from:3,dep:4,to:5,arr:6,dur:7},deadhead:"\\b(?:DH|DHD|PAX|POS)\\b"},
+ grid:{above:"Rep\\. time",day:"^\\d{1,2}$",code:"^[A-Z]{2,5}$",maxGap:20}}];
+function allRecipes(){return (store.recipes||[]).concat(BUILTIN_RECIPES)}
+function linesFromItems(items){
+  const sorted=items.slice().sort((a,b)=>a.p-b.p||a.y-b.y||a.x-b.x);const lines=[];let cur=null;
+  for(const it of sorted){if(cur&&cur.p===it.p&&Math.abs(it.y-cur.y)<=2.5)cur.items.push(it);else{cur={p:it.p,y:it.y,items:[it]};lines.push(cur)}}
+  for(const l of lines){l.items.sort((a,b)=>a.x-b.x);l.text=l.items.map(i=>i.s.trim()).filter(Boolean).join(" ")}
+  return lines;
+}
+function rx(src,flags){try{return src?new RegExp(src,flags||""):null}catch(e){return null}}
+function addDays(ymd,n){const d=new Date(ymd+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+function ymdOf(y,m,d){return y+"-"+String(m).padStart(2,"0")+"-"+String(d).padStart(2,"0")}
+const MONN={JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12};
+function recipeDetects(R,text){return Array.isArray(R.detect)&&R.detect.length>0&&R.detect.every(s=>typeof s==="string"&&s&&text.includes(s))}
+function runRecipe(R,items){
+  const lines=linesFromItems(items);const full=lines.map(l=>l.text).join("\n");
+  const out={flights:[],duties:[],period:null};
+  let y0,m0;
+  const pr=R.period&&rx(R.period.regex);const pm=pr&&full.match(pr);
+  const ord=(R.period&&R.period.order)||"dmy";const pick=(a,b,c)=>{a=String(a);b=String(b);c=String(c);const mon=v=>MONN[v.slice(0,3).toUpperCase()]||+v;return ord==="dmy"?[+c,mon(b),+a]:ord==="mdy"?[+c,mon(a),+b]:[+a,mon(b),+c]};
+  if(pm){const s0=pick(pm[1],pm[2],pm[3]);y0=s0[0];m0=s0[1];out.period={start:ymdOf(...s0),end:pm[6]?ymdOf(...pick(pm[4],pm[5],pm[6])):null}}
+  if(!y0){const n=new Date();y0=n.getUTCFullYear();m0=n.getUTCMonth()+1}
+  // date markers
+  const dre=rx(R.date&&R.date.regex);const dates=[];let yy=y0,mo=m0,last=0;
+  if(dre)for(const l of lines){const m=l.text.match(dre);if(!m)continue;const d=+m[R.date.day||1];if(!(d>=1&&d<=31))continue;
+   if(R.date.month&&m[R.date.month]){const mv=m[R.date.month];const mm=MONN[String(mv).slice(0,3).toUpperCase()]||+mv;if(mm<mo-6)yy++;mo=mm}else if(d<last){mo++;if(mo>12){mo=1;yy++}}
+   last=d;dates.push({p:l.p,y:l.y,ymd:ymdOf(yy,mo,d)})}
+  const dateFor=l=>{const same=dates.filter(d=>d.p===l.p);if(R.dateAssign==="nearest"&&same.length){let best=null,bd=1e9;for(const d of same){const dd=Math.abs(d.y-l.y);if(dd<bd-0.01){bd=dd;best=d}}return best.ymd}
+   let best=null;for(const d of dates){if(d.p<l.p||(d.p===l.p&&d.y<=l.y+1))best=d}return best?best.ymd:(dates[0]&&dates[0].ymd)};
+  // flights
+  const fr=rx(R.flight&&R.flight.regex,"g"),G=(R.flight&&R.flight.groups)||{},dh=rx(R.flight&&R.flight.deadhead);
+  const raw=[];if(fr)for(const l of lines){fr.lastIndex=0;let m,guard=0;while((m=fr.exec(l.text))&&guard++<6){raw.push({l,m});if(m[0]==="")fr.lastIndex++}}
+  const utc=R.timeBasis==="utc";
+  const at=(ymd,t,st)=>utc?new Date(ymd+"T"+t.padStart(5,"0")+":00Z"):zonedToUtc(ymd,t.padStart(5,"0"),tzOf(st));
+  let prev=null;
+  for(const{l,m}of raw){
+   const g=k=>G[k]?m[G[k]]:undefined;const from=g("from"),to=g("to"),dep=g("dep"),arr=g("arr"),dur=g("dur"),rep=g("report");let fl=String(g("flight")||"").trim();
+   if(!from||!to||!dep)continue;if(fl&&!/^[A-Z]/.test(fl))fl=(R.flightPrefix||"")+fl;
+   const row=g("date")?null:dateFor(l);if(!row)continue;
+   let outT=at(row,dep,from);
+   if(prev&&prev.arr===from&&prev.inn&&(!rep||rep===prev.repStr)){const gap=(outT-prev.inn)/36e5;if(gap<0||gap>20){let best=null;for(const k of[-1,0,1]){const c=at(addDays(row,k),dep,from);const gg=(c-prev.inn)/36e5;if(gg>=0&&gg<=20&&(!best||c<best))best=c}if(best)outT=best}}
+   let inn=null;
+   if(dur&&/^\d{1,2}:\d{2}$/.test(dur)){const[h,mi]=dur.split(":").map(Number);inn=new Date(outT.getTime()+(h*60+mi)*6e4)}
+   else if(arr){const ly=ymdIn(outT,utc?"UTC":tzOf(from));inn=at(ly,arr,to);let n=0;while(inn<=outT&&n++<3)inn=new Date(inn.getTime()+864e5)}
+   let repT=null;
+   let repAt=from;
+   if(rep){if(prev&&rep===prev.repStr&&prev.arr===from&&prev.inn&&(outT-prev.inn)<12*36e5){repT=prev.rep;repAt=prev.repAt}else{const ly=ymdIn(outT,utc?"UTC":tzOf(from));repT=at(ly,rep,from);if(repT>outT)repT=new Date(repT-864e5)}}
+   const f={date:ymdIn(outT,utc?"UTC":tzOf(from)),flt:fl,dep:from,arr:to,out:outT,inn,rep:repT,cat:dh&&dh.test(l.text)?"D":"O",emp:R.airline||"",ac:"",reg:"",src:"I",tb:"i"};
+   f.repAt=repAt;out.flights.push(f);prev={arr:to,inn,rep:repT,repStr:rep,repAt};
+  }
+  // duty grid (codes placed under day numbers)
+  if(R.grid){
+   const hr=rx(R.grid.above);let lim={p:1e9,y:1e9};if(hr){const hl=lines.find(l=>hr.test(l.text));if(hl)lim={p:hl.p,y:hl.y}}
+   const zone=items.filter(i=>i.p<lim.p||(i.p===lim.p&&i.y<lim.y));const dayRe=rx(R.grid.day),codeRe=rx(R.grid.code);
+   const days=zone.filter(i=>dayRe&&dayRe.test(i.s.trim())).sort((a,b)=>a.p-b.p||a.y-b.y||a.x-b.x);
+   let y=y0,mo=m0,lastD=0;for(const d of days){const n=+d.s.trim();if(n<lastD){mo++;if(mo>12){mo=1;y++}}lastD=n;d.ymd=ymdOf(y,mo,n)}
+   for(const c of zone){const t=c.s.trim();if(!codeRe||!codeRe.test(t))continue;let best=null;
+    for(const d of days){const dy=c.y-d.y;if(d.p===c.p&&dy>0&&dy<(R.grid.maxGap||20)&&d.x<=c.x+5&&(!best||d.x>best.x))best=d}
+    if(best)out.duties.push({date:best.ymd,code:t})}
+  }
+  // line duties
+  const dr=rx(R.duty&&R.duty.regex);
+  if(dr)for(const l of lines){const m=l.text.match(dr);if(!m)continue;const ymd=dateFor(l);const code=String(m[R.duty.code||1]||"").trim().toUpperCase();if(ymd&&code)out.duties.push({date:ymd,code})}
+  const seen=new Set();out.duties=out.duties.filter(d=>{const k=d.date+d.code;if(seen.has(k))return false;seen.add(k);return true});
+  return out;
+}
+async function learnRecipe(items,text,rows,res){
+  const lines=linesFromItems(items).slice(0,400).map((l,i)=>`L${i+1} [page ${l.p}, y ${Math.round(l.y)}] ${l.text}`).join("\n");
+  const sample=rows.slice(0,6).map(r=>`${r.date} ${r.flt} ${r.dep}-${r.arr}`).join("; ");
+  const R=await CAP.sample.json(`Write a reusable parsing recipe for this airline crew roster format so a simple program can read future rosters of the same format without AI. The program groups PDF text into lines (shown below with page and vertical position) and applies JavaScript regular expressions to each line's text.
+Recipe JSON schema (reply with this JSON only):
+{"name":"short format name","airline":"airline name","flightPrefix":"IATA airline code to prepend when flight numbers are printed without letters, else empty",
+"detect":["2-3 literal strings that appear on every roster of this format, e.g. header words"],
+"timeBasis":"local"|"utc",
+"period":{"regex":"regex capturing the roster start date as 3 groups (and optionally end date as groups 4-6)","order":"dmy"|"mdy"|"ymd"} (month groups may be numbers or month names),
+"date":{"regex":"regex matching a line that starts a calendar day, with a capture group for the day number","day":1,"month":optional group number of a month number or name},
+"dateAssign":"above" (flight belongs to the last date line above it) or "nearest" (date labels are vertically centred in merged table cells),
+"flight":{"regex":"regex with capture groups, matched globally on each line","groups":{"flight":n,"from":n,"to":n,"dep":n,"arr":n,"report":n or omit,"dur":n or omit},"deadhead":"regex that matches a line only if that sector is deadheading, or omit"},
+"duty":{"regex":"regex matching a line with a non-flight duty code","code":group number} or omit,
+"codes":{"CODE":{"kind":"off|rest|sby|avd|leave|sick|training|ground|other","label":"plain English"}}}
+Escape backslashes for JSON. The recipe must find these flights in the lines below: ${sample} (and ${rows.length} flights in total).
+Lines:
+${lines}`,{modelTier:"complex"});
+  if(!R||!R.flight||!R.flight.regex||!Array.isArray(R.detect))return null;
+  R.id="learned-"+Date.now().toString(36);R.name=String(R.name||R.airline||"Learned format").slice(0,60);
+  if(!recipeDetects(R,text))return null;
+  const got=runRecipe(R,items).flights;const key=f=>f.date+f.dep+f.arr;const want=new Set(rows.map(key));
+  const hit=got.filter(f=>want.has(key(f))).length;
+  if(!(hit>=Math.ceil(rows.length*.9)&&got.length<=rows.length*1.1+1))return null;
+  for(const[c,v]of Object.entries(R.codes||{})){if(!CODES0[c]&&!store.codes[c]&&v&&v.kind)store.codes[c]=[KINDN[v.kind]?v.kind:"other",String(v.label||c)]}
+  delete R.codes;store.recipes=store.recipes.filter(x=>x.name!==R.name).concat([R]);save();return R;
+}
+async function shrink(file){const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error("This photo format can't be opened. Try a screenshot or PDF."));i.src=URL.createObjectURL(file)});
+  const s=Math.min(1,2000/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext("2d").drawImage(img,0,0,c.width,c.height);return await new Promise(r=>c.toBlob(r,"image/jpeg",.86))}
+/* export */
+async function saveFile(name,data,type){
+  if(CAP.downloads){try{await CAP.downloads.save({filename:name,data});toast("Saved "+name);return}catch(e){if(e&&e.code==="declined")return;toast("Could not save the file here");return}}
+  try{const url=URL.createObjectURL(new Blob([data],{type}));const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000)}catch(e){toast("Could not save the file")}
+}
+function icsDate(d){return d.toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"")}
+function fold(l){let o="";while(l.length>73){o+=l.slice(0,73)+"\r\n ";l=l.slice(73)}return o+l}
+function icsEsc(s){return String(s).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n")}
+function exportIcs(range,cats){
+  const now=Date.now();const from=range==="all"?0:range==="90"?now-90*864e5:new Date(new Date().toISOString().slice(0,10)+"T00:00:00Z").getTime();
+  const fs=FL.filter(f=>f.out&&f.inn&&cats.includes(f.cat)&&f.inn.getTime()>=from);
+  if(!fs.length){toast("No flights in that range");return}
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Contrail//Crew logbook//EN","CALSCALE:GREGORIAN","METHOD:PUBLISH","X-WR-CALNAME:Contrail flights","X-PUBLISHED-TTL:PT6H"];
+  const stamp=icsDate(new Date());
+  for(const f of fs){const tzA=tzOf(f.dep),tzB=tzOf(f.arr);
+   L.push("BEGIN:VEVENT","UID:"+f.id+"@contrail","DTSTAMP:"+stamp,"DTSTART:"+icsDate(f.out),"DTEND:"+icsDate(f.inn),
+    fold("SUMMARY:"+icsEsc((f.cat==="D"?"DH ":"")+f.flt+" "+f.dep+"–"+f.arr)),
+    fold("LOCATION:"+icsEsc(city(f.dep)+" ("+f.dep+")")),
+    fold("DESCRIPTION:"+icsEsc(`${city(f.dep)} ${hm(f.out,tzA)} local, ${city(f.arr)} ${hm(f.inn,tzB)} local\nBlock ${HM(f.bh)}${f.ac?"\n"+f.ac:""}${f.reg?" "+f.reg:""}\n${CATN[f.cat]}`)),"END:VEVENT")}
+  L.push("END:VCALENDAR");saveFile("contrail-flights.ics",L.join("\r\n"),"text/calendar");
+}
+function exportCsv(){
+  const H=["date_utc","flight","from","to","out_utc","in_utc","block_hours","category","employer","aircraft","registration","km","night_hours","source","note"];
+  const q=v=>{v=v==null?"":String(v);return/[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const rows=FL.map(f=>[f.out?f.out.toISOString().slice(0,10):f.date,f.flt,f.dep,f.arr,f.out?f.out.toISOString().slice(0,16).replace("T"," "):"",f.inn?f.inn.toISOString().slice(0,16).replace("T"," "):"",f.bh!=null?f.bh.toFixed(2):"",CATN[f.cat],f.emp,f.ac,f.reg,f.km?Math.round(f.km):"",f.nightH!=null?f.nightH.toFixed(2):"",f.src,f.note].map(q).join(","));
+  saveFile("contrail-logbook.csv",[H.join(",")].concat(rows).join("\n"),"text/csv");
+}
+
+/* ---------- boot ---------- */
+function boot(){
+  build();Log.init();updateBadge();
+  if(window.d3){Globe.init()}else{document.getElementById("fc").innerHTML=`<div class="fc-state">The globe needs a connection the first time it opens.</div>`}
+  initCaps();
+  try{if(localStorage.getItem("contrail.job"))setTimeout(()=>toast("An import is waiting for you in Add"),900)}catch(e){}
+}
+boot();
+</script>
+<script>if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
+</body>
+</html>
