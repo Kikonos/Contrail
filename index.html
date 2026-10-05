@@ -474,7 +474,7 @@ let CUR="globe";
 function go(t){CUR=t;document.querySelectorAll(".tab").forEach(s=>s.classList.toggle("on",s.id==="t-"+t));document.querySelectorAll("#bar button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
   if(t==="globe"&&Globe.ctx)Globe.resize();if(t==="log")Log.render();if(t==="stats")Stats.render();if(t==="review")Review.render();if(t==="add")AddUI.render();if(t==="set")Settings.render();Globe.active(t==="globe")}
 document.querySelectorAll("#bar button").forEach(b=>b.onclick=()=>go(b.dataset.t));
-function refreshAll(){build();if(Globe.ctx)Globe.rebuild();updateBadge();if(CUR==="log")Log.render();if(CUR==="stats")Stats.render();if(CUR==="review")Review.render();if(CUR==="set")Settings.render()}
+function refreshAll(){build();if(Globe.ctx){Globe.chips();Globe.rebuild()}updateBadge();if(CUR==="log")Log.render();if(CUR==="stats")Stats.render();if(CUR==="review")Review.render();if(CUR==="set")Settings.render()}
 function updateBadge(){const n=FL.filter(needsReview).length;const b=document.getElementById("rbadge");b.hidden=!n;b.textContent=n}
 
 /* ---------- globe ---------- */
@@ -500,16 +500,33 @@ const Globe={
   window.echarts={registerMap:(n,g)=>{try{this.land=decodeGeo(g);this.kick()}catch(e){}}};
   const s=document.createElement("script");s.src="https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/js/world.js";s.async=true;document.head.appendChild(s);
  },
+ per:"all",custom:null,
+ periodRange(){const k=this.per,n=new Date(),y=n.getUTCFullYear(),m=n.getUTCMonth();
+  if(k==="tm")return[Date.UTC(y,m,1),Date.UTC(y,m+1,1)];
+  if(k==="lm")return[Date.UTC(y,m-1,1),Date.UTC(y,m,1)];
+  if(k==="p6")return[Date.UTC(y,m-6,n.getUTCDate()),Date.now()];
+  if(k==="ty")return[Date.UTC(y,0,1),Date.UTC(y+1,0,1)];
+  if(/^\d{4}$/.test(k))return[Date.UTC(+k,0,1),Date.UTC(+k+1,0,1)];
+  if(k==="custom"&&this.custom)return[Date.parse(this.custom[0]+"T00:00:00Z"),Date.parse(this.custom[1]+"T00:00:00Z")+864e5];
+  return null},
+ customLabel(){if(!this.custom)return"Custom range";const f=new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});return f.format(new Date(this.custom[0]+"T12:00:00Z"))+" to "+f.format(new Date(this.custom[1]+"T12:00:00Z"))},
+ pickCustom(){const today=new Date().toISOString().slice(0,10);const c=this.custom||[addDays(today,-90),today];
+  Sheet.open(`<h2 style="margin-top:6px">Custom range</h2><div class="form"><label>From<input type="date" id="cr-a" value="${c[0]}"></label><label>To<input type="date" id="cr-b" value="${c[1]}"></label></div>
+   <div class="d-acts"><button class="btn pri" id="cr-go">Show on globe</button><button class="btn" id="cr-x">Cancel</button></div><p class="note" id="cr-m"></p>`,el=>{
+   el.querySelector("#cr-x").onclick=()=>{Sheet.close();this.chips()};
+   el.querySelector("#cr-go").onclick=()=>{const a=el.querySelector("#cr-a").value,b=el.querySelector("#cr-b").value;if(!a||!b||a>b){el.querySelector("#cr-m").textContent="Choose a start date on or before the end date.";return}
+    this.custom=[a,b];this.per="custom";Sheet.close();this.chips();this.rebuild()}})},
  chips(){
   const el=document.getElementById("gchips");
-  const years=[...new Set(HIST.map(r=>(r[5]||r[1]).slice(0,4)).concat(store.add.map(a=>(a.out||a.date).slice(0,4))))].sort();
+  const years=[...new Set(FL.filter(f=>f.cat==="O"||f.cat==="D").map(f=>f.year))].sort().reverse();
+  const opts=[["all","All time"],["tm","This month"],["lm","Last month"],["p6","Past 6 months"],["ty","This year"]].concat(years.map(y=>[y,y])).concat([["custom",this.customLabel()]]);
   el.innerHTML=["O","D","P"].map(c=>`<button class="chip ${this.filt[c]?"on":""}" data-c="${c}" aria-pressed="${this.filt[c]}"><i class="dot c-${c}"></i>${CATN[c]}</button>`).join("")+
-   `<label class="chip on"><select id="gyear" aria-label="Period"><option value="all">All time</option>${years.map(y=>`<option ${this.year===y?"selected":""}>${y}</option>`).join("")}</select></label>`;
+   `<label class="chip on"><select id="gyear" aria-label="Period">${opts.map(([v,l])=>`<option value="${v}" ${this.per===v?"selected":""}>${esc(l)}</option>`).join("")}</select></label>`;
   el.querySelectorAll("button").forEach(b=>b.onclick=()=>{this.filt[b.dataset.c]=!this.filt[b.dataset.c];this.chips();this.rebuild()});
-  el.querySelector("#gyear").onchange=e=>{this.year=e.target.value;this.rebuild()};
+  el.querySelector("#gyear").onchange=e=>{const v=e.target.value;if(v==="custom"){this.pickCustom();return}this.per=v;this.rebuild()};
  },
  rebuild(){
-  const fs=FL.filter(f=>this.filt[f.cat]&&(this.year==="all"||f.year===this.year));
+  const pr=this.periodRange();const fs=FL.filter(f=>this.filt[f.cat]&&(!pr||(f.t>=pr[0]&&f.t<pr[1])));
   const rm=new Map(),am=new Map();
   for(const f of fs){
    const A=ll(f.dep),B=ll(f.arr);if(!A||!B)continue;
@@ -521,7 +538,7 @@ const Globe={
   this.routes=[...rm.values()].sort((x,y)=>order[x.cat]-order[y.cat]||x.n-y.n);
   this.aps=[...am.values()].sort((x,y)=>x.n-y.n);
   const ops=fs.filter(f=>f.cat==="O").length;
-  document.getElementById("glegend").textContent=`${nf0.format(this.routes.length)} routes, ${nf0.format(this.aps.length)} airports${ops?", "+nf0.format(ops)+" operating sectors":""}`;
+  document.getElementById("glegend").textContent=fs.length?`${nf0.format(this.routes.length)} routes, ${nf0.format(this.aps.length)} airports${ops?", "+nf0.format(ops)+" operating sectors":""}`:"No flights in this period";
   this.card();this.kick();
  },
  cur(){ // live, next or last
@@ -695,7 +712,7 @@ const Log={q:"",cat:"all",
 /* ---------- stats ---------- */
 const Stats={scope:"all",
  render(){
-  const years=[...new Set(FL.map(f=>f.year))].sort();const emps=[...new Set(FL.filter(f=>f.cat==="O"&&f.emp).map(f=>f.emp))];
+  const years=[...new Set(FL.filter(f=>f.cat==="O"||f.cat==="D").map(f=>f.year))].sort();const emps=[...new Set(FL.filter(f=>f.cat==="O"&&f.emp).map(f=>f.emp))];
   const opts=[["all","All time"],...years.map(y=>[y,y]),...emps.map(e=>["e:"+e,e])];
   const seg=document.getElementById("sseg");seg.innerHTML=opts.map(([k,n])=>`<button data-k="${esc(k)}" class="${k===this.scope?"on":""}">${esc(n)}</button>`).join("");
   seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{this.scope=b.dataset.k;this.render()});
@@ -850,6 +867,11 @@ const Settings={render(){
   <h2>Roster formats</h2>
   <div class="set">${allRecipes().map(r=>`<div class="it"><span class="lab">${esc(r.name)}<small>${r.builtin?"Built in":"Learned from your roster"}</small></span>${r.builtin?"":`<button class="btn sm" data-delrec="${esc(r.id)}">Forget</button>`}</div>`).join("")}</div>
   <p class="note">When a roster arrives in a format Contrail doesn't know, Claude reads it once and writes down how. After that it's read on your phone.</p>
+  <h2>Imported rosters</h2>
+  <div class="set" id="imps">${(()=>{const g=new Map();for(const a of store.add){if(a.src!=="I")continue;const k=(a.date||"").slice(0,7);const x=g.get(k)||{f:0,d:0};x.f++;g.set(k,x)}for(const d of store.duties){if(d.src!=="roster")continue;const k=d.date.slice(0,7);const x=g.get(k)||{f:0,d:0};x.d++;g.set(k,x)}
+   const mf=new Intl.DateTimeFormat("en-GB",{month:"long",year:"numeric",timeZone:"UTC"});const ks=[...g.keys()].sort().reverse();
+   return ks.length?ks.map(k=>`<div class="it"><span class="lab">${mf.format(new Date(k+"-01T12:00:00Z"))}<small>${g.get(k).f} flights, ${g.get(k).d} duty days</small></span><button class="btn sm" data-unimp="${k}">Remove</button></div>`).join("")+`<div class="it"><span class="lab">Everything imported from rosters<small>Your history from RosterBuster and Flighty stays</small></span><button class="btn sm" data-unimp="all" style="color:var(--x)">Remove all</button></div>`:`<div class="it"><span class="lab">No rosters imported yet</span></div>`})()}</div>
+  <p class="note">If a roster came in on the wrong dates, remove that month here and import the roster again.</p>
   <h2>Duty codes</h2>
   <div class="set" id="codes">${[...new Set(Object.keys(CODES0).concat(Object.keys(store.codes)).concat(allDuties().map(d=>d.code)))].sort().map(c=>{const ci=codeInfo(c);return`<div class="it"><span class="lab">${esc(c)}<small>${esc(ci.label)}</small></span><select data-code="${esc(c)}" style="border:0;background:var(--surface-2);border-radius:9px;padding:7px 8px;font-size:14px">${KINDS.map(([k,n])=>`<option value="${k}" ${ci.kind===k?"selected":""}>${n}</option>`).join("")}</select></div>`}).join("")}
    <div class="it"><input id="code-new" placeholder="New code, e.g. BLOCK" style="border:0;background:var(--surface-2);border-radius:9px;padding:9px 10px;font-size:15px;flex:1;min-width:0;text-transform:uppercase"><input id="code-lab" placeholder="Meaning" style="border:0;background:var(--surface-2);border-radius:9px;padding:9px 10px;font-size:15px;flex:1;min-width:0"><button class="btn sm pri" id="code-add">Add</button></div></div>
@@ -871,6 +893,10 @@ const Settings={render(){
   W.querySelectorAll(".seg[data-k] button").forEach(b=>b.onclick=()=>{const k=b.parentElement.dataset.k;store.disp[k]=b.dataset.v;b.parentElement.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));upd()});
   document.getElementById("s-reset").onclick=()=>{store.disp=Object.assign({},DISP0);upd();this.render();toast("Display settings reset")};
   document.getElementById("theme").querySelectorAll("button").forEach(b=>b.onclick=()=>{store.theme=b.dataset.k;save();applyTheme();this.render();Globe._C=null;if(Globe.ctx)Globe.kick()});
+  W.querySelectorAll("[data-unimp]").forEach(b=>b.onclick=()=>{const k=b.dataset.unimp;const hit=x=>k==="all"||(x||"").slice(0,7)===k;
+   const nf=store.add.filter(a=>a.src==="I"&&hit(a.date)).length,nd=store.duties.filter(d=>d.src==="roster"&&hit(d.date)).length;
+   if(!confirm(`Remove ${nf} flights and ${nd} duty days imported from rosters${k==="all"?"":" in this month"}?`))return;
+   store.add=store.add.filter(a=>!(a.src==="I"&&hit(a.date)));store.duties=store.duties.filter(d=>!(d.src==="roster"&&hit(d.date)));save();refreshAll();this.render();toast(`Removed ${nf} flights and ${nd} duty days`)});
   W.querySelectorAll("[data-delrec]").forEach(b=>b.onclick=()=>{store.recipes=store.recipes.filter(r=>r.id!==b.dataset.delrec);save();this.render();toast("Format forgotten")});
   W.querySelectorAll("#codes select").forEach(sl=>sl.onchange=()=>{const c=sl.dataset.code;store.codes[c]=[sl.value,codeInfo(c).label];save();toast(c+" saved")});
   document.getElementById("code-add").onclick=()=>{const c=document.getElementById("code-new").value.trim().toUpperCase(),l=document.getElementById("code-lab").value.trim();if(!/^[A-Z0-9]{1,6}$/.test(c)){toast("Codes are up to 6 letters or numbers");return}store.codes[c]=[codeInfo(c).kind,l||c];save();this.render();toast(c+" added")};
@@ -932,18 +958,30 @@ const AddUI={rendered:false,pending:null,
   if(!files.length)return;if(Job.busy()){toast("Still reading the last file");return}
   Job.start("roster");
   try{
-   let items=[],text="",images=[];
+   let items=[],text="",images=[];const got={flights:[],duties:[],periods:[],names:[],outside:0};
    for(const[n,f]of files.entries()){
-    if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)){Job.say(`Opening ${f.name}`);const r=await pdfItems(f,items.length?Math.max(...items.map(i=>i.p)):0,(p,t)=>Job.say(`Reading page ${p} of ${t} in ${f.name}`));items.push(...r.items);text+=r.text+"\n";images.push(...r.images)}
+    if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)){
+     Job.say(`Opening ${f.name}${files.length>1?` (${n+1} of ${files.length})`:""}`);
+     const r=await pdfItems(f,0,(p,t)=>Job.say(`Reading page ${p} of ${t} in ${f.name}`));
+     // every roster file is read on its own, with its own dates
+     let done=false;
+     for(const Rc of allRecipes()){if(!recipeDetects(Rc,r.text))continue;
+      Job.say(`${f.name}: ${Rc.name}, reading flights and duty days`);await tick();
+      let res=null;try{res=runRecipe(Rc,r.items)}catch(e){}
+      if(res&&(res.flights.length||res.duties.length)){
+       if(res.period){const lo=addDays(res.period.start,-1),hi=addDays(res.period.end||res.period.start,2);
+        const keep=res.flights.filter(x=>x.date>=lo&&x.date<=hi);got.outside+=res.flights.length-keep.length;res.flights=keep;
+        res.duties=res.duties.filter(x=>x.date>=res.period.start&&x.date<=(res.period.end||res.period.start));got.periods.push(res.period)}
+       got.flights.push(...res.flights);got.duties.push(...res.duties);if(!got.names.includes(Rc.name))got.names.push(Rc.name);done=true;break}}
+     if(!done){const off=items.length?Math.max(...items.map(i=>i.p)):0;items.push(...r.items.map(i=>Object.assign({},i,{p:i.p+off})));text+=r.text+"\n";images.push(...r.images)}
+    }
     else if(f.type.startsWith("image/")){Job.say(`Preparing photo ${n+1} of ${files.length}`);images.push(await shrink(f))}
    }
-   if(items.length){
-    Job.say("Looking for a roster format Contrail knows");await tick();
-    for(const Rc of allRecipes()){if(!recipeDetects(Rc,text))continue;
-     Job.say(`Recognised the ${Rc.name} format, reading flights and duty days`);await tick();
-     let res=null;try{res=runRecipe(Rc,items)}catch(e){}
-     if(res&&(res.flights.length||res.duties.length)){await this.prepare("roster",res.flights,"roster",{duties:res.duties,period:res.period,how:`Read on your phone using the ${Rc.name} format.`});return}}
-   }
+   if(got.flights.length||got.duties.length){
+    if(items.length||images.length)toast("Some files were in a format Contrail doesn't know yet, so they were skipped");
+    const ps=got.periods.slice().sort((a,b)=>a.start.localeCompare(b.start));
+    const span=ps.length?` ${new Intl.DateTimeFormat("en-GB",{month:"short",year:"numeric",timeZone:"UTC"}).format(new Date(ps[0].start+"T12:00:00Z"))}${ps.length>1&&ps[0].start.slice(0,7)!==(ps[ps.length-1].end||ps[ps.length-1].start).slice(0,7)?" to "+new Intl.DateTimeFormat("en-GB",{month:"short",year:"numeric",timeZone:"UTC"}).format(new Date((ps[ps.length-1].end||ps[ps.length-1].start)+"T12:00:00Z")):""}`:"";
+    await this.prepare("roster",got.flights,"roster",{duties:got.duties,periods:ps,how:`${files.length>1?files.length+" rosters":"Roster"}${span}, read on your phone using the ${got.names.join(" and ")} format.${got.outside?` ${got.outside} lines outside the roster dates were left out.`:""}`});return}
    if(!CAP.sample){
     if(!items.length)throw new Error("Reading photos needs Contrail opened inside Claude. Use the roster PDF instead.");
     throw new Error("This roster format is new to Contrail. Open Contrail inside Claude once to teach it this format, or send the roster to Claude to have it built in.");
@@ -979,6 +1017,10 @@ ${text.trim()?"Roster text, one printed line per row:\n"+text.slice(0,60000):"Th
  },
  async prepare(area,rows,kind,extra){
   // match every new row against the logbook, in small steps so the screen keeps updating
+  // the same flight in two files of one import counts once
+  const uniq=[];for(const r of rows){if(!uniq.some(u=>u.dep===r.dep&&u.arr===r.arr&&((u.out&&r.out&&Math.abs(u.out-r.out)<4*36e5)||(!u.out&&!r.out&&u.date===r.date))))uniq.push(r)}
+  rows.length=0;rows.push(...uniq);
+  if(extra.duties){const ds=new Set();extra.duties=extra.duties.filter(d=>{const k=d.date+d.code;if(ds.has(k))return false;ds.add(k);return true})}
   const n=rows.length;
   for(let i=0;i<n;i++){const r=rows[i];r.match=findMatch(r);
    if(i%20===0||i===n-1){Job.say(`Checking against your logbook: ${nf0.format(i+1)} of ${nf0.format(n)}, ${r.flt||""} ${r.dep}–${r.arr}${r.out?", "+dayStr(r.out,tzOf(r.dep))+" "+r.out.getUTCFullYear():""}`);await tick()}}
@@ -986,12 +1028,13 @@ ${text.trim()?"Roster text, one printed line per row:\n"+text.slice(0,60000):"Th
   Job.ready(area,rows,kind,extra);
  },
  preview(el,rows,kind,extra){
-  extra=extra||{};const duties=extra.duties||[],period=extra.period;
+  extra=extra||{};const duties=extra.duties||[];const periods=(extra.periods||(extra.period?[extra.period]:[])).filter(p=>p&&p.start);
+  const inP=d=>periods.some(p=>d>=p.start&&d<=(p.end||p.start));const period=periods.length?periods[0]:null;
   rows.forEach(r=>{if(r.match===undefined)r.match=findMatch(r)});
-  const stale=(period&&!extra.addOnly)?store.add.filter(a=>a.src==="I"&&a.date>=period.start&&a.date<=(period.end||period.start)&&!rows.some(r=>r.match&&r.match.id===a.id)):[];
+  const stale=(periods.length&&!extra.addOnly)?store.add.filter(a=>a.src==="I"&&inP(a.date)&&!rows.some(r=>r.match&&r.match.id===a.id)):[];
   const fresh=rows.map((r,i)=>[r,i]).filter(([r])=>!r.match),known=rows.filter(r=>r.match);
   const have=new Set(allDuties().map(d=>d.date+d.code));
-  const replaceable=new Set(period&&!extra.addOnly?store.duties.filter(d=>d.src==="roster"&&d.date>=period.start&&d.date<=(period.end||period.start)).map(d=>d.date+d.code):[]);
+  const replaceable=new Set(periods.length&&!extra.addOnly?store.duties.filter(d=>d.src==="roster"&&inP(d.date)).map(d=>d.date+d.code):[]);
   const newD=duties.filter(d=>!have.has(d.date+d.code)||replaceable.has(d.date+d.code));
   const kinds={};for(const d of newD){const k=codeInfo(d.code).kind;kinds[k]=(kinds[k]||0)+1}
   const unknown=[...new Set(duties.map(d=>d.code).filter(c=>!CODES0[c]&&!store.codes[c]))];
@@ -1018,7 +1061,7 @@ ${text.trim()?"Roster text, one printed line per row:\n"+text.slice(0,60000):"Th
     else{const p={};if(!m.ac&&r.ac)p.ac=r.ac;if(!m.reg&&r.reg)p.reg=r.reg;if(!m.out&&r.out){p.out=r.out.toISOString();p.inn=r.inn&&r.inn.toISOString()}if(r.rep&&!m.rep){p.rep=r.rep.toISOString();p.repAt=r.repAt||m.dep}if(Object.keys(p).length){store.ov[m.id]=Object.assign({},store.ov[m.id]||{},p);merged++}}}
    const sc=el.querySelector("#imp-stale");if(sc&&sc.checked){const ids=new Set(stale.map(a=>a.id));store.add=store.add.filter(a=>!ids.has(a.id));removed=ids.size}
    const dc=el.querySelector("#imp-duties");if(dc&&dc.checked){
-    if(period&&!extra.addOnly)store.duties=store.duties.filter(d=>!(d.src==="roster"&&d.date>=period.start&&d.date<=(period.end||period.start)));
+    if(periods.length&&!extra.addOnly)store.duties=store.duties.filter(d=>!(d.src==="roster"&&inP(d.date)));
     const now=new Set(allDuties().map(d=>d.date+d.code));
     for(const d of duties){if(now.has(d.date+d.code))continue;now.add(d.date+d.code);store.duties.push({id:"d"+Math.random().toString(36).slice(2,9),date:d.date,code:d.code,src:kind==="rb"?"rb":"roster"});dn++}}
    addFlights(sel,true);added=sel.length;save();refreshAll();const area=Job.cur?Job.cur.area:"file";Job.clear();
@@ -1039,7 +1082,7 @@ const Job={cur:null,lock:null,
   if(document.hidden||CUR!=="add")toast("Import ready to review in Add")},
  persist(){try{if(!this.cur||!this.cur.preview){localStorage.removeItem("contrail.job");return}const{rows,kind,extra}=this.cur.preview;
   const ser=r=>({date:r.date,flt:r.flt,dep:r.dep,arr:r.arr,out:r.out&&r.out.toISOString(),inn:r.inn&&r.inn.toISOString(),rep:r.rep&&r.rep.toISOString(),repAt:r.repAt,cat:r.cat,emp:r.emp,ac:r.ac,reg:r.reg,src:r.src,tb:r.tb});
-  localStorage.setItem("contrail.job",JSON.stringify({area:this.cur.area,kind,rows:rows.map(ser),extra:{duties:extra.duties,period:extra.period,how:extra.how,addOnly:extra.addOnly}}))}catch(e){}},
+  localStorage.setItem("contrail.job",JSON.stringify({area:this.cur.area,kind,rows:rows.map(ser),extra:{duties:extra.duties,period:extra.period,periods:extra.periods,how:extra.how,addOnly:extra.addOnly}}))}catch(e){}},
  clear(){this.cur=null;try{localStorage.removeItem("contrail.job")}catch(e){}this.wake(false)},
  restore(){
   if(!this.cur){try{const j=JSON.parse(localStorage.getItem("contrail.job")||"null");if(j&&j.rows){const de=r=>Object.assign({},r,{out:r.out?new Date(r.out):null,inn:r.inn?new Date(r.inn):null,rep:r.rep?new Date(r.rep):null});this.cur={area:j.area,state:"ready",status:"",preview:{rows:j.rows.map(de),kind:j.kind,extra:j.extra||{}}}}}catch(e){}}
