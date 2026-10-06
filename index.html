@@ -383,7 +383,7 @@ function build(){
   for(const o of store.add){if(del.has(o.id))continue;FL.push(objToF(o))}
   for(const f of FL){
     const ov=store.ov[f.id];
-    if(ov){if(ov.c)f.cat=ov.c;if(ov.ac)f.ac=ov.ac;if(ov.reg)f.reg=ov.reg;if(ov.emp)f.emp=ov.emp;if(ov.al)f.al=ov.al;if(ov.tko)f.tko=new Date(ov.tko);if(ov.ldg)f.ldg=new Date(ov.ldg);if(ov.fr24)f.fr24=ov.fr24;if(ov.out)f.out=new Date(ov.out);if(ov.inn)f.inn=new Date(ov.inn);if(ov.rep){f.rep=new Date(ov.rep);f.repAt=ov.repAt||f.dep}f.ok=!!ov.ok}
+    if(ov){if(ov.c)f.cat=ov.c;if(ov.ac)f.ac=ov.ac;if(ov.reg)f.reg=ov.reg;if(ov.emp)f.emp=ov.emp;if(ov.al)f.al=ov.al;if(ov.tko)f.tko=new Date(ov.tko);if(ov.ldg)f.ldg=new Date(ov.ldg);if(ov.fr24)f.fr24=ov.fr24;if(ov.adb)f.adb=ov.adb;if(ov.out)f.out=new Date(ov.out);if(ov.inn)f.inn=new Date(ov.inn);if(ov.rep){f.rep=new Date(ov.rep);f.repAt=ov.repAt||f.dep}f.ok=!!ov.ok}
     f.t=f.out?f.out.getTime():Date.parse(f.date+"T12:00:00Z");
     const key=f.id+"|"+f.t+"|"+(f.inn?f.inn.getTime():0)+"|"+f.dep+f.arr;
     let dv=derived[f.id];
@@ -914,18 +914,21 @@ const Settings={render(){
    <div class="it"><input id="code-new" placeholder="New code, e.g. BLOCK" style="border:0;background:var(--surface-2);border-radius:9px;padding:9px 10px;font-size:15px;flex:1;min-width:0;text-transform:uppercase"><input id="code-lab" placeholder="Meaning" style="border:0;background:var(--surface-2);border-radius:9px;padding:9px 10px;font-size:15px;flex:1;min-width:0"><button class="btn sm pri" id="code-add">Add</button></div></div>
   <h2>Appearance</h2>
   <div class="seg" id="theme">${[["system","Match iPhone"],["light","Light"],["dark","Dark"]].map(([k,l])=>`<button data-k="${k}" class="${store.theme===k?"on":""}">${l}</button>`).join("")}</div>
-  <h2>Flightradar24</h2>
-  <div class="panel">${FR24.key()?`<p style="margin:0 0 10px">Your API key is saved on this phone.</p><div class="d-acts" style="margin-top:0"><button class="btn sm" id="fr-test">Test connection</button><button class="btn sm" id="fr-del" style="color:var(--x)">Remove key</button></div>`
+  <h2>Flight data</h2>
+  <div class="panel"><h3 style="margin-bottom:8px">Flightradar24</h3>${FR24.key()?`<p style="margin:0 0 10px">Your API key is saved on this phone.</p><div class="d-acts" style="margin-top:0"><button class="btn sm" id="fr-test">Test connection</button><button class="btn sm" id="fr-del" style="color:var(--x)">Remove key</button></div>`
    :`<div class="form"><label class="full">API key<input id="fr-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste your Flightradar24 API key"></label></div><div class="d-acts"><button class="btn sm pri" id="fr-save">Save key</button></div>`}
-   <div class="live${FR24.state?" "+FR24.state:""}" id="fr-stat">${esc(FR24.status)}</div></div>
-  ${FR24.key()?(()=>{const m=FR24.missing().length;return`<div class="set" style="margin-top:10px"><div class="it"><span class="lab">Fill in past flights<small>${m?nf0.format(m)+" flights since May 2016 are missing the aircraft, registration or airline":"Every flight since May 2016 is filled in"}</small></span>${FR24.run?`<button class="btn sm" id="fr-stop">Stop</button>`:`<button class="btn sm pri" id="fr-fill" ${m?"":"disabled"}>Fill in</button>`}</div>${(()=>{const n=FR24.pending().length;return n&&!FR24.run?`<div class="it"><span class="lab">Found, not saved yet<small>${nf0.format(n)} flights with new details</small></span><button class="btn sm" id="fr-rev">Review</button></div>`:""})()}</div>`})():""}
-  <p class="note">Follows your flight live on the globe and fills in the aircraft, registration and airline. Flights from April 2024 are looked up a few days at a time. Older flights, back to May 2016, need one lookup each, so they use more credits and take longer; you can leave Settings while it works. The key stays on this phone and isn't included in backups.</p>
+   <div class="live" id="fr-tst"></div></div>
+  <div class="panel" style="margin-top:10px"><h3 style="margin-bottom:8px">AeroDataBox</h3>${ADB.key()?`<p style="margin:0 0 10px">Your RapidAPI key is saved on this phone.</p><div class="d-acts" style="margin-top:0"><button class="btn sm" id="adb-test">Test connection</button><button class="btn sm" id="adb-del" style="color:var(--x)">Remove key</button></div>`
+   :`<div class="form"><label class="full">RapidAPI key<input id="adb-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste your RapidAPI key"></label></div><div class="d-acts"><button class="btn sm pri" id="adb-save">Save key</button></div>`}
+   <div class="live" id="adb-tst"></div></div>
+  ${FR24.key()||ADB.key()?(()=>{const m=FR24.missing().length;return`<div class="set" style="margin-top:10px"><div class="it"><span class="lab">Fill in past flights<small>${m?nf0.format(m)+" past flights are missing the aircraft, registration or airline":"Nothing left that your keys can look up"}</small></span>${FR24.run?`<button class="btn sm" id="fr-stop">Stop</button>`:`<button class="btn sm pri" id="fr-fill" ${m?"":"disabled"}>Fill in</button>`}</div><div class="it col" style="border-bottom:0;min-height:0;padding-top:0"><div class="live${FR24.state?" "+FR24.state:""}" id="fr-stat" style="margin-top:0">${esc(FR24.status)}</div></div>${(()=>{const n=FR24.pending().length;return n&&!FR24.run?`<div class="it"><span class="lab">Found, not saved yet<small>${nf0.format(n)} flights with new details</small></span><button class="btn sm" id="fr-rev">Review</button></div>`:""})()}</div>`})():""}
+  <p class="note">Flightradar24 follows your flight live on the globe. Fill in tries Flightradar24 first, as far back as your plan allows, then AeroDataBox for the rest of the last year (its free plan allows about 200 flights a month). You can leave Settings while it works. Keys stay on this phone and aren't included in backups.</p>
   <h2>Backup</h2>
   <div class="panel">
    <p style="margin:0 0 10px">${nf0.format(n)} flights in your logbook, ${u} added since the first import.</p>
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 1.10 (6 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 1.11 (6 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -947,7 +950,11 @@ const Settings={render(){
   document.getElementById("bk-csv").onclick=()=>exportCsv();
   const frS=document.getElementById("fr-save");if(frS)frS.onclick=()=>{const k=document.getElementById("fr-key").value.trim();if(k.length<20){toast("That doesn't look like a full API key");return}FR24.setKey(k);FR24.say("");this.render();Live.tick(true);toast("API key saved")};
   const frD=document.getElementById("fr-del");if(frD)frD.onclick=()=>{if(!confirm("Remove the Flightradar24 API key from this phone?"))return;FR24.setKey("");FR24.say("");this.render();toast("API key removed")};
-  const frT=document.getElementById("fr-test");if(frT)frT.onclick=async()=>{FR24.say("Connecting to Flightradar24…");try{const a=await FR24.get("/static/airlines/UAE/light");FR24.say(a&&a.name?"Connected. Flightradar24 accepted the key.":"Connected, but the reply was unexpected.","done")}catch(e){FR24.say(e.message,"err")}};
+  const line=(id,t,st)=>{const e=document.getElementById(id);if(e){e.textContent=t;e.className="live"+(st?" "+st:"")}};
+  const frT=document.getElementById("fr-test");if(frT)frT.onclick=async()=>{line("fr-tst","Connecting to Flightradar24…");try{const a=await FR24.get("/static/airlines/UAE/light");line("fr-tst",a&&a.name?"Connected. Flightradar24 accepted the key.":"Connected, but the reply was unexpected.","done")}catch(e){line("fr-tst",e.message,"err")}};
+  const adS=document.getElementById("adb-save");if(adS)adS.onclick=()=>{const k=document.getElementById("adb-key").value.trim();if(k.length<20){toast("That doesn't look like a full RapidAPI key");return}ADB.setKey(k);this.render();toast("RapidAPI key saved")};
+  const adD=document.getElementById("adb-del");if(adD)adD.onclick=()=>{if(!confirm("Remove the RapidAPI key from this phone?"))return;ADB.setKey("");this.render();toast("RapidAPI key removed")};
+  const adT=document.getElementById("adb-test");if(adT)adT.onclick=async()=>{line("adb-tst","Connecting to AeroDataBox…");try{await ADB.get("/health/services/airports/OMDB/feeds");line("adb-tst","Connected. AeroDataBox accepted the key.","done")}catch(e){line("adb-tst",e.message,"err")}};
   const frF=document.getElementById("fr-fill");if(frF)frF.onclick=async()=>{const p=FR24.fill();this.render();await p;if(CUR==="set")this.render()};
   const frX=document.getElementById("fr-stop");if(frX)frX.onclick=()=>{if(FR24.run)FR24.run.stop=true;frX.disabled=true;FR24.say("Stopping after this lookup…")};
   const frR=document.getElementById("fr-rev");if(frR)frR.onclick=()=>FR24.review();
@@ -1453,53 +1460,94 @@ const FR24={
    const t=Date.parse(r.datetime_takeoff||r.first_seen||"");if(!t)continue;const d=Math.abs(t-f.out);if(d<bd){bd=d;best=r}}
   return best},
  /* fill in past flights */
- missing(){const now=Date.now();return FL.filter(f=>f.out&&f.cat!=="X"&&f.t>=this.HFROM&&f.t<now-3*36e5&&this.fltNo(f.flt)&&!f.fr24&&(!f.ac||!f.reg||!f.al))},
+ // flights still missing details that a saved key could look up (each source tries a flight once)
+ missing(){const now=Date.now(),fk=!!this.key(),ak=!!ADB.key();
+  return FL.filter(f=>f.out&&f.cat!=="X"&&f.t>=this.HFROM&&f.t<now-3*36e5&&this.fltNo(f.flt)&&(!f.ac||!f.reg||!f.al)&&!(f.fr24&&f.fr24!=="-")&&!(f.adb&&f.adb!=="-")
+   &&((fk&&f.fr24!=="-")||(ak&&f.adb!=="-"&&f.t>=now-ADB.DAYS*864e5)))},
  status:"",state:"",run:null,
  say(t,st){this.status=t;this.state=st||"";const e=document.getElementById("fr-stat");if(e){e.textContent=t;e.className="live"+(st?" "+st:"")}},
  // details found but not yet reviewed survive the app being closed
  pending(){try{return JSON.parse(localStorage.getItem("contrail.fr24found")||"[]").filter(x=>BYID[x.id])}catch(e){return[]}},
  setPending(a){try{a.length?localStorage.setItem("contrail.fr24found",JSON.stringify(a)):localStorage.removeItem("contrail.fr24found")}catch(e){}},
  async fill(){if(this.run)return;const list=this.missing();if(!list.length){this.say("Nothing to fill in.","done");return}
-  const recent=list.filter(f=>f.t>=this.FROM).sort((a,b)=>b.t-a.t),old=list.filter(f=>f.t<this.FROM).sort((a,b)=>b.t-a.t);
-  const found=this.pending(),seen=new Set(found.map(x=>x.id)),mark=[];let done=0,oldErr="";this.run={stop:false};
-  const refused=(f,e)=>e.status&&e.status<500&&e.status!==401&&e.status!==429?`Stopped at ${f.flt} on ${fullDate(f.out,tzOf(f.dep))}. ${e.message} Your plan may not reach back that far (Explorer covers the last 30 days, Essential 2 years), or it may be out of credits.`:e.message;
-  const take=async(f,r)=>{if(!r){mark.push({id:f.id,p:{fr24:"-"}});return}const p=await this.patchFrom(f,r);p.fr24=r.fr24_id||"1";
-   if(Object.keys(p).length>1){if(!seen.has(f.id)){found.push({id:f.id,p});seen.add(f.id)}}else mark.push({id:f.id,p});this.setPending(found)};
-  const step=()=>this.say(`Looking up flights on Flightradar24, ${done} of ${list.length}…`);
+  const fk=!!this.key(),ak=!!ADB.key(),now=Date.now();
+  const found=this.pending(),seen=new Set(found.map(x=>x.id)),mark={};let done=0;const errs=[],notes=[];this.run={stop:false};
+  const addMark=(id,p)=>{mark[id]=Object.assign(mark[id]||{},p)};
+  const keep=(f,p)=>{if(Object.keys(p).length>1){if(!seen.has(f.id)){found.push({id:f.id,p});seen.add(f.id)}}else addMark(f.id,p);this.setPending(found)};
+  const when=f=>`${f.flt} on ${fullDate(f.out,tzOf(f.dep))}`;
+  const planErr=e=>e.status&&e.status<500&&e.status!==401&&e.status!==429;
+  const step=who=>this.say(`Looking up flights on ${who}, ${done} of ${list.length}…`);
   try{
-   // since April 2024: flight summaries, a few days of flights per request
-   const groups=[];for(const f of recent){const g=groups[groups.length-1];
-    if(g&&g[0].t-f.t<4*864e5&&new Set(g.map(x=>this.fltNo(x.flt)).concat(this.fltNo(f.flt))).size<=15)g.push(f);else groups.push([f])}
-   for(const g of groups){if(this.run.stop)break;step();let rows;
-    try{rows=await this.get("/flight-summary/full",{flights:[...new Set(g.map(x=>this.fltNo(x.flt)))].join(","),flight_datetime_from:this.iso(g[g.length-1].t-12*36e5),flight_datetime_to:this.iso(Math.min(g[0].t+12*36e5,Date.now()-6e4)),limit:200})}
-    catch(e){oldErr=refused(g[0],e);break}
-    for(const f of g)await take(f,this.pick(f,Array.isArray(rows)?rows:[]));
-    done+=g.length;await new Promise(z=>setTimeout(z,700))}
-   // before that: the position archive, asking which aircraft flew the flight halfway through it
-   for(const f of oldErr?[]:old){if(this.run.stop)break;step();
-    const mid=f.inn?(+f.out+ +f.inn)/2:+f.out+36e5;let rows;
-    try{rows=await this.get("/historic/flight-positions/full",{timestamp:Math.round(mid/1000),flights:this.fltNo(f.flt)})}
-    catch(e){oldErr=refused(f,e);break}
-    const no=this.fltNo(f.flt),list2=Array.isArray(rows)?rows:[];
-    await take(f,list2.find(x=>this.fltNo(x.flight)===no&&x.orig_iata===f.dep)||list2.find(x=>this.fltNo(x.flight)===no&&!x.orig_iata)||null);
-    done++;await new Promise(z=>setTimeout(z,700))}
-  }catch(e){this.say(e.message,"err")}
+   if(fk){let frErr="";const fl=list.filter(f=>f.fr24!=="-");
+    const recent=fl.filter(f=>f.t>=this.FROM).sort((a,b)=>b.t-a.t),old=fl.filter(f=>f.t<this.FROM).sort((a,b)=>b.t-a.t);
+    const take=async(f,r)=>{if(!r){addMark(f.id,{fr24:"-"});return}const p=await this.patchFrom(f,r);p.fr24=r.fr24_id||"1";keep(f,p)};
+    // since April 2024: flight summaries, a few days of flights per request
+    const groups=[];for(const f of recent){const g=groups[groups.length-1];
+     if(g&&g[0].t-f.t<4*864e5&&new Set(g.map(x=>this.fltNo(x.flt)).concat(this.fltNo(f.flt))).size<=15)g.push(f);else groups.push([f])}
+    for(const g of groups){if(this.run.stop)break;step("Flightradar24");let rows;
+     try{rows=await this.get("/flight-summary/full",{flights:[...new Set(g.map(x=>this.fltNo(x.flt)))].join(","),flight_datetime_from:this.iso(g[g.length-1].t-12*36e5),flight_datetime_to:this.iso(Math.min(g[0].t+12*36e5,Date.now()-6e4)),limit:200})}
+     catch(e){frErr=planErr(e)?`Flightradar24 stopped at ${when(g[0])}: your plan doesn't reach back further (Explorer covers 30 days, Essential 2 years).`:e.message;break}
+     for(const f of g)await take(f,this.pick(f,Array.isArray(rows)?rows:[]));
+     done+=g.length;await new Promise(z=>setTimeout(z,700))}
+    // before that: the position archive, asking which aircraft flew the flight halfway through it
+    for(const f of frErr?[]:old){if(this.run.stop)break;step("Flightradar24");
+     const mid=f.inn?(+f.out+ +f.inn)/2:+f.out+36e5;let rows;
+     try{rows=await this.get("/historic/flight-positions/full",{timestamp:Math.round(mid/1000),flights:this.fltNo(f.flt)})}
+     catch(e){frErr=planErr(e)?`Flightradar24 stopped at ${when(f)}: your plan doesn't reach back further (Explorer covers 30 days, Essential 2 years).`:e.message;break}
+     const no=this.fltNo(f.flt),list2=Array.isArray(rows)?rows:[];
+     await take(f,list2.find(x=>this.fltNo(x.flight)===no&&x.orig_iata===f.dep)||list2.find(x=>this.fltNo(x.flight)===no&&!x.orig_iata)||null);
+     done++;await new Promise(z=>setTimeout(z,700))}
+    if(frErr)(/your plan doesn't reach/.test(frErr)?notes:errs).push(frErr)}
+   // AeroDataBox: whatever Flightradar24 didn't find, one flight per request
+   if(ak&&!this.run.stop){
+    const al=list.filter(f=>!seen.has(f.id)&&!(mark[f.id]&&mark[f.id].fr24&&mark[f.id].fr24!=="-")&&f.adb!=="-"&&f.t>=now-ADB.DAYS*864e5).sort((a,b)=>b.t-a.t);
+    for(const f of al){if(this.run.stop)break;step("AeroDataBox");let r;
+     try{r=await ADB.lookup(f)}catch(e){if(e.quota)notes.push(e.message);else errs.push(planErr(e)&&e.status!==403?`AeroDataBox stopped at ${when(f)}. ${e.message} Your plan may not reach back that far.`:e.message);break}
+     if(r){const p=ADB.patchFrom(f,r);p.adb="1";keep(f,p)}else addMark(f.id,{adb:"-"});
+     done++;await new Promise(z=>setTimeout(z,1100))}}
+  }catch(e){errs.push(e.message)}
   const stopped=this.run.stop;this.run=null;
-  if(mark.length){for(const x of mark)store.ov[x.id]=Object.assign({},store.ov[x.id]||{},x.p);save()}
-  let msg=`Found details for ${found.length} of ${list.length} flights.`;
-  if(oldErr)msg+=" "+oldErr;
-  if(stopped)msg=`Stopped. `+msg;
-  if(this.state!=="err")this.say(found.length?msg:(oldErr?msg:`No new details found for these ${list.length} flights.`),oldErr?"err":"done");
+  const ids=Object.keys(mark);if(ids.length){for(const id of ids)store.ov[id]=Object.assign({},store.ov[id]||{},mark[id]);save()}
+  let msg=found.length?`Found details for ${found.length} of ${list.length} flights.`:`No new details found for these ${list.length} flights.`;
+  if(notes.length||errs.length)msg+=" "+notes.concat(errs).join(" ");
+  if(stopped)msg="Stopped. "+msg;
+  this.say(msg,errs.length?"err":"done");
   if(found.length)this.review()},
  review(){const found=this.pending();if(!found.length)return;
   const line=x=>{const f=BYID[x.id],p=x.p,bits=[p.reg,p.ac,p.al].filter(Boolean);return`<div class="prow" style="grid-template-columns:1fr auto"><span><b>${esc(f.flt)}</b> ${esc(f.dep)}–${esc(f.arr)}<br><span class="st">${esc(bits.join(", ")||"Take-off and landing times")}</span></span><span class="st">${esc(dayStr(f.out,tzOf(f.dep)))} ${esc(f.year)}</span></div>`};
-  Sheet.open(`<h2 style="margin-top:6px">From Flightradar24</h2><p class="sub">Details for ${found.length} flight${found.length===1?"":"s"}. Only empty fields are filled; nothing you entered is changed.</p>
+  Sheet.open(`<h2 style="margin-top:6px">Flight details found</h2><p class="sub">Details for ${found.length} flight${found.length===1?"":"s"}. Only empty fields are filled; nothing you entered is changed.</p>
    <div class="d-acts" style="margin-top:0"><button class="btn pri" id="fr-ok">Save to logbook</button><button class="btn" id="fr-no">Not now</button><button class="btn" id="fr-x" style="color:var(--x)">Discard</button></div>
    <div style="margin-top:12px">${found.slice(0,200).map(line).join("")}</div>${found.length>200?`<p class="note">and ${found.length-200} more.</p>`:""}`,el=>{
    el.querySelector("#fr-no").onclick=()=>{Sheet.close();if(CUR==="set")Settings.render()};
    el.querySelector("#fr-x").onclick=()=>{if(!confirm("Discard what Flightradar24 found? Looking it up again uses credits."))return;this.setPending([]);Sheet.close();this.say("");if(CUR==="set")Settings.render()};
    el.querySelector("#fr-ok").onclick=()=>{for(const x of found){const f=BYID[x.id];const p=Object.assign({},x.p);for(const k of["ac","reg","al","tko","ldg"])if(f[k])delete p[k];store.ov[x.id]=Object.assign({},store.ov[x.id]||{},p)}
     this.setPending([]);save();refreshAll();Sheet.close();this.say(`Saved details for ${found.length} flights.`,"done");toast("Saved details for "+found.length+" flights")}})}
+};
+
+/* ---------- AeroDataBox (via RapidAPI) ---------- */
+// A second source for Fill in: the free Basic plan reaches back a year, about 200 lookups a month.
+const ADB={host:"aerodatabox.p.rapidapi.com",DAYS:365,
+ key(){try{return localStorage.getItem("contrail.adbkey")||""}catch(e){return""}},
+ setKey(k){try{k?localStorage.setItem("contrail.adbkey",k):localStorage.removeItem("contrail.adbkey")}catch(e){}},
+ async get(path){const k=this.key();if(!k)throw new Error("Add your RapidAPI key in Settings first.");let r;
+  try{r=await fetch("https://"+this.host+path,{headers:{"X-RapidAPI-Key":k,"X-RapidAPI-Host":this.host,"Accept":"application/json"},cache:"no-store"})}
+  catch(e){throw new Error(navigator.onLine===false?"No internet connection.":"Couldn't reach AeroDataBox.")}
+  if(r.status===204||r.status===404)return[];
+  if(!r.ok){let why="";try{const j=await r.json();why=String(j.message||j.error||"").trim().slice(0,240)}catch(e){}
+   const notSub=/not subscribed/i.test(why),quota=r.status===429&&/quota/i.test(why);
+   const msg=notSub?"You're not subscribed to AeroDataBox on RapidAPI yet. Subscribe to its free Basic plan, then try again.":r.status===401||r.status===403?"RapidAPI didn't accept the key.":quota?"This month's AeroDataBox allowance is used up. Fill in can carry on next month.":r.status===429?"AeroDataBox is limiting requests. Try again in a minute.":"AeroDataBox replied with an error ("+r.status+").";
+   const err=new Error(msg+(why&&!notSub&&r.status!==429?" It said: "+why+(/[.!?]$/.test(why)?"":"."):""));err.status=r.status;err.quota=quota;throw err}
+  const t=await r.text();return t?JSON.parse(t):[]},
+ utc(x){return x&&x.utc?Date.parse(String(x.utc).replace(" ","T"))||0:0},
+ async lookup(f){const rows=await this.get(`/flights/number/${encodeURIComponent(FR24.fltNo(f.flt))}/${ymdIn(f.out,tzOf(f.dep))}?dateLocalRole=Departure&withAircraftImage=false&withLocation=false`);
+  let best=null,bd=8*36e5;
+  for(const r of Array.isArray(rows)?rows:[]){const d=r.departure||{},a=d.airport||{};if(a.iata&&a.iata!==f.dep)continue;
+   const t=this.utc(d.scheduledTime)||this.utc(d.revisedTime)||this.utc(d.runwayTime);if(!t)continue;const x=Math.abs(t-f.out);if(x<bd){bd=x;best=r}}
+  return best},
+ patchFrom(f,r){const p={},ac=r.aircraft||{},al=r.airline||{};
+  if(!f.ac&&ac.model)p.ac=ac.model;if(!f.reg&&ac.reg)p.reg=String(ac.reg).toUpperCase();if(!f.al&&al.name)p.al=al.name;
+  const tk=this.utc((r.departure||{}).runwayTime),ld=this.utc((r.arrival||{}).runwayTime);
+  if(!f.tko&&tk)p.tko=new Date(tk).toISOString();if(!f.ldg&&ld)p.ldg=new Date(ld).toISOString();return p}
 };
 
 /* ---------- live flight ---------- */
