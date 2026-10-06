@@ -1,5 +1,5 @@
 // Contrail offline cache. Bump VERSION with every release so phones pick up the new app.
-const VERSION = "contrail-1.7";
+const VERSION = "contrail-1.8";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png", "./favicon-32.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: "reload" })))));
@@ -12,6 +12,8 @@ self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+  // Flightradar24 data is always fetched fresh, never from the cache
+  if (url.hostname === "fr24api.flightradar24.com") return;
   // the app itself: always the newest copy from GitHub when online, the saved copy when offline
   if (req.mode === "navigate" || (url.origin === location.origin && /\/(index\.html)?$/.test(url.pathname))) {
     e.respondWith(fetch(req, { cache: "no-store" }).then(r => { const c = r.clone(); caches.open(VERSION).then(x => x.put("./index.html", c)); return r; }).catch(() => caches.match("./index.html")));

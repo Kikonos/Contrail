@@ -383,7 +383,7 @@ function build(){
   for(const o of store.add){if(del.has(o.id))continue;FL.push(objToF(o))}
   for(const f of FL){
     const ov=store.ov[f.id];
-    if(ov){if(ov.c)f.cat=ov.c;if(ov.ac)f.ac=ov.ac;if(ov.reg)f.reg=ov.reg;if(ov.emp)f.emp=ov.emp;if(ov.out)f.out=new Date(ov.out);if(ov.inn)f.inn=new Date(ov.inn);if(ov.rep){f.rep=new Date(ov.rep);f.repAt=ov.repAt||f.dep}f.ok=!!ov.ok}
+    if(ov){if(ov.c)f.cat=ov.c;if(ov.ac)f.ac=ov.ac;if(ov.reg)f.reg=ov.reg;if(ov.emp)f.emp=ov.emp;if(ov.al)f.al=ov.al;if(ov.tko)f.tko=new Date(ov.tko);if(ov.ldg)f.ldg=new Date(ov.ldg);if(ov.fr24)f.fr24=ov.fr24;if(ov.out)f.out=new Date(ov.out);if(ov.inn)f.inn=new Date(ov.inn);if(ov.rep){f.rep=new Date(ov.rep);f.repAt=ov.repAt||f.dep}f.ok=!!ov.ok}
     f.t=f.out?f.out.getTime():Date.parse(f.date+"T12:00:00Z");
     const key=f.id+"|"+f.t+"|"+(f.inn?f.inn.getTime():0)+"|"+f.dep+f.arr;
     let dv=derived[f.id];
@@ -441,6 +441,8 @@ function openFlight(id){
    <div><span>Employer</span><b>${esc(f.emp||"–")}</b></div>
    <div><span>Aircraft</span><b>${esc(f.ac||"–")}</b></div>
    <div><span>Registration</span><b>${esc(f.reg||"–")}</b></div>
+   <div><span>Airline</span><b>${esc(f.al||"–")}</b></div>
+   ${f.tko||f.ldg?`<div><span>Take-off, UTC</span><b>${f.tko?esc(hm(f.tko,"UTC")):"–"}</b></div><div><span>Landing, UTC</span><b>${f.ldg?esc(hm(f.ldg,"UTC")):"–"}</b></div>`:""}
   </div>
   <p class="small">Source: ${esc(srcN)}${tb?". Times: "+esc(tb):""}.</p>
   ${f.note?`<div class="d-note">${esc(f.note)}</div>`:""}
@@ -463,11 +465,12 @@ function editFlight(id){
   <div class="form">
    <label>Aircraft<input id="e-ac" value="${esc(f.ac)}" placeholder="Boeing 777-300ER"></label>
    <label>Registration<input id="e-reg" value="${esc(f.reg)}" placeholder="A6-EGA"></label>
-   <label class="full">Employer<input id="e-emp" value="${esc(f.emp)}" placeholder="Emirates"></label>
+   <label>Employer<input id="e-emp" value="${esc(f.emp)}" placeholder="Emirates"></label>
+   <label>Airline<input id="e-al" value="${esc(f.al)}" placeholder="Emirates"></label>
   </div>
   <div class="d-acts"><button class="btn pri" id="e-save">Save changes</button><button class="btn" id="e-cancel">Cancel</button></div>`,el=>{
     el.querySelector("#e-cancel").onclick=()=>openFlight(id);
-    el.querySelector("#e-save").onclick=()=>{setOv(id,{ac:el.querySelector("#e-ac").value.trim(),reg:el.querySelector("#e-reg").value.trim().toUpperCase(),emp:el.querySelector("#e-emp").value.trim()});openFlight(id);toast("Changes saved")};
+    el.querySelector("#e-save").onclick=()=>{setOv(id,{ac:el.querySelector("#e-ac").value.trim(),reg:el.querySelector("#e-reg").value.trim().toUpperCase(),emp:el.querySelector("#e-emp").value.trim(),al:el.querySelector("#e-al").value.trim()});openFlight(id);toast("Changes saved")};
   });
 }
 function setOv(id,patch){store.ov[id]=Object.assign({},store.ov[id]||{},patch);save();refreshAll()}
@@ -495,7 +498,7 @@ const Globe={
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{this._C=null;this.kick()});
   setInterval(()=>{if(this.on&&!document.hidden){this.card();this.kick()}},30000);
  },
- active(v){this.on=v;if(v)this.kick()},
+ active(v){this.on=v;if(v){this.kick();if(window.d3)Live.tick()}},
  resize(){const r={width:this.cv.clientWidth,height:this.cv.clientHeight};if(!r.width)return;this.dpr=Math.min(2.5,window.devicePixelRatio||1);this.w=r.width;this.h=r.height;this.cv.width=Math.round(r.width*this.dpr);this.cv.height=Math.round(r.height*this.dpr);this.kick()},
  loadLand(){
   // world outline from echarts' map package; page works without it
@@ -551,6 +554,7 @@ const Globe={
  },
  card(){
   const el=document.getElementById("fc");const {live,next,last}=this.cur();const now=Date.now();
+  const T=Live.target(),lp=T&&Live.pos(T);if(lp)return this.liveCard(el,T,lp);
   const f=live||next||last;if(!f){el.innerHTML=`<div class="fc-state">No flights yet</div><p class="small" style="margin:4px 0 8px">Restore your Contrail backup to bring in your history, or add a roster.</p><div class="fc-actions" style="margin-top:0"><button class="btn sm pri" id="fcrest">Restore backup</button><button class="btn sm" id="fcadd">Add a roster</button></div>`;el.querySelector("#fcrest").onclick=()=>go("set");el.querySelector("#fcadd").onclick=()=>go("add");return}
   const tzA=tzOf(f.dep),tzB=tzOf(f.arr);let state,prog=0,meta;
   if(f===live){prog=(now-f.out)/(f.inn-f.out);const rem=(f.inn-now)/36e5;state=`<span class="fc-state live">In the air now</span>`;meta=`<span>${HM((now-f.out)/36e5)} flown</span><span>${HM(rem)} to go</span>`}
@@ -559,6 +563,7 @@ const Globe={
   el.innerHTML=`<div class="fc-head">${state}<span class="small">${esc(f.flt)}</span></div>
    <div class="fc-route"><span class="num">${esc(f.dep)}</span><div class="fc-line"><i style="width:${(prog*100).toFixed(1)}%"></i>${f===next?"":`<b style="left:${(prog*100).toFixed(1)}%"></b>`}</div><span class="num">${esc(f.arr)}</span></div>
    <div class="fc-meta">${meta}</div>
+   ${T===f&&FR24.key()?`<div class="fc-meta" style="margin-top:4px"><span>${esc(Live.err||"Live position appears once the aircraft shows on Flightradar24.")}</span></div>`:""}
    <div class="fc-actions"><button class="btn sm pri" id="fcshow">Show</button>${f===last?`<button class="btn sm" id="fcplay">Replay</button>`:""}<button class="btn sm" id="fcopen">Details</button></div>`;
   el.querySelector("#fcshow").onclick=()=>this.select(f.id,true);
   el.querySelector("#fcopen").onclick=()=>openFlight(f.id);
@@ -584,6 +589,22 @@ const Globe={
  tap(x,y){const r=Rot.rect(this.cv);x-=r.left;y-=r.top;let best=null,bd=22;
   for(const a of this.aps){if(d3.geoDistance(a.p,this.center())>Math.PI/2-.02)continue;const q=this.proj(a.p);const d=Math.hypot(q[0]-x,q[1]-y);if(d<bd){bd=d;best=a}}
   if(best)openAirport(best.code);else if(this.sel){this.sel=null;this.replay=null;this.kick()}},
+ liveCard(el,f,lp){const s=Live.mine(f),now=Date.now(),A=ll(f.dep),B=ll(f.arr),tzB=tzOf(f.arr);
+  let prog=0;if(lp.landed)prog=1;else if(A&&B&&s.flew){const a=d3.geoDistance(A,lp.p),b=d3.geoDistance(lp.p,B);prog=a+b>0?a/(a+b):0}
+  const eta=Date.parse(s.eta||"")||0,mins=lp.age/6e4,ago=mins<1.5?"just now":mins<60?Math.round(mins)+" min ago":HM(mins/60)+" h ago";
+  const lvl=s.alt>=10000?"FL"+String(Math.round(s.alt/100)).padStart(3,"0"):nf0.format(s.alt||0)+" ft";
+  let state,m1,m2;
+  if(s.landed){state=`<span class="fc-state live">Landed in ${esc(shortCity(f.arr))}</span>`;m1=`<span>${s.landedAt?"Landed "+esc(hm(new Date(s.landedAt),tzB))+" local":""}</span><span>${s.saved?"Saved to your logbook":""}</span>`}
+  else if(lp.est){state=`<span class="fc-state">${lp.landed?"Should be landing about now":"In the air"}, estimated</span>`;m1=`<span>Offline, last report ${ago}</span><span>${eta?"Lands about "+esc(hm(new Date(eta),tzB)):HM(Math.max(0,(f.inn-now)/36e5))+" to go"}</span>`}
+  else if(s.air){state=`<span class="fc-state live">In the air now, live</span>`;m1=`<span>${lvl}, ${nf0.format(s.gs||0)} kt</span><span>${eta?"Lands "+esc(hm(new Date(eta),tzB)):HM(Math.max(0,(f.inn-now)/36e5))+" to go"}</span>`}
+  else{state=`<span class="fc-state live">${s.gs>5?"Taxiing":"On the ground"} in ${esc(shortCity(f.dep))}</span>`;m1=`<span>Departs ${esc(hm(f.out,tzOf(f.dep)))}</span><span>${HM(f.bh)} block</span>`}
+  m2=`<span>${esc([s.reg,FR24.typeName(s.type)].filter(Boolean).join(", "))}</span><span>${s.landed||lp.est||Live.err?"":"Updated "+ago}</span>`;
+  el.innerHTML=`<div class="fc-head">${state}<span class="small">${esc(f.flt)}</span></div>
+   <div class="fc-route"><span class="num">${esc(f.dep)}</span><div class="fc-line"><i style="width:${(prog*100).toFixed(1)}%"></i><b style="left:${(prog*100).toFixed(1)}%"></b></div><span class="num">${esc(f.arr)}</span></div>
+   <div class="fc-meta">${m1}</div><div class="fc-meta" style="margin-top:4px">${m2}</div>${Live.err&&!s.landed&&!lp.est?`<div class="fc-meta" style="margin-top:4px"><span>${esc(Live.err)}</span></div>`:""}
+   <div class="fc-actions"><button class="btn sm pri" id="fcshow">Show</button><button class="btn sm" id="fcopen">Details</button></div>`;
+  el.querySelector("#fcshow").onclick=()=>{this.select(f.id,false);this.flyTo(lp.p,Math.max(this.zoom,1.6))};
+  el.querySelector("#fcopen").onclick=()=>openFlight(f.id)},
  center(){return[-this.rot[0],-this.rot[1]]},
  kick(){if(!this.raf)this.raf=requestAnimationFrame(t=>this.frame(t))},
  frame(t){this.raf=0;if(!this.on||document.hidden)return;let more=false;
@@ -636,22 +657,34 @@ const Globe={
    if(placed.some(b=>!(bx[2]<b[0]||bx[0]>b[2]||bx[3]<b[1]||bx[1]>b[3])))continue;placed.push(bx);
    ctx.strokeStyle=C.halo;ctx.lineWidth=3.2;ctx.globalAlpha=.85;ctx.strokeText(txt,q[0]+6,q[1]);ctx.globalAlpha=1;ctx.fillStyle=C.text;ctx.fillText(txt,q[0]+6,q[1])}
   // selected flight
-  if(this.sel){const f=BYID[this.sel];if(f){const A=ll(f.dep),B=ll(f.arr);if(A&&B){
+  if(this.sel){const f=BYID[this.sel];if(f){const A=ll(f.dep),B=ll(f.arr);const lp=!(this.replay&&this.replay.id===f.id)&&Live.pos(f);if(A&&B&&lp)this.livePlane(f,A,B,lp,C,true);else if(A&&B){
    ctx.beginPath();this.path({type:"LineString",coordinates:[A,B]});ctx.strokeStyle=C[f.cat==="X"?"muted":f.cat]||C.O;ctx.lineWidth=3.2;ctx.globalAlpha=1;ctx.stroke();
    for(const c of[A,B]){if(d3.geoDistance(c,ctr)>Math.PI/2)continue;const q=this.proj(c);ctx.beginPath();ctx.arc(q[0],q[1],5,0,7);ctx.fillStyle=C.surf;ctx.fill();ctx.lineWidth=2.4;ctx.strokeStyle=C[f.cat]||C.O;ctx.stroke()}
    let p=null;const now=Date.now();
    if(this.replay&&this.replay.id===f.id)p=this.replay.p;else if(f.out&&f.inn&&f.out<=now&&f.inn>=now)p=(now-f.out)/(f.inn-f.out);
    if(p!=null)this.plane(A,B,p,C)}}}
-  else{const L=this.cur().live;if(L){const A=ll(L.dep),B=ll(L.arr);if(A&&B)this.plane(A,B,(Date.now()-L.out)/(L.inn-L.out),C)}}
+  else{const T=Live.target(),lp=T&&Live.pos(T),TA=T&&ll(T.dep),TB=T&&ll(T.arr);if(lp&&TA&&TB)this.livePlane(T,TA,TB,lp,C,false);else{const L=this.cur().live;if(L){const A=ll(L.dep),B=ll(L.arr);if(A&&B)this.plane(A,B,(Date.now()-L.out)/(L.inn-L.out),C)}}}
  },
+ livePlane(f,A,B,lp,C,sel){const ctx=this.ctx,s=Live.mine(f),col=C[f.cat==="X"?"muted":f.cat]||C.O;
+  ctx.lineCap="round";
+  if(s.flew&&!lp.landed){ctx.beginPath();this.path({type:"LineString",coordinates:[A,lp.p]});ctx.strokeStyle=col;ctx.lineWidth=3.2;ctx.globalAlpha=1;ctx.stroke();
+   ctx.beginPath();this.path({type:"LineString",coordinates:[lp.p,B]});ctx.setLineDash([5,5]);ctx.lineWidth=2;ctx.globalAlpha=.8;ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1}
+  else if(sel){ctx.beginPath();this.path({type:"LineString",coordinates:[A,B]});ctx.strokeStyle=col;ctx.lineWidth=3.2;ctx.stroke()}
+  const ctr=this.center();
+  for(const c of[A,B]){if(d3.geoDistance(c,ctr)>Math.PI/2)continue;const q=this.proj(c);ctx.beginPath();ctx.arc(q[0],q[1],5,0,7);ctx.fillStyle=C.surf;ctx.fill();ctx.lineWidth=2.4;ctx.strokeStyle=col;ctx.stroke()}
+  if(lp.landed)return;
+  const ahead=lp.ahead||(lp.trk!=null?destPt(lp.p,lp.trk,30):d3.geoInterpolate(lp.p,B)(.01));
+  this.planeAt(lp.p,ahead,C,lp.est)},
  colors(){const n=performance.now();if(this._C&&n-this._Ct<1500)return this._C;this._Ct=n;return this._C={o1:cssv("--ocean-1"),o2:cssv("--ocean-2"),land:cssv("--land"),edge:cssv("--land-edge"),night:cssv("--night"),grat:cssv("--grat"),rim:cssv("--rim"),O:cssv("--op"),D:cssv("--dh"),P:cssv("--pers"),text:cssv("--text"),muted:cssv("--muted"),surf:cssv("--surface"),sans:cssv("--sans"),halo:cssv("--ocean-2")}},
- plane(A,B,p,C){const ip=d3.geoInterpolate(A,B),pos=ip(Math.min(.999,p)),ahead=ip(Math.min(1,p+.01));if(d3.geoDistance(pos,this.center())>Math.PI/2)return;
+ plane(A,B,p,C){const ip=d3.geoInterpolate(A,B);this.planeAt(ip(Math.min(.999,p)),ip(Math.min(1,p+.01)),C)},
+ planeAt(pos,ahead,C,est){if(d3.geoDistance(pos,this.center())>Math.PI/2)return;
   const q=this.proj(pos),q2=this.proj(ahead);const ang=Math.atan2(q2[1]-q[1],q2[0]-q[0]);const ctx=this.ctx;
   ctx.save();ctx.translate(q[0],q[1]);ctx.rotate(ang+Math.PI/2);ctx.scale(1.15,1.15);
   ctx.beginPath();ctx.arc(0,0,13,0,7);ctx.fillStyle=C.O;ctx.globalAlpha=.18;ctx.fill();ctx.globalAlpha=1;
   ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(1.4,-6);ctx.lineTo(1.4,-2);ctx.lineTo(8,2.5);ctx.lineTo(8,4.2);ctx.lineTo(1.4,2.3);ctx.lineTo(1.2,6.4);ctx.lineTo(3.3,8);ctx.lineTo(3.3,9.2);ctx.lineTo(0,8.3);ctx.lineTo(-3.3,9.2);ctx.lineTo(-3.3,8);ctx.lineTo(-1.2,6.4);ctx.lineTo(-1.4,2.3);ctx.lineTo(-8,4.2);ctx.lineTo(-8,2.5);ctx.lineTo(-1.4,-2);ctx.lineTo(-1.4,-6);ctx.closePath();
-  ctx.fillStyle=C.text;ctx.fill();ctx.restore()}
+  ctx.fillStyle=C.text;ctx.globalAlpha=est?.6:1;ctx.fill();ctx.restore()}
 };
+function destPt(p,brg,km){const r=Math.PI/180,d=km/R_KM,la=p[1]*r,lo=p[0]*r,b=brg*r;const la2=Math.asin(Math.sin(la)*Math.cos(d)+Math.cos(la)*Math.sin(d)*Math.cos(b));return[(lo+Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(la),Math.cos(d)-Math.sin(la)*Math.sin(la2)))/r,la2/r]}
 function decodeGeo(g){
   const scale=g.UTF8Scale||1024;
   function dec(c,off){const res=[];let px=off[0],py=off[1];for(let i=0;i<c.length;i+=2){let x=c.charCodeAt(i)-64,y=c.charCodeAt(i+1)-64;x=(x>>1)^(-(x&1));y=(y>>1)^(-(y&1));x+=px;y+=py;px=x;py=y;res.push([x/scale,y/scale])}return res}
@@ -700,7 +733,7 @@ const Log={q:"",cat:"all",
  render(){
   if(this.cat==="duty")return this.renderDuties();
   const q=this.q.toUpperCase();let fs=FL.filter(f=>this.cat==="all"||f.cat===this.cat);
-  if(q)fs=fs.filter(f=>(f.flt+" "+f.dep+" "+f.arr+" "+(f.ac||"")+" "+(f.reg||"")+" "+(f.emp||"")+" "+f.year+" "+city(f.dep)+" "+city(f.arr)).toUpperCase().includes(q));
+  if(q)fs=fs.filter(f=>(f.flt+" "+f.dep+" "+f.arr+" "+(f.ac||"")+" "+(f.reg||"")+" "+(f.emp||"")+" "+(f.al||"")+" "+f.year+" "+city(f.dep)+" "+city(f.arr)).toUpperCase().includes(q));
   fs=fs.slice().reverse();
   if(!fs.length){document.getElementById("loglist").innerHTML=`<div class="empty">No flights match. Try another search or filter.</div>`;return}
   const groups=new Map();for(const f of fs){const k=(f.out?f.out.toISOString():f.date).slice(0,7);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(f)}
@@ -881,12 +914,18 @@ const Settings={render(){
    <div class="it"><input id="code-new" placeholder="New code, e.g. BLOCK" style="border:0;background:var(--surface-2);border-radius:9px;padding:9px 10px;font-size:15px;flex:1;min-width:0;text-transform:uppercase"><input id="code-lab" placeholder="Meaning" style="border:0;background:var(--surface-2);border-radius:9px;padding:9px 10px;font-size:15px;flex:1;min-width:0"><button class="btn sm pri" id="code-add">Add</button></div></div>
   <h2>Appearance</h2>
   <div class="seg" id="theme">${[["system","Match iPhone"],["light","Light"],["dark","Dark"]].map(([k,l])=>`<button data-k="${k}" class="${store.theme===k?"on":""}">${l}</button>`).join("")}</div>
+  <h2>Flightradar24</h2>
+  <div class="panel">${FR24.key()?`<p style="margin:0 0 10px">Your API key is saved on this phone.</p><div class="d-acts" style="margin-top:0"><button class="btn sm" id="fr-test">Test connection</button><button class="btn sm" id="fr-del" style="color:var(--x)">Remove key</button></div>`
+   :`<div class="form"><label class="full">API key<input id="fr-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste your Flightradar24 API key"></label></div><div class="d-acts"><button class="btn sm pri" id="fr-save">Save key</button></div>`}
+   <div class="live${FR24.state?" "+FR24.state:""}" id="fr-stat">${esc(FR24.status)}</div></div>
+  ${FR24.key()?(()=>{const m=FR24.missing().length;return`<div class="set" style="margin-top:10px"><div class="it"><span class="lab">Fill in past flights<small>${m?nf0.format(m)+" flights since April 2024 are missing the aircraft, registration or airline":"Every flight since April 2024 is filled in"}</small></span><button class="btn sm pri" id="fr-fill" ${m&&!FR24.run?"":"disabled"}>Fill in</button></div></div>`})():""}
+  <p class="note">Follows your flight live on the globe and fills in the aircraft, registration and airline. Flightradar24 has these details from April 2024. The key stays on this phone and isn't included in backups.</p>
   <h2>Backup</h2>
   <div class="panel">
    <p style="margin:0 0 10px">${nf0.format(n)} flights in your logbook, ${u} added since the first import.</p>
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 1.7 (6 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 1.8 (6 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -906,6 +945,10 @@ const Settings={render(){
   document.getElementById("code-add").onclick=()=>{const c=document.getElementById("code-new").value.trim().toUpperCase(),l=document.getElementById("code-lab").value.trim();if(!/^[A-Z0-9]{1,6}$/.test(c)){toast("Codes are up to 6 letters or numbers");return}store.codes[c]=[codeInfo(c).kind,l||c];save();this.render();toast(c+" added")};
   document.getElementById("bk-json").onclick=()=>saveFile("contrail-backup-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify({app:"contrail",v:2,exported:new Date().toISOString(),hist:HIST,hduties:HDUT,store}),"application/json");
   document.getElementById("bk-csv").onclick=()=>exportCsv();
+  const frS=document.getElementById("fr-save");if(frS)frS.onclick=()=>{const k=document.getElementById("fr-key").value.trim();if(k.length<20){toast("That doesn't look like a full API key");return}FR24.setKey(k);FR24.say("");this.render();Live.tick(true);toast("API key saved")};
+  const frD=document.getElementById("fr-del");if(frD)frD.onclick=()=>{if(!confirm("Remove the Flightradar24 API key from this phone?"))return;FR24.setKey("");FR24.say("");this.render();toast("API key removed")};
+  const frT=document.getElementById("fr-test");if(frT)frT.onclick=async()=>{FR24.say("Connecting to Flightradar24…");try{const a=await FR24.get("/static/airlines/UAE/light");FR24.say(a&&a.name?"Connected. Flightradar24 accepted the key.":"Connected, but the reply was unexpected.","done")}catch(e){FR24.say(e.message,"err")}};
+  const frF=document.getElementById("fr-fill");if(frF)frF.onclick=async()=>{frF.disabled=true;await FR24.fill();if(CUR==="set")this.render()};
   document.getElementById("bk-in").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());if(j.app!=="contrail"||!j.store)throw 0;if(Array.isArray(j.hist)&&j.hist.length&&!EMBED.length){HIST=j.hist;try{localStorage.setItem("contrail.hist",JSON.stringify(HIST))}catch(e){}}
    if(Array.isArray(j.hduties)&&j.hduties.length&&!EMBED_D.length){HDUT=j.hduties;try{localStorage.setItem("contrail.hduties",JSON.stringify(HDUT))}catch(e){}}store=Object.assign(blankStore(),j.store);fixStore();save();applyTheme();Globe.chips&&Globe.ctx&&Globe.chips();refreshAll();this.render();toast("Backup restored, "+FL.length+" flights")}catch(_){toast("That file is not a Contrail backup")}};
 }};
@@ -1360,6 +1403,134 @@ function exportCsv(){
 /* ---------- boot ---------- */
 // Portrait lock. iPhone web apps can't lock rotation, so when the phone is turned
 // sideways the whole app is turned back by 90 degrees and stays upright on the phone.
+/* ---------- Flightradar24 ---------- */
+// The API key stays on this phone: it isn't in backups and isn't synced.
+const FR24={
+ base:"https://fr24api.flightradar24.com/api",
+ FROM:Date.parse("2024-04-07T00:00:00Z"), // flight summaries start here
+ key(){try{return localStorage.getItem("contrail.fr24key")||""}catch(e){return""}},
+ setKey(k){try{k?localStorage.setItem("contrail.fr24key",k):localStorage.removeItem("contrail.fr24key")}catch(e){}},
+ async get(path,params){const k=this.key();if(!k)throw new Error("Add your Flightradar24 API key in Settings first.");
+  const u=new URL(this.base+path);for(const p in params||{})u.searchParams.set(p,params[p]);
+  for(let attempt=0;;attempt++){
+   let r;try{r=await fetch(u,{headers:{"Accept":"application/json","Accept-Version":"v1","Authorization":"Bearer "+k},cache:"no-store"})}
+   catch(e){throw new Error(navigator.onLine===false?"No internet connection.":"Couldn't reach Flightradar24. If you're online, it may not accept requests from the app.")}
+   if(r.status===429&&attempt<3){await new Promise(z=>setTimeout(z,8000*(attempt+1)));continue}
+   if(r.status===401)throw new Error("Flightradar24 didn't accept the API key.");
+   if(r.status===402||r.status===403)throw new Error("Flightradar24 refused the request. Check that your plan has credits left.");
+   if(r.status===429)throw new Error("Flightradar24 is limiting requests. Try again in a few minutes.");
+   if(!r.ok)throw new Error("Flightradar24 replied with an error ("+r.status+").");
+   const j=await r.json();return j&&Array.isArray(j.data)?j.data:j}},
+ iso(ms){return new Date(ms).toISOString().slice(0,19)+"Z"},
+ // "EK0133" and "EK 133" both become "EK133"
+ fltNo(s){const m=String(s||"").toUpperCase().replace(/\s+/g,"").match(/^([A-Z]{2}|[A-Z]\d|\d[A-Z])0*([1-9]\d{0,3}[A-Z]?)$/);return m?m[1]+m[2]:null},
+ TYPES:{A388:"Airbus A380-800",A359:"Airbus A350-900",A35K:"Airbus A350-1000",A332:"Airbus A330-200",A333:"Airbus A330-300",A338:"Airbus A330-800neo",A339:"Airbus A330-900neo",A343:"Airbus A340-300",A346:"Airbus A340-600",
+  A318:"Airbus A318",A319:"Airbus A319",A320:"Airbus A320",A321:"Airbus A321",A19N:"Airbus A319neo",A20N:"Airbus A320neo",A21N:"Airbus A321neo",BCS1:"Airbus A220-100",BCS3:"Airbus A220-300",
+  B77W:"Boeing 777-300ER",B77L:"Boeing 777-200LR",B772:"Boeing 777-200",B773:"Boeing 777-300",B778:"Boeing 777-8",B779:"Boeing 777-9",B77F:"Boeing 777F",
+  B788:"Boeing 787-8",B789:"Boeing 787-9",B78X:"Boeing 787-10",B744:"Boeing 747-400",B748:"Boeing 747-8",B763:"Boeing 767-300",B764:"Boeing 767-400",B752:"Boeing 757-200",B753:"Boeing 757-300",
+  B737:"Boeing 737-700",B738:"Boeing 737-800",B739:"Boeing 737-900",B37M:"Boeing 737 MAX 7",B38M:"Boeing 737 MAX 8",B39M:"Boeing 737 MAX 9",B3XM:"Boeing 737 MAX 10",
+  E170:"Embraer 170",E175:"Embraer 175",E190:"Embraer 190",E195:"Embraer 195",E290:"Embraer E190-E2",E295:"Embraer E195-E2",AT72:"ATR 72",AT75:"ATR 72-500",AT76:"ATR 72-600",DH8D:"De Havilland Dash 8-400",CRJ9:"Bombardier CRJ900"},
+ typeName(c){c=String(c||"").toUpperCase();return c?(this.TYPES[c]||c):""},
+ AIR0:{UAE:"Emirates",FDB:"flydubai",QTR:"Qatar Airways",ETD:"Etihad Airways",ABY:"Air Arabia",SVA:"Saudia",GFA:"Gulf Air",OMA:"Oman Air",KAC:"Kuwait Airways",BAW:"British Airways",VIR:"Virgin Atlantic",EZY:"easyJet",RYR:"Ryanair",
+  DLH:"Lufthansa",AFR:"Air France",KLM:"KLM",SWR:"Swiss",AUA:"Austrian",TAP:"TAP Air Portugal",IBE:"Iberia",AEA:"Air Europa",VLG:"Vueling",ITY:"ITA Airways",THY:"Turkish Airlines",PGT:"Pegasus",
+  AAL:"American Airlines",DAL:"Delta Air Lines",UAL:"United Airlines",ACA:"Air Canada",QFA:"Qantas",SIA:"Singapore Airlines",CPA:"Cathay Pacific",ANA:"All Nippon Airways",JAL:"Japan Airlines",AIC:"Air India",WZZ:"Wizz Air",ASL:"Air Serbia",AFL:"Aeroflot",ETH:"Ethiopian Airlines",KQA:"Kenya Airways",SAA:"South African Airways",RAM:"Royal Air Maroc",MSR:"EgyptAir"},
+ async airline(icao){icao=String(icao||"").toUpperCase();if(!icao)return"";if(this.AIR0[icao])return this.AIR0[icao];
+  let c={};try{c=JSON.parse(localStorage.getItem("contrail.fr24air")||"{}")}catch(e){}if(c[icao])return c[icao];
+  try{const a=await this.get("/static/airlines/"+icao+"/light");c[icao]=(a&&a.name)||icao}catch(e){return icao}
+  try{localStorage.setItem("contrail.fr24air",JSON.stringify(c))}catch(e){}return c[icao]},
+ // what a summary row adds to a flight; only empty fields are filled
+ async patchFrom(f,row){const p={};
+  if(!f.ac&&row.type)p.ac=this.typeName(row.type);
+  if(!f.reg&&row.reg)p.reg=String(row.reg).toUpperCase();
+  if(!f.al&&(row.operating_as||row.painted_as))p.al=await this.airline(row.operating_as||row.painted_as);
+  if(!f.tko&&row.datetime_takeoff)p.tko=new Date(row.datetime_takeoff).toISOString();
+  if(!f.ldg&&row.datetime_landed)p.ldg=new Date(row.datetime_landed).toISOString();
+  return p},
+ pick(f,rows){const no=this.fltNo(f.flt);let best=null,bd=8*36e5;
+  for(const r of rows){if(this.fltNo(r.flight)!==no)continue;const o=r.orig_iata||"";if(o&&o!==f.dep)continue;
+   const t=Date.parse(r.datetime_takeoff||r.first_seen||"");if(!t)continue;const d=Math.abs(t-f.out);if(d<bd){bd=d;best=r}}
+  return best},
+ /* fill in past flights */
+ missing(){const now=Date.now();return FL.filter(f=>f.out&&f.cat!=="X"&&f.t>=this.FROM&&f.t<now-3*36e5&&this.fltNo(f.flt)&&!f.fr24&&(!f.ac||!f.reg||!f.al))},
+ status:"",state:"",run:null,
+ say(t,st){this.status=t;this.state=st||"";const e=document.getElementById("fr-stat");if(e){e.textContent=t;e.className="live"+(st?" "+st:"")}},
+ async fill(){if(this.run)return;const list=this.missing().sort((a,b)=>a.t-b.t);if(!list.length){this.say("Nothing to fill in.","done");return}
+  // a few days per request keeps the number of results (and credits) low
+  const groups=[];for(const f of list){const g=groups[groups.length-1];
+   if(g&&f.t-g[0].t<4*864e5&&new Set(g.map(x=>this.fltNo(x.flt)).concat(this.fltNo(f.flt))).size<=15)g.push(f);else groups.push([f])}
+  const found=[],quiet=[];let done=0;this.run={stop:false};
+  try{
+   for(const g of groups){if(this.run.stop)break;
+    this.say(`Looking up flights on Flightradar24, ${done} of ${list.length}…`);
+    const rows=await this.get("/flight-summary/full",{flights:[...new Set(g.map(x=>this.fltNo(x.flt)))].join(","),flight_datetime_from:this.iso(g[0].t-12*36e5),flight_datetime_to:this.iso(g[g.length-1].t+12*36e5),limit:200});
+    for(const f of g){const r=this.pick(f,Array.isArray(rows)?rows:[]);if(r){const p=await this.patchFrom(f,r);p.fr24=r.fr24_id||"1";if(Object.keys(p).length>1)found.push({f,p});else quiet.push({f,p})}}
+    done+=g.length;await new Promise(z=>setTimeout(z,700))}
+  }catch(e){this.say(e.message+(found.length?` Found details for ${found.length} flights before that.`:""),"err")}
+  this.run=null;
+  if(quiet.length){for(const x of quiet)store.ov[x.f.id]=Object.assign({},store.ov[x.f.id]||{},x.p);save()}
+  if(!found.length){if(this.state!=="err")this.say(`No new details found for these ${list.length} flights.`,"done");return}
+  if(this.state!=="err")this.say(`Found details for ${found.length} of ${list.length} flights.`,"done");
+  this.review(found)},
+ review(found){
+  const line=x=>{const f=x.f,p=x.p,bits=[p.reg,p.ac,p.al].filter(Boolean);return`<div class="prow" style="grid-template-columns:1fr auto"><span><b>${esc(f.flt)}</b> ${esc(f.dep)}–${esc(f.arr)}<br><span class="st">${esc(bits.join(", ")||"Take-off and landing times")}</span></span><span class="st">${esc(dayStr(f.out,tzOf(f.dep)))} ${esc(f.year)}</span></div>`};
+  Sheet.open(`<h2 style="margin-top:6px">From Flightradar24</h2><p class="sub">Details for ${found.length} flight${found.length===1?"":"s"}. Only empty fields are filled; nothing you entered is changed.</p>
+   <div class="d-acts" style="margin-top:0"><button class="btn pri" id="fr-ok">Save to logbook</button><button class="btn" id="fr-no">Cancel</button></div>
+   <div style="margin-top:12px">${found.slice(0,200).map(line).join("")}</div>${found.length>200?`<p class="note">and ${found.length-200} more.</p>`:""}`,el=>{
+   el.querySelector("#fr-no").onclick=()=>Sheet.close();
+   el.querySelector("#fr-ok").onclick=()=>{for(const x of found)store.ov[x.f.id]=Object.assign({},store.ov[x.f.id]||{},x.p);save();refreshAll();Sheet.close();this.say(`Saved details for ${found.length} flights.`,"done");toast("Saved details for "+found.length+" flights")}})}
+};
+
+/* ---------- live flight ---------- */
+// Follows the current flight on Flightradar24 about once a minute while the globe is open.
+// The last report is kept, so with no connection the position is estimated from it.
+const Live={snap:null,busy:false,err:"",last:0,
+ init(){try{this.snap=JSON.parse(localStorage.getItem("contrail.live")||"null")}catch(e){}
+  setInterval(()=>this.tick(),15000);document.addEventListener("visibilitychange",()=>this.tick());addEventListener("online",()=>this.tick(true));this.tick(true)},
+ keep(){try{localStorage.setItem("contrail.live",JSON.stringify(this.snap))}catch(e){}},
+ mine(f){return this.snap&&f&&this.snap.id===f.id?this.snap:null},
+ // the flight to follow: from 3 h before departure until shortly after landing
+ target(){const now=Date.now();let best=null;
+  for(const f of FL){if(f.cat==="X"||!f.out||!f.inn||!FR24.fltNo(f.flt))continue;const s=this.mine(f);
+   if(s&&s.landed){if(now-s.landedAt>45*6e4)continue}
+   const end=Math.max(+f.inn,s&&s.air&&s.eta?Date.parse(s.eta)||0:0)+2*36e5;
+   if(now>=f.out-3*36e5&&now<=end&&(!best||Math.abs(f.out-now)<Math.abs(best.out-now)))best=f}
+  return best},
+ tick(force){const f=this.target();if(!f||!FR24.key()||document.hidden||this.busy)return;
+  if(!Globe.on&&!force)return;if(!force&&Date.now()-this.last<55e3)return;
+  const s=this.mine(f);if(s&&s.landed&&s.saved)return;this.poll(f)},
+ async poll(f){this.busy=true;this.last=Date.now();
+  try{const no=FR24.fltNo(f.flt),prev=this.mine(f),now=Date.now(),B=ll(f.arr);
+   if(!(prev&&prev.landed)){
+    const rows=await FR24.get("/live/flight-positions/full",{flights:no});const list=Array.isArray(rows)?rows:[];
+    const r=list.find(x=>x.orig_iata===f.dep&&(!x.dest_iata||x.dest_iata===f.arr))||list.find(x=>!x.orig_iata&&(!prev||!prev.fid||x.fr24_id===prev.fid))||null;
+    if(r){const air=(r.alt||0)>150||(r.gspeed||0)>70;
+     const s={id:f.id,fid:r.fr24_id,t:Date.parse(r.timestamp)||now,lat:r.lat,lon:r.lon,trk:r.track,alt:r.alt,gs:r.gspeed,vs:r.vspeed,eta:r.eta||null,reg:r.reg||"",type:r.type||"",op:r.operating_as||r.painted_as||"",air,flew:air||!!(prev&&prev.flew),landed:false};
+     if(s.flew&&!air&&B&&d3.geoDistance([s.lon,s.lat],B)*R_KM<40){s.landed=true;s.landedAt=now}
+     this.snap=s}
+    else if(prev&&prev.flew){const e=this.pos(f);if(e&&(e.k>.9||e.landed)){prev.landed=true;prev.landedAt=now}}
+   }
+   this.err="";const s=this.mine(f);
+   if(s&&s.landed&&!s.saved)await this.finish(f,s);
+  }catch(e){this.err=e.message}
+  finally{this.busy=false;this.keep();Globe.card();Globe.kick()}},
+ // after landing: save registration, aircraft, airline and the take-off and landing times
+ async finish(f,s){let p={};
+  try{const rows=await FR24.get("/flight-summary/full",{flights:FR24.fltNo(f.flt),flight_datetime_from:FR24.iso(f.out-12*36e5),flight_datetime_to:FR24.iso(Date.now())});
+   const list=Array.isArray(rows)?rows:[];const r=list.find(x=>x.fr24_id===s.fid)||FR24.pick(f,list);
+   if(r){p=await FR24.patchFrom(f,r);p.fr24=r.fr24_id||s.fid;if(!r.datetime_landed&&Date.now()-s.landedAt<40*6e4)return}}
+  catch(e){if(Date.now()-s.landedAt<40*6e4)return}
+  if(!f.reg&&!p.reg&&s.reg)p.reg=s.reg.toUpperCase();if(!f.ac&&!p.ac&&s.type)p.ac=FR24.typeName(s.type);if(!f.al&&!p.al&&s.op)p.al=await FR24.airline(s.op);
+  s.saved=true;if(Object.keys(p).length)setOv(f.id,p)},
+ // where the aircraft is: the last report, or an estimate carried on from it when no new report has come in
+ pos(f){const s=this.mine(f);if(!s||typeof d3==="undefined")return null;const P=[s.lon,s.lat],B=ll(f.arr),now=Date.now(),age=now-s.t;
+  if(s.landed)return{p:B||P,trk:s.trk,landed:true,est:false,age,k:1};
+  if(!s.air||!B||age<120e3)return{p:P,trk:s.trk,est:false,age,k:0};
+  const eta=Date.parse(s.eta||"")||0,dist=Math.max(1,d3.geoDistance(P,B)*R_KM);
+  const k=eta>s.t?Math.min(1,(now-s.t)/(eta-s.t)):Math.min(1,(s.gs||450)*1.852*age/36e5/dist);
+  const ip=d3.geoInterpolate(P,B),p=ip(k);
+  return{p,ahead:ip(Math.min(1,k+.02)),est:true,age,k,landed:k>=1,eta}}
+};
+
 const Rot={a:0,
  set(){const R=document.documentElement,land=innerWidth>innerHeight&&innerHeight<520&&matchMedia("(pointer:coarse)").matches;
   let o=typeof window.orientation==="number"?window.orientation:(screen.orientation?screen.orientation.angle:90);if(o>180)o-=360;
@@ -1375,7 +1546,7 @@ Rot.set();addEventListener("resize",()=>Rot.set());addEventListener("orientation
 document.addEventListener("touchmove",e=>{if(e.touches.length>1&&e.target.id!=="globe")e.preventDefault()},{passive:false});
 function boot(){
   build();Log.init();updateBadge();
-  if(window.d3){Globe.init()}else{document.getElementById("fc").innerHTML=`<div class="fc-state">The globe needs a connection the first time it opens.</div>`}
+  if(window.d3){Globe.init();Live.init()}else{document.getElementById("fc").innerHTML=`<div class="fc-state">The globe needs a connection the first time it opens.</div>`}
   initCaps();
   try{if(localStorage.getItem("contrail.job"))setTimeout(()=>toast("An import is waiting for you in Add"),900)}catch(e){}
 }

@@ -26,6 +26,16 @@ While a file is being read, the grey line under it shows what Contrail is readin
 - **Calendar subscription:** Add > Save calendar file, upload `contrail-flights.ics` to this repository, then add a subscribed calendar in iPhone Calendar settings with `https://kikonos.github.io/Contrail/contrail-flights.ics`. Re-upload it when your roster changes. Anyone with that link can see it.
 - **Updates:** replace `index.html` in the repository. The app picks up the new version the next time it opens online.
 
+## Flightradar24
+
+With a Flightradar24 API key (from fr24api.flightradar24.com), Contrail can:
+
+- **Follow your flight live:** from 3 hours before departure, the globe card shows where the aircraft is, its height, speed and landing time, about once a minute while the Globe tab is open. If the connection drops after take-off, Contrail keeps going from the last report and shows an estimated position until it's back online.
+- **Save the details after landing:** registration, aircraft type, airline, and take-off and landing times.
+- **Fill in past flights:** Settings > Flightradar24 > Fill in looks up flights since April 2024 that are missing the aircraft, registration or airline. You see what was found before anything is saved, and only empty fields are filled.
+
+Add the key in Settings > Flightradar24. It stays on the phone and isn't included in backups. Lookups use credits from your Flightradar24 plan.
+
 ## Other airlines' rosters
 
 This version reads the formats it knows. To add a new one, send the roster to Claude so the format can be built in.
