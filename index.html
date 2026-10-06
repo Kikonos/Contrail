@@ -227,9 +227,21 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border:0;border-radiu
 .toast{position:fixed;left:50%;bottom:calc(70px + max(4px,calc(var(--sab) - 14px)));transform:translate(-50%,20px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;opacity:0;transition:.2s;z-index:30;pointer-events:none;max-width:90%}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 /* crew tools */
-.pchips{display:flex;flex-wrap:wrap;gap:6px}
-.pchip{display:inline-flex;align-items:center;gap:7px;border:0;background:var(--surface-2);border-radius:999px;padding:7px 12px;font-size:14px;font-weight:600;color:var(--text)}
-.pchip .x{color:var(--muted);font-weight:700}
+.tb-box{background:var(--surface-2);border-radius:18px;padding:14px 16px 16px;margin-top:12px}
+.tb-box .btn{background:var(--surface)}
+.tb-box h3{font-size:13px;font-weight:600;color:var(--muted);margin:0 0 12px;letter-spacing:.01em}
+.tb-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 14px}
+.tb-grid span{display:block;font-size:12.5px;color:var(--muted)}
+.tb-grid b{display:block;font:700 20px/1.2 var(--round);margin-top:3px;font-variant-numeric:tabular-nums}
+.tb-grid em{display:block;font-style:normal;font-size:13px;color:var(--muted);margin-top:2px}
+.tb-grid em span,.tb-grid b span{display:inline;font:inherit;color:inherit}
+.tb-big{font:700 20px/1.25 var(--round)}
+.tb-big span{font:600 15px var(--sans);color:var(--muted)}
+.wx-now{display:flex;align-items:center;gap:14px;padding-bottom:14px;margin-bottom:12px;border-bottom:1px solid var(--hair)}
+.wx-now .tb-big{font-size:30px}
+.wx-sun{display:flex;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--hair);font-size:14px;color:var(--muted)}
+.wx-sun b{color:var(--text);font-family:var(--round)}
+.wxi{display:block;flex:none}
 .lnk{border:0;background:none;padding:0;color:var(--op);font:inherit;font-weight:600;text-align:left}
 .meter{margin:4px 0 12px}
 .meter:last-child{margin-bottom:0}
@@ -245,7 +257,8 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border:0;border-radiu
 .nudge{position:fixed;left:12px;right:12px;bottom:calc(68px + max(4px,calc(var(--sab) - 14px)));z-index:15;max-width:560px;margin:0 auto;background:var(--surface);border:1px solid var(--hair);box-shadow:var(--sheet-shadow);border-radius:16px;padding:10px 8px 10px 14px;display:flex;align-items:center;gap:10px;font-size:14px}
 .nudge span{flex:1}
 .nudge .x{border:0;background:none;color:var(--muted);font-size:22px;line-height:1;padding:4px 6px}
-.wx{display:grid;grid-template-columns:auto 1fr auto;gap:7px 12px;align-items:baseline;font-size:14px}
+.wx{display:grid;grid-template-columns:42px 30px 1fr auto;gap:10px 8px;align-items:center;font-size:15px}
+.wx .d{font-weight:600}
 .wx .t{font-family:var(--round);font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
 .ib{display:flex;align-items:center;gap:8px;width:100%;margin-top:6px;border:0;background:none;padding:0;color:var(--muted);font-size:13px;text-align:left}
 .ib span{display:flex;align-items:center;gap:8px}
@@ -273,7 +286,7 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border:0;border-radiu
   <section class="tab" id="t-log" aria-label="Logbook"><div class="wrap">
     <h1>Logbook</h1>
     <div class="logtools">
-      <input class="search" id="q" type="search" placeholder="Search flight, airport, aircraft, crew or year" autocomplete="off">
+      <input class="search" id="q" type="search" placeholder="Search flight, airport, aircraft or year" autocomplete="off">
       <div class="seg" id="lseg"></div>
     </div>
     <div id="loglist"></div>
@@ -411,7 +424,7 @@ function build(){
   for(const o of store.add){if(del.has(o.id))continue;FL.push(objToF(o))}
   for(const f of FL){
     const ov=store.ov[f.id];
-    if(ov){if(ov.c)f.cat=ov.c;if(ov.ac)f.ac=ov.ac;if(ov.reg)f.reg=ov.reg;if(ov.emp)f.emp=ov.emp;if(ov.al)f.al=ov.al;if(ov.tko)f.tko=new Date(ov.tko);if(ov.ldg)f.ldg=new Date(ov.ldg);if(ov.fr24)f.fr24=ov.fr24;if(ov.adb)f.adb=ov.adb;if(ov.crew)f.crew=ov.crew;if(ov.ibReg)f.ibReg=ov.ibReg;if(ov.out)f.out=new Date(ov.out);if(ov.inn)f.inn=new Date(ov.inn);if(ov.rep){f.rep=new Date(ov.rep);f.repAt=ov.repAt||f.dep}f.ok=!!ov.ok}
+    if(ov){if(ov.c)f.cat=ov.c;if(ov.ac)f.ac=ov.ac;if(ov.reg)f.reg=ov.reg;if(ov.emp)f.emp=ov.emp;if(ov.al)f.al=ov.al;if(ov.tko)f.tko=new Date(ov.tko);if(ov.ldg)f.ldg=new Date(ov.ldg);if(ov.fr24)f.fr24=ov.fr24;if(ov.adb)f.adb=ov.adb;if(ov.ibReg)f.ibReg=ov.ibReg;if(ov.out)f.out=new Date(ov.out);if(ov.inn)f.inn=new Date(ov.inn);if(ov.rep){f.rep=new Date(ov.rep);f.repAt=ov.repAt||f.dep}f.ok=!!ov.ok}
     f.t=f.out?f.out.getTime():Date.parse(f.date+"T12:00:00Z");
     const key=f.id+"|"+f.t+"|"+(f.inn?f.inn.getTime():0)+"|"+f.dep+f.arr;
     let dv=derived[f.id];
@@ -471,7 +484,7 @@ function openFlight(id){
    <div><span>Registration</span><b>${f.reg?`<button class="lnk" data-tail="${esc(Tails.norm(f.reg))}">${esc(f.reg)}</button>`:"–"}</b></div>
    <div><span>Airline</span><b>${esc(f.al||"–")}</b></div>
    ${f.cat==="O"||f.cat==="D"?Duty.rows(f):""}
-   <div style="grid-column:1/-1"><span>Crew</span><b>${f.crew&&f.crew.length?f.crew.map(n=>`<button class="lnk" data-person="${esc(Crew.key(n))}">${esc(n)}</button>`).join(", "):"–"}</b></div>
+
    ${f.tko||f.ldg?`<div><span>Take-off, UTC</span><b>${f.tko?esc(hm(f.tko,"UTC")):"–"}</b></div><div><span>Landing, UTC</span><b>${f.ldg?esc(hm(f.ldg,"UTC")):"–"}</b></div>`:""}
   </div>
   <p class="small">Source: ${esc(srcN)}${tb?". Times: "+esc(tb):""}.</p>
@@ -480,7 +493,6 @@ function openFlight(id){
    <button class="btn pri sm" id="dglobe">Show on globe</button>
    ${f.check&&!f.ok?`<button class="btn sm" id="dok">Mark as checked</button>`:""}
    <button class="btn sm" id="dedit">Edit details</button>
-   <button class="btn sm" id="dcrew">${f.crew&&f.crew.length?"Edit crew":"Add crew"}</button>
    <button class="btn sm" id="dshare">Share</button>
    ${f.out&&+f.out>Date.now()-36*36e5?`<button class="btn sm" id="dbrief">Trip brief</button>`:""}
    ${f.user?`<button class="btn sm" id="ddel" style="color:var(--x)">Delete flight</button>`:""}
@@ -489,11 +501,10 @@ function openFlight(id){
     el.querySelector("#dglobe").onclick=()=>{Sheet.close();go("globe");Globe.select(f.id,true)};
     const ok=el.querySelector("#dok");if(ok)ok.onclick=()=>{setOv(f.id,{ok:true});openFlight(f.id);toast("Marked as checked")};
     el.querySelector("#dedit").onclick=()=>editFlight(f.id);
-    el.querySelector("#dcrew").onclick=()=>Crew.edit(f.id);
     el.querySelector("#dshare").onclick=()=>shareFlight(f.id);
     const br=el.querySelector("#dbrief");if(br)br.onclick=()=>Trip.open(f.id);
     el.querySelectorAll("[data-tail]").forEach(b=>b.onclick=()=>Tails.open(b.dataset.tail));
-    el.querySelectorAll("[data-person]").forEach(b=>b.onclick=()=>Crew.person(b.dataset.person));
+
     const dl=el.querySelector("#ddel");if(dl)dl.onclick=()=>{store.add=store.add.filter(x=>x.id!==f.id);save();refreshAll();Sheet.close();toast("Flight deleted")};
   });
 }
@@ -779,7 +790,7 @@ const Log={q:"",cat:"all",
  render(){
   if(this.cat==="duty")return this.renderDuties();
   const q=this.q.toUpperCase();let fs=FL.filter(f=>this.cat==="all"||f.cat===this.cat);
-  if(q)fs=fs.filter(f=>(f.flt+" "+f.dep+" "+f.arr+" "+(f.ac||"")+" "+(f.reg||"")+" "+(f.emp||"")+" "+(f.al||"")+" "+(f.crew||[]).join(" ")+" "+f.year+" "+city(f.dep)+" "+city(f.arr)).toUpperCase().includes(q));
+  if(q)fs=fs.filter(f=>(f.flt+" "+f.dep+" "+f.arr+" "+(f.ac||"")+" "+(f.reg||"")+" "+(f.emp||"")+" "+(f.al||"")+" "+f.year+" "+city(f.dep)+" "+city(f.arr)).toUpperCase().includes(q));
   fs=fs.slice().reverse();
   if(!fs.length){document.getElementById("loglist").innerHTML=`<div class="empty">No flights match. Try another search or filter.</div>`;return}
   const groups=new Map();for(const f of fs){const k=(f.out?f.out.toISOString():f.date).slice(0,7);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(f)}
@@ -811,7 +822,7 @@ const Stats={scope:"all",
   <div class="kv">
    <div><span class="num">${nf0.format(km)}</span><span>kilometres flown</span></div>
    <div><span class="num">${nf1.format(km/40075)}</span><span>times around the Earth</span></div>
-   <div><span class="num">${HM(night)}</span><span>night hours</span></div>
+   <div><span class="num">${moonText(km)}</span><span>${moonLabel(km)}</span></div>
    <div><span class="num">${O.length?HM(bh/O.length):"–"}</span><span>average sector</span></div>
    <div><span class="num">${apsO.size}</span><span>airports operated</span></div>
    <div><span class="num">${ctryO.size}</span><span>countries, ${regO.size} regions</span></div>
@@ -885,7 +896,7 @@ const Stats={scope:"all",
     ${groups.length?`<div><span class="num">${HM(dutyH)}</span><span>duty hours, ${groups.length} duties</span></div><div><span class="num">${HM(dutyH/groups.length)}</span><span>average duty</span></div>`:""}
     ${Object.entries(kinds).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<div><span class="num" style="color:${KINDCOL[k]||"var(--text)"}">${n}</span><span>${esc(KINDN[k]||k)}</span></div>`).join("")}
    </div><p class="note">Duty hours run from report time to 30 minutes after the last landing, for rosters that include report times. Duty days come from your imported rosters.</p></div>`}}
-  h+=Duty.section(this.scope)+Pay.section(this.scope)+Crew.section(sel);
+  h+=Duty.section(this.scope);
   h+=sec("Deadheading",D,"var(--dh)","Positioning to and from trips. Not counted in block hours.");
   h+=sec("Personal travel",P,"var(--pers)","Commutes, leave and holidays you logged in Flighty.");
   document.getElementById("stats").innerHTML=h;
@@ -982,7 +993,7 @@ const Settings={render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.0 (6 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.0 (7 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -1489,6 +1500,9 @@ const CONT0={AF:"DZ AO BJ BW BF BI CV CM CF TD KM CG CD CI DJ EG GQ ER SZ ET GA 
  OC:"AS AU CK FJ PF GU KI MH FM NR NC NZ NU NF MP PW PG PN WS SB TK TO TV VU WF"};
 const CONT={};for(const k in CONT0)for(const c of CONT0[k].split(" "))CONT[c]=k;
 const CONTN={AF:"Africa",AS:"Asia",EU:"Europe",NA:"North America",SA:"South America",OC:"Oceania"};
+// share of the 768,800 km to the Moon and back, as a percentage or a multiple
+function moonText(km){const r=km/768800;return r<1?Math.round(r*100)+"%":nf1.format(r)}
+function moonLabel(km){return km<768800?"of the way to the Moon and back":"times to the Moon and back"}
 function contOf(code){const A=ap(code);return A?CONT[A[1]]||null:null}
 
 /* ---------- share my flight ---------- */
@@ -1533,17 +1547,17 @@ const Miles={
  // reached milestones in order, with the flight that reached each, and what's next
  compute(){
   const now=Date.now(),fl=FL.filter(f=>f.cat!=="X"&&f.out&&+f.out<=now).sort((a,b)=>a.t-b.t);
-  const got=[],c={bh:0,sec:0,km:0,eq:0,dl:0,night:0},aps=new Set(),cts=new Set(),conts=new Set();
+  const got=[],c={bh:0,sec:0,km:0,eq:0,dl:0},aps=new Set(),cts=new Set(),conts=new Set();
   const T={bh:[100,250,500,1000,1500,2000,2500,3000,4000,5000,6000,7500,10000,12500,15000,20000],sec:[50,100,250,500,750,1000,1500,2000,2500,3000,4000,5000],
-   ap:[10,25,50,75,100,150,200],ct:[10,20,30,40,50,75,100],earth:[1,2,3,5,10,15,20,25,30,40,50,75,100],eq:[1,10,25,50,100,250,500],dl:[1,10,25,50,100],night:[100,250,500,1000,2000,3000,5000]};
-  const nx={bh:0,sec:0,ap:0,ct:0,earth:0,eq:0,dl:0,night:0};
+   ap:[10,25,50,75,100,150,200],ct:[10,20,30,40,50,75,100],earth:[1,2,3,5,10,15,20,25,30,40,50,75,100],eq:[1,10,25,50,100,250,500],dl:[1,10,25,50,100]};
+  const nx={bh:0,sec:0,ap:0,ct:0,earth:0,eq:0,dl:0};
   const L={bh:n=>nf0.format(n)+" block hours",sec:n=>nf0.format(n)+" sectors",ap:n=>n+" airports",ct:n=>n+" countries",earth:n=>n===1?"Around the Earth":"Around the Earth "+n+" times",
-   eq:n=>n===1?"First equator crossing":nf0.format(n)+" equator crossings",dl:n=>n===1?"First date line crossing":n+" date line crossings",night:n=>nf0.format(n)+" night hours"};
+   eq:n=>n===1?"First equator crossing":nf0.format(n)+" equator crossings",dl:n=>n===1?"First date line crossing":n+" date line crossings"};
   const hit=(k,v,f)=>{while(nx[k]<T[k].length&&v>=T[k][nx[k]]){const n=T[k][nx[k]];got.push({id:k+":"+n,label:L[k](n),f});nx[k]++}};
   let moon=0;
   if(fl.length)got.push({id:"first",label:"First flight in your logbook",f:fl[0]});
   for(const f of fl){
-   if(f.cat==="O"){c.bh+=f.bh||0;c.sec++;c.night+=f.nightH||0;hit("bh",c.bh,f);hit("sec",c.sec,f);hit("night",c.night,f)}
+   if(f.cat==="O"){c.bh+=f.bh||0;c.sec++;hit("bh",c.bh,f);hit("sec",c.sec,f)}
    c.km+=f.km||0;hit("earth",c.km/this.EARTH,f);
    if(moon===0&&c.km>=this.MOON){moon=1;got.push({id:"moon",label:"To the Moon, 384,400 km",f})}
    if(moon===1&&c.km>=2*this.MOON){moon=2;got.push({id:"moonback",label:"To the Moon and back",f})}
@@ -1555,11 +1569,14 @@ const Miles={
   }
   // pace over the last 180 days, for "about 3 months to go"
   const since=now-180*864e5,rec=fl.filter(f=>f.t>=since),pace={bh:rec.filter(f=>f.cat==="O").reduce((s,f)=>s+(f.bh||0),0)/180,sec:rec.filter(f=>f.cat==="O").length/180,earth:rec.reduce((s,f)=>s+(f.km||0),0)/this.EARTH/180};
-  const cur={bh:c.bh,sec:c.sec,ap:aps.size,ct:cts.size,earth:c.km/this.EARTH,eq:c.eq,night:c.night};
+  const cur={bh:c.bh,sec:c.sec,ap:aps.size,ct:cts.size,earth:c.km/this.EARTH,eq:c.eq};
   const next=["bh","sec","earth","ap","ct"].filter(k=>nx[k]<T[k].length).map(k=>{const tg=T[k][nx[k]],prev=nx[k]?T[k][nx[k]-1]:0,left=tg-cur[k],days=pace[k]>0?left/pace[k]:null;
    return{k,label:L[k](tg),cur:cur[k],tg,prev,p:Math.max(0,Math.min(1,(cur[k]-prev)/(tg-prev))),eta:days!=null&&days<3650?days:null}});
+  // the Moon and back: 768,800 km
+  if(c.km<2*this.MOON){const tg=c.km<this.MOON?this.MOON:2*this.MOON,prev=tg===this.MOON?0:this.MOON,kmDay=pace.earth*this.EARTH;
+   next.splice(2,0,{k:"moon",label:tg===this.MOON?"To the Moon":"To the Moon and back",cur:c.km,tg,prev,p:Math.max(0,Math.min(1,(c.km-prev)/(tg-prev))),eta:kmDay>0&&(tg-c.km)/kmDay<3650?(tg-c.km)/kmDay:null})}
   return{got,next,cur}},
- fmtCur(n){return n.k==="bh"?HM(n.cur):n.k==="earth"?nf1.format(n.cur)+" times":nf0.format(n.cur)},
+ fmtCur(n){return n.k==="bh"?HM(n.cur):n.k==="earth"?nf1.format(n.cur)+" times":n.k==="moon"?nf0.format(n.cur)+" km":nf0.format(n.cur)},
  when(f){return f.out?dateLong(f.out,tzOf(f.dep)):f.date},
  card(m){return`<button class="m" data-open="${esc(m.f.id)}"><b>${esc(m.label)}</b><span>${esc(this.when(m.f))} · <span style="white-space:nowrap;display:inline;margin:0">${esc(m.f.flt+" "+m.f.dep+"–"+m.f.arr)}</span></span></button>`},
  section(scope){const R=this.compute();let got=R.got;
@@ -1621,94 +1638,10 @@ const Tails={
    const I=this.info(reg);paint(I);if(!I&&ADB.key())this.fetchInfo(reg).then(paint)})}
 };
 
-/* ---------- crew you flew with ---------- */
-const Crew={
- norm(s){return String(s||"").replace(/\s+/g," ").trim()},
- key(s){return this.norm(s).toLowerCase()},
- people(sel){const m=new Map();
-  for(const f of FL){if(!f.crew||!f.crew.length||(sel&&!sel(f)))continue;
-   for(const n of f.crew){const k=this.key(n);if(!k)continue;let x=m.get(k);if(!x){x={key:k,name:this.norm(n),fl:[]};m.set(k,x)}x.fl.push(f)}}
-  for(const x of m.values()){x.fl.sort((a,b)=>a.t-b.t);x.n=x.fl.length;x.first=x.fl[0];x.last=x.fl[x.fl.length-1];x.h=x.fl.reduce((s,f)=>s+(f.bh||0),0)}
-  return[...m.values()].sort((a,b)=>b.n-a.n||b.last.t-a.last.t)},
- // the connected sectors of the trip a flight belongs to, from leaving base to getting back
- trip(f){const fl=FL.filter(x=>(x.cat==="O"||x.cat==="D")&&x.out&&x.inn).sort((a,b)=>a.t-b.t),i=fl.indexOf(f);if(i<0)return[f];
-  const base=baseOf(f),T=[f];
-  for(let j=i;j>0;j--){const a=fl[j-1],b=fl[j];if(b.dep===base||a.arr!==b.dep||b.out-a.inn>6*864e5)break;T.unshift(a)}
-  for(let j=i;j<fl.length-1;j++){const a=fl[j],b=fl[j+1];if(a.arr===base||a.arr!==b.dep||b.out-a.inn>6*864e5)break;T.push(b)}
-  return T},
- prev(f){return this.trip(f).filter(x=>x!==f&&x.crew&&x.crew.length).sort((a,b)=>Math.abs(a.t-f.t)-Math.abs(b.t-f.t))[0]||null},
- edit(id){const f=BYID[id];if(!f)return;let names=(f.crew||[]).slice();
-  const known=()=>this.people().map(p=>p.name).filter(n=>!names.some(m=>this.key(m)===this.key(n)));
-  const others=this.trip(f).filter(x=>x!==f);const pv=this.prev(f);
-  const paint=()=>{const el=document.getElementById("cr-chips");el.innerHTML=names.length?names.map((n,i)=>`<button class="pchip" data-i="${i}" aria-label="Remove ${esc(n)}">${esc(n)}<span class="x">×</span></button>`).join(""):`<span class="small">No one added yet.</span>`;
-   document.getElementById("cr-dl").innerHTML=known().map(n=>`<option value="${esc(n)}"></option>`).join("")};
-  const add=v=>{for(const p of String(v||"").split(/[,;\n]/)){const n=this.norm(p);if(n&&!names.some(m=>this.key(m)===this.key(n)))names.push(n)}paint()};
-  Sheet.open(`<h2 style="margin-top:6px">Crew on ${esc(f.flt)}</h2><p class="sub">${esc(f.dep)}–${esc(f.arr)}, ${esc(f.out?dayStr(f.out,tzOf(f.dep))+" "+f.year:f.date)}</p>
-   <div class="pchips" id="cr-chips"></div>
-   <div class="form" style="margin-top:14px"><label class="full">Add people<input id="cr-in" list="cr-dl" placeholder="Name, or several separated by commas" autocomplete="off" autocapitalize="words"></label></div><datalist id="cr-dl"></datalist>
-   <div class="d-acts"><button class="btn sm" id="cr-add">Add</button>${pv?`<button class="btn sm" id="cr-copy">Same as ${esc(pv.flt)} ${esc(pv.dep)}–${esc(pv.arr)}</button>`:""}</div>
-   ${others.length?`<label class="it" style="display:flex;align-items:center;gap:10px;margin-top:16px;font-size:14px"><input type="checkbox" id="cr-trip" checked style="width:20px;height:20px">Also save for the rest of this trip (${others.map(x=>esc(x.flt)).join(", ")})</label>`:""}
-   <div class="d-acts"><button class="btn pri" id="cr-save">Save crew</button><button class="btn" id="cr-x">Cancel</button></div>`,el=>{
-   paint();const inp=el.querySelector("#cr-in");
-   el.querySelector("#cr-add").onclick=()=>{add(inp.value);inp.value="";inp.focus()};
-   inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();add(inp.value);inp.value=""}};
-   inp.onchange=()=>{if(known().includes(inp.value)){add(inp.value);inp.value=""}};
-   const cp=el.querySelector("#cr-copy");if(cp)cp.onclick=()=>add(pv.crew.join(","));
-   el.querySelector("#cr-chips").onclick=e=>{const b=e.target.closest("[data-i]");if(b){names.splice(+b.dataset.i,1);paint()}};
-   el.querySelector("#cr-x").onclick=()=>openFlight(id);
-   el.querySelector("#cr-save").onclick=()=>{add(inp.value);const tr=el.querySelector("#cr-trip");const targets=[f].concat(tr&&tr.checked?others:[]);
-    for(const x of targets)store.ov[x.id]=Object.assign({},store.ov[x.id]||{},{crew:names.slice()});save();refreshAll();openFlight(id);toast(names.length?"Crew saved":"Crew cleared")}})},
- person(key){const p=this.people().find(x=>x.key===key);if(!p)return;
-  const cities=new Map();for(const f of p.fl)if(f.arr!==baseOf(f))cities.set(f.arr,(cities.get(f.arr)||0)+1);
-  const top=[...cities.entries()].sort((a,b)=>b[1]-a[1]).slice(0,4).map(([c,n])=>shortCity(c)+(n>1?" ("+n+")":"")).join(", ");
-  const W=f=>f.out?dateLong(f.out,tzOf(f.dep)):f.date;
-  Sheet.open(`<h2 style="margin-top:6px">${esc(p.name)}</h2>
-   <div class="kv" style="margin-top:6px"><div><span class="num">${p.n}</span><span>${p.n===1?"flight":"flights"} together</span></div><div><span class="num">${HM(p.h)}</span><span>block hours</span></div><div><span class="num" style="font-size:18px">${esc(W(p.first))}</span><span>first flight together</span></div><div><span class="num" style="font-size:18px">${esc(W(p.last))}</span><span>most recent</span></div></div>
-   ${top?`<p class="note" style="margin-top:12px">Places together: ${esc(top)}</p>`:""}
-   <h2 style="font-size:17px">Flights together</h2><div class="list">${p.fl.slice().reverse().map(flightRow).join("")}</div>
-   <div class="d-acts" style="margin-top:16px"><button class="btn sm" id="cp-ren">Rename</button></div>`,el=>{
-   el.querySelector("#cp-ren").onclick=()=>{const n=this.norm(prompt("Rename "+p.name+" on all "+p.n+" flights to:",p.name)||"");if(!n||n===p.name)return;
-    for(const f of p.fl){const list=(f.crew||[]).map(m=>this.key(m)===key?n:m);const seen=new Set();store.ov[f.id]=Object.assign({},store.ov[f.id]||{},{crew:list.filter(m=>{const k=this.key(m);if(seen.has(k))return false;seen.add(k);return true})})}
-    save();refreshAll();this.person(this.key(n));toast("Renamed")}})},
- section(sel){const P=this.people(sel);if(!P.length)return"";const top=P.slice(0,8),mx=top[0].n,withCrew=FL.filter(f=>f.crew&&f.crew.length&&(!sel||sel(f))).length;
-  return`<h2>Crew you've flown with</h2><div class="panel"><div class="kv" style="margin-top:0"><div><span class="num">${P.length}</span><span>people</span></div><div><span class="num">${withCrew}</span><span>flights with crew added</span></div></div></div>
-   <div class="panel bars" style="margin-top:10px">${top.map(p=>`<button class="b" data-act="crew" data-key="${esc(p.key)}" style="border:0;background:none;width:100%;color:inherit;font:inherit;text-align:left;padding:6px 0"><span class="k">${esc(p.name)}</span><span class="tr"><i style="width:${(p.n/mx*100).toFixed(1)}%;background:var(--pers)"></i></span><span class="v">${p.n}</span></button>`).join("")}
-   ${P.length>8?`<div class="d-acts"><button class="btn sm" data-act="crew-all">Everyone (${P.length})</button></div>`:""}</div>`},
- all(){const P=this.people();
-  const draw=q=>{q=this.key(q);const rows=P.filter(p=>!q||p.key.includes(q));document.getElementById("cl-list").innerHTML=rows.length?`<div class="list">${rows.map(p=>`<button class="row" data-act="crew" data-key="${esc(p.key)}"><span class="cb c-P"></span><span><span class="rt" style="font-size:16px">${esc(p.name)}</span><span class="mt"><span>Last ${esc(p.last.out?dateLong(p.last.out,tzOf(p.last.dep)):p.last.date)}</span></span></span><span class="rr"><span class="num">${p.n}</span><span class="small">${p.n===1?"flight":"flights"}</span></span></button>`).join("")}</div>`:`<div class="empty">No one matches.</div>`};
-  Sheet.open(`<h2 style="margin-top:6px">Crew you've flown with</h2><input class="search" id="cl-q" type="search" placeholder="Search names" autocomplete="off" style="margin:4px 0 12px"><div id="cl-list"></div>`,el=>{draw("");el.querySelector("#cl-q").oninput=e=>draw(e.target.value);
-   el.querySelector("#cl-list").onclick=e=>{const b=e.target.closest("[data-act=crew]");if(b)this.person(b.dataset.key)}})}
-};
-
-/* ---------- pay estimate ---------- */
-const Pay={
- cfg(){return Object.assign({cur:"AED",basic:0,fly:0,dh:0,lay:0,layH:0,other:0,minLay:8},store.pay||{})},
- on(){const c=this.cfg();return!!(c.basic||c.fly||c.dh||c.lay||c.layH||c.other)},
- // nights away: time between arriving somewhere other than base and flying on from there
- layovers(){const fl=FL.filter(f=>(f.cat==="O"||f.cat==="D")&&f.out&&f.inn).sort((a,b)=>a.t-b.t),L=[],c=this.cfg();
-  for(let i=0;i<fl.length-1;i++){const a=fl[i],b=fl[i+1];if(a.arr===baseOf(a)||a.arr!==b.dep)continue;const h=(b.out-a.inn)/36e5;if(h>=c.minLay&&h<240)L.push({st:a.arr,from:+a.inn,to:+b.out,h,a,b})}
-  return L},
- month(ym,now){const c=this.cfg(),fl=FL.filter(f=>f.out&&(f.cat==="O"||f.cat==="D")&&f.out.toISOString().slice(0,7)===ym);
-  const done=f=>+f.out<=now;
-  const part=list=>{const O=list.filter(f=>f.cat==="O"),D=list.filter(f=>f.cat==="D"),bh=O.reduce((s,f)=>s+(f.bh||0),0),dh=D.reduce((s,f)=>s+(f.bh||0),0);return{bh,dh,n:O.length}};
-  const L=this.layovers().filter(l=>new Date(l.from).toISOString().slice(0,7)===ym);
-  const calc=(p,lays)=>{const lh=lays.reduce((s,l)=>s+l.h,0);const items=[["Basic salary",c.basic],["Flying pay",p.bh*c.fly,HM(p.bh)+" h"],["Deadhead pay",p.dh*c.dh,HM(p.dh)+" h"],["Layover allowance",lays.length*c.lay+lh*c.layH,lays.length+" layovers, "+Math.round(lh)+" h"],["Other allowances",c.other]].filter(x=>x[1]);
-   return{items,total:items.reduce((s,x)=>s+x[1],0),p,lays:lays.length}};
-  return{sofar:calc(part(fl.filter(done)),L.filter(l=>l.to<=now)),all:calc(part(fl),L)}},
- money(v){const c=this.cfg();try{return new Intl.NumberFormat("en-GB",{style:"currency",currency:c.cur,maximumFractionDigits:0}).format(v)}catch(e){return c.cur+" "+nf0.format(v)}},
- section(scope){if(!this.on()||(scope!=="all"&&!/^\d{4}$/.test(scope)))return"";const now=Date.now(),d=new Date(now),ym=d.toISOString().slice(0,7);
-  const months=[];if(/^\d{4}$/.test(scope)){for(let m=1;m<=12;m++){const k=scope+"-"+String(m).padStart(2,"0");if(k<=ym)months.push(k)}}
-  else for(let i=11;i>=0;i--){const x=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()-i,1));months.push(x.toISOString().slice(0,7))}
-  const mf=new Intl.DateTimeFormat("en-GB",{month:"long",year:"numeric",timeZone:"UTC"}),ms=new Intl.DateTimeFormat("en-GB",{month:"short",timeZone:"UTC"});
-  const rows=months.map(k=>({k,v:this.month(k,now)})),mx=Math.max(1,...rows.map(r=>r.v.all.total));
-  let h=`<h2>Pay estimate</h2>`;
-  if(scope==="all"){const cur=rows[rows.length-1].v,last=rows[rows.length-2]&&rows[rows.length-2].v;
-   h+=`<div class="panel"><div class="kv" style="margin-top:0"><div><span class="num">${esc(this.money(cur.all.total))}</span><span>${esc(mf.format(new Date(ym+"-01T00:00:00Z")))} with your roster</span></div><div><span class="num">${esc(this.money(cur.sofar.total))}</span><span>earned so far this month</span></div>${last?`<div><span class="num">${esc(this.money(last.all.total))}</span><span>last month</span></div>`:""}</div>
-    <div class="records" style="margin-top:12px">${cur.all.items.map(x=>`<div class="r"><span>${esc(x[0])}${x[2]?`<div class="small">${esc(x[2])}</div>`:""}</span><b>${esc(this.money(x[1]))}</b></div>`).join("")}</div></div>`}
-  h+=`<div class="panel bars" style="margin-top:10px">${rows.slice().reverse().map(r=>`<div class="b pay"><span class="k">${esc(ms.format(new Date(r.k+"-01T00:00:00Z")))} ${r.k.slice(2,4)}</span><span class="tr"><i style="width:${(r.v.all.total/mx*100).toFixed(1)}%;background:var(--ok)"></i></span><span class="v">${esc(this.money(r.v.all.total))}</span></div>`).join("")}</div>
-   <p class="note">An estimate from the rates in Settings and your logged and rostered flights, by the month you fly. Many airlines pay flying pay the month after.</p>`;
-  return h}
-};
+// nights away: time between arriving somewhere other than base and flying on from there
+function layoversAll(){const fl=FL.filter(f=>(f.cat==="O"||f.cat==="D")&&f.out&&f.inn).sort((a,b)=>a.t-b.t),L=[];
+ for(let i=0;i<fl.length-1;i++){const a=fl[i],b=fl[i+1];if(a.arr===baseOf(a)||a.arr!==b.dep)continue;const h=(b.out-a.inn)/36e5;if(h>=8&&h<240)L.push({st:a.arr,from:+a.inn,to:+b.out,h})}
+ return L}
 
 /* ---------- year in review ---------- */
 const Year={
@@ -1723,10 +1656,9 @@ const Year={
   const longest=fl.filter(f=>f.bh!=null).sort((a,b)=>b.bh-a.bh)[0];
   const types=new Map(),regs=new Map();for(const f of fl){if(f.ac)types.set(f.ac,(types.get(f.ac)||0)+1);if(f.reg){const r=Tails.norm(f.reg);regs.set(r,(regs.get(r)||0)+1)}}
   const top=m=>[...m.entries()].sort((a,b)=>b[1]-a[1])[0]||null;
-  const lays=Pay.layovers().filter(l=>new Date(l.from).toISOString().slice(0,4)===y);
-  const crew=Crew.people(f=>f.year===y)[0]||null;
+  const lays=layoversAll().filter(l=>new Date(l.from).toISOString().slice(0,4)===y);
   const ms=Miles.compute().got.filter(m=>m.f.year===y);
-  return{y,fl,O,bh,allH,km,night,aps,cts,newAps:[...aps].filter(c=>!oldAps.has(c)),newCts:[...cts].filter(c=>!oldCts.has(c)),dest:[...dest.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5),bm,longest,type:top(types),reg:top(regs),lays,crew,ms}},
+  return{y,fl,O,bh,allH,km,night,aps,cts,newAps:[...aps].filter(c=>!oldAps.has(c)),newCts:[...cts].filter(c=>!oldCts.has(c)),dest:[...dest.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5),bm,longest,type:top(types),reg:top(regs),lays,ms}},
  section(scope){const ys=this.years();if(!ys.length||scope!=="all")return"";
   return`<h2>Year in review</h2><div class="panel"><p style="margin:0 0 10px">Your year in the air, to look back on or share.</p><div class="d-acts" style="margin-top:0">${ys.slice(0,6).map(y=>`<button class="btn sm${y===ys[0]?" pri":""}" data-act="yr" data-y="${esc(y)}">${esc(y)}</button>`).join("")}</div></div>`},
  open(y){const D=this.data(y),ys=this.years();if(!D.fl.length){toast("No flights in "+y);return}
@@ -1736,7 +1668,7 @@ const Year={
    <div class="yr-hero"><span class="small">${y===String(new Date().getUTCFullYear())?"Your year so far":"Your year in the air"}</span><div class="num" style="font-size:56px;line-height:1">${esc(y)}</div></div>
    <div class="kv" style="margin-top:14px"><div><span class="num">${HM(D.bh)}</span><span>block hours operating</span></div><div><span class="num">${nf0.format(D.O.length)}</span><span>operating sectors</span></div>
     <div><span class="num">${nf0.format(D.km)}</span><span>km, ${nf1.format(D.km/Miles.EARTH)} times around the Earth</span></div><div><span class="num">${D.cts.size}</span><span>countries${D.newCts.length?", "+D.newCts.length+" new":""}</span></div>
-    <div><span class="num">${D.aps.size}</span><span>airports${D.newAps.length?", "+D.newAps.length+" new":""}</span></div><div><span class="num">${HM(D.night)}</span><span>night hours</span></div></div>
+    <div><span class="num">${D.aps.size}</span><span>airports${D.newAps.length?", "+D.newAps.length+" new":""}</span></div><div><span class="num">${moonText(D.km)}</span><span>${moonLabel(D.km)}</span></div></div>
    <div class="panel records" style="margin-top:16px">
     ${row("Most visited",esc(D.dest.map(([c,n])=>shortCity(c)+" ("+n+")").join(", ")))}
     ${row("Layovers",D.lays.length?D.lays.length+", "+nf0.format(Math.round(D.lays.reduce((s,l)=>s+l.h,0)/24))+" days away":"")}
@@ -1744,7 +1676,6 @@ const Year={
     ${row("Busiest month",D.bm?esc(mf.format(new Date(D.bm[0]+"-01T00:00:00Z"))+", "+HM(D.bm[1])+" h"):"")}
     ${row("Most flown aircraft",D.type?esc(D.type[0]+" ("+D.type[1]+")"):"")}
     ${row("Favourite tail",D.reg&&D.reg[1]>1?esc(D.reg[0]+", "+D.reg[1]+" times"):"")}
-    ${row("Flew most with",D.crew?esc(D.crew.name+", "+D.crew.n+" flights"):"")}
     ${row("New countries",D.newCts.length&&D.newCts.length<=8?esc(D.newCts.map(c=>CN[c]||c).join(", ")):"")}
    </div>
    ${D.ms.length?`<h2 style="font-size:17px">Milestones in ${esc(y)}</h2><div class="ms">${D.ms.slice().reverse().slice(0,6).map(m=>Miles.card(m)).join("")}</div>`:""}
@@ -1845,46 +1776,66 @@ const FX={
 };
 
 /* ---------- trip brief ---------- */
+// weather icons drawn inline so they work offline: sun, cloud, rain, snow, fog, storm
+function wxIcon(code,s){s=s||28;const c=+code,sun='<circle cx="12" cy="12" r="4.2" fill="#F5B83D"/><g stroke="#F5B83D" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></g>',
+  cloud=(x,y,col)=>`<path transform="translate(${x||0} ${y||0})" d="M7 18h10.5a3.8 3.8 0 0 0 .4-7.6A5.5 5.5 0 0 0 7.3 9.6 4.2 4.2 0 0 0 7 18z" fill="${col||"#9FB1C7"}"/>`,
+  drops='<g stroke="#4DA6EA" stroke-width="1.8" stroke-linecap="round"><path d="M9 19.5l-1 2.5M13 19.5l-1 2.5M17 19.5l-1 2.5"/></g>',
+  flakes='<g fill="#CFE3F7"><circle cx="8.5" cy="21" r="1.2"/><circle cx="12.5" cy="22" r="1.2"/><circle cx="16.5" cy="21" r="1.2"/></g>';
+ let g;
+ if(c<=1)g=sun;
+ else if(c===2)g=`<g transform="translate(-3 -4) scale(.85)">${sun}</g>`+cloud(1,2);
+ else if(c===3)g=cloud(0,1);
+ else if(c===45||c===48)g=cloud(0,-2)+'<g stroke="#9FB1C7" stroke-width="1.8" stroke-linecap="round"><path d="M5 19.5h14M7 22.5h10"/></g>';
+ else if(c>=71&&c<=77||c===85||c===86)g=cloud(0,-3)+flakes;
+ else if(c>=95)g=cloud(0,-3,"#7E8FA6")+'<path d="M12.5 15.5l-2.5 4h3l-2 4" fill="none" stroke="#F5B83D" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>';
+ else if(c>=51)g=cloud(0,-3)+drops;
+ else g=cloud(0,1);
+ return`<svg class="wxi" width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true">${g}</svg>`}
 const Trip={
  // the next flight's layover: from landing to the next departure from the same airport
  after(f){const fl=FL.filter(x=>(x.cat==="O"||x.cat==="D"||x.cat==="P")&&x.out&&x.t>f.t).sort((a,b)=>a.t-b.t),n=fl[0];return n&&n.dep===f.arr&&f.inn&&n.out-f.inn<14*864e5?n:null},
+ cell(k,v,sub){return`<div><span>${esc(k)}</span><b>${v}</b>${sub?`<em>${sub}</em>`:""}</div>`},
  open(id){const f=BYID[id];if(!f)return;const tzA=tzOf(f.dep),tzB=tzOf(f.arr),now=Date.now(),p=Duty.of(f),nx=this.after(f),home=f.arr===baseOf(f);
   const off=t=>tzOffsetMin(t,tzB)-tzOffsetMin(t,tzA),d=off(f.inn?+f.inn:now),dh=Math.abs(d)/60;
-  const diff=d===0?`Same time as ${esc(shortCity(f.dep))}`:`${esc(shortCity(f.arr))} is ${dh%1?nf1.format(dh):dh} h ${d>0?"ahead of":"behind"} ${esc(shortCity(f.dep))}`;
+  const diff=d===0?`Same time as ${esc(shortCity(f.dep))}`:`${dh%1?nf1.format(dh):dh} h ${d>0?"ahead of":"behind"} ${esc(shortCity(f.dep))}`;
   const until=t=>{const m=(t-now)/6e4;return m<=0?"":m<90?"in "+Math.round(m)+" min":m<48*60?"in "+durText(m/60):"in "+Math.round(m/1440)+" days"};
-  const A=ap(f.arr),cc=A&&A[1],cur=cc&&CURR[cc],homeCur=Pay.cfg().cur||"AED";
+  const A=ap(f.arr),cc=A&&A[1],cur=cc&&CURR[cc],homeCur="AED";
+  const C=(k,v,sub)=>this.cell(k,v,sub);
   Sheet.open(`<div class="d-route"><span class="num">${esc(f.dep)}</span><div class="mid">${esc(f.flt)}<br>${f.bh!=null?HM(f.bh)+" block":""}</div><span class="num">${esc(f.arr)}</span></div>
    <div class="d-city"><span>${esc(city(f.dep))}</span><span>${esc(city(f.arr))}</span></div>
-   <div class="d-grid">
-    ${p?`<div><span>Report, local${p.repKnown?"":" (estimated)"}</span><b>${esc(hm(new Date(p.start),tzOf(p.repAt)))} ${p.start>now?`<span class="small">${esc(until(p.start))}</span>`:""}</b></div>`:""}
-    <div><span>Departs, local</span><b>${f.out?esc(hm(f.out,tzA)+", "+dayStr(f.out,tzA)):"–"}</b></div>
-    <div><span>Lands, local</span><b>${f.inn?esc(hm(f.inn,tzB)+", "+dayStr(f.inn,tzB)):"–"}</b></div>
-    ${p?`<div><span>Duty</span><b>${HM(p.h)}</b></div><div><span>Rest before</span><b style="${p.short?"color:var(--x)":""}">${p.rest!=null&&p.rest<24*30?esc(durText(p.rest)):"–"}</b></div>`:""}
-    <div><span>Local time in ${esc(shortCity(f.arr))}</span><b>${esc(hm(new Date(now),tzB))}</b></div>
-   </div>
-   <p style="margin:0 0 4px">${diff}.</p>
-   <p style="margin:0">${home?"You're heading home.":nx?`Layover of <b>${esc(durText((nx.out-f.inn)/36e5))}</b>, until ${esc(nx.flt)} at ${esc(hm(nx.out,tzB))} on ${esc(dayStr(nx.out,tzB))}.`:""}</p>
+   <div class="tb-box"><h3>Your duty</h3><div class="tb-grid">
+    ${p?C("Report"+(p.repKnown?"":", estimated"),esc(hm(new Date(p.start),tzOf(p.repAt))),p.start>now?esc(until(p.start)):""):""}
+    ${C("Departs",f.out?esc(hm(f.out,tzA)):"–",f.out?esc(dayStr(f.out,tzA)):"")}
+    ${C("Lands",f.inn?esc(hm(f.inn,tzB)):"–",f.inn?esc(dayStr(f.inn,tzB)):"")}
+    ${p?C("Duty",HM(p.h),"")+C("Rest before",p.rest!=null&&p.rest<24*30?`<span style="${p.short?"color:var(--x)":""}">${esc(durText(p.rest))}</span>`:"–",""):""}
+   </div><p class="small" style="margin:10px 0 0">Times are local at each airport.</p></div>
+   <div class="tb-box"><h3>${esc(shortCity(f.arr))}</h3><div class="tb-grid">
+    ${C("Local time now",esc(hm(new Date(now),tzB)),diff)}
+    ${home?C("Layover","Home",""):nx?C("Layover",esc(durText((nx.out-f.inn)/36e5)),"until "+esc(nx.flt)+" "+esc(hm(nx.out,tzB))+", "+esc(dayStr(nx.out,tzB))):""}
+   </div></div>
    <div id="tb-ib"></div>
-   <h3 style="margin:18px 0 8px">Weather in ${esc(shortCity(f.arr))}</h3><div id="tb-wx" class="small">Loading the forecast…</div>
-   ${cur&&cur!==homeCur?`<h3 style="margin:18px 0 8px">Money</h3><div id="tb-fx">${esc(FX.name(cur))} (${esc(cur)})</div>`:""}
-   <div class="d-acts" style="margin-top:18px"><button class="btn sm" id="tb-share">Share</button><button class="btn sm" id="tb-open">Flight details</button></div>`,el=>{
+   <div class="tb-box"><h3>Weather in ${esc(shortCity(f.arr))}</h3><div id="tb-wx" class="small">Loading the forecast…</div></div>
+   ${cur&&cur!==homeCur?`<div class="tb-box"><h3>Money</h3><div id="tb-fx" class="tb-big">${esc(FX.name(cur))}</div></div>`:""}
+   <div class="d-acts" style="margin-top:16px"><button class="btn sm" id="tb-share">Share</button><button class="btn sm" id="tb-open">Flight details</button></div>`,el=>{
    el.querySelector("#tb-share").onclick=()=>shareFlight(f.id);el.querySelector("#tb-open").onclick=()=>openFlight(f.id);
    Inbound.paint(f);
    const stay=[f.inn?+f.inn:now,nx?+nx.out:(f.inn?+f.inn:now)+24*36e5];
-   WX.get(f.arr).then(w=>{const box=document.getElementById("tb-wx");if(!box)return;if(!w){box.textContent="No forecast right now. It needs a connection the first time.";return}
+   WX.get(f.arr).then(w=>{const box=document.getElementById("tb-wx");if(!box)return;if(!w){box.textContent="No forecast right now. It needs a connection.";return}
     const at=f.inn?WX.at(w,+f.inn):null,days=WX.days(w,stay[0],Math.min(stay[1],stay[0]+6*864e5),tzB);
     if(!at&&!days.length){box.textContent=f.inn&&+f.inn>now+15*864e5?"The forecast opens about two weeks before the flight.":"No forecast for these days.";return}
-    box.className="";box.innerHTML=(at?`<p style="margin:0 0 8px">On landing: <b>${Math.round(at.temp)}°</b>, ${esc(WX.text(at.code).toLowerCase())}${at.wind!=null?", wind "+Math.round(at.wind)+" km/h":""}${at.rain?", "+at.rain+"% chance of rain":""}.</p>`:"")+
-     (days.length?`<div class="wx">${days.map(x=>`<span>${esc(dtf(tzB,{weekday:"short",day:"numeric"}).format(new Date(x.mid)))}</span><span>${esc(WX.text(x.code))}${x.rain?` <span class="small">${x.rain}%</span>`:""}</span><span class="t">${Math.round(x.hi)}° <span class="small">${Math.round(x.lo)}°</span></span>`).join("")}</div>
-      <p class="small" style="margin:8px 0 0">${(()=>{const sd=days.find(x=>!f.inn||x.rise>+f.inn)||days[0];return`Sunrise ${esc(hm(new Date(sd.rise),tzB))}, sunset ${esc(hm(new Date(sd.set),tzB))} on ${esc(dtf(tzB,{weekday:"long"}).format(new Date(sd.mid)))}.`})()} Forecast from Open-Meteo${w.stale?", saved "+esc(agoText(w.t)):""}.</p>`:"")});
+    const sd=days.find(x=>!f.inn||x.rise>+f.inn)||days[0];
+    box.className="";box.innerHTML=(at?`<div class="wx-now">${wxIcon(at.code,52)}<div><div class="tb-big">${Math.round(at.temp)}° <span>${esc(WX.text(at.code))}</span></div><div class="small">On landing${at.wind!=null?" · wind "+Math.round(at.wind)+" km/h":""}${at.rain?" · "+at.rain+"% rain":""}</div></div></div>`:"")+
+     (days.length?`<div class="wx">${days.map(x=>`<span class="d">${esc(dtf(tzB,{weekday:"short"}).format(new Date(x.mid)))}</span>${wxIcon(x.code,26)}<span>${esc(WX.text(x.code))}${x.rain?` <span class="small">${x.rain}%</span>`:""}</span><span class="t">${Math.round(x.hi)}° <span class="small">${Math.round(x.lo)}°</span></span>`).join("")}</div>`:"")+
+     (sd?`<div class="wx-sun"><span>Sunrise <b>${esc(hm(new Date(sd.rise),tzB))}</b></span><span>Sunset <b>${esc(hm(new Date(sd.set),tzB))}</b></span></div>`:"")+
+     `<p class="small" style="margin:10px 0 0">From Open-Meteo${w.stale?", saved "+esc(agoText(w.t)):""}.</p>`});
    if(cur&&cur!==homeCur)FX.rate(homeCur,cur).then(r=>{const e=document.getElementById("tb-fx");if(!e||!r)return;const big=r<1?1/r:r,fmt=v=>v>=100?nf0.format(v):v>=10?nf1.format(v):v.toFixed(2);
-    e.innerHTML=`${esc(FX.name(cur))}: ${r>=1?`1 ${esc(homeCur)} = ${esc(fmt(big))} ${esc(cur)}`:`1 ${esc(cur)} = ${esc(fmt(big))} ${esc(homeCur)}`}. <span class="small">Rate from ExchangeRate-API, for a rough idea.</span>`})})}
+    e.innerHTML=`${r>=1?`1 ${esc(homeCur)} = ${esc(fmt(big))} ${esc(cur)}`:`1 ${esc(cur)} = ${esc(fmt(big))} ${esc(homeCur)}`}<div class="small" style="font-weight:400;margin-top:4px">${esc(FX.name(cur))}. A rough rate from ExchangeRate-API.</div>`})})}
 };
 
 /* ---------- inbound aircraft ---------- */
 // Which aircraft will fly your next flight, where it's coming from, and whether it will be late.
 const Inbound={
- cfg(){return Object.assign({auto:true,ta380:120,taWide:90,taNarrow:60},store.ib||{})},
+ cfg(){return Object.assign({auto:true},store.ib||{})},
  all(){return lsGet("contrail.inbound",{})||{}},
  get(f){return f?this.all()[f.id]||null:null},
  put(f,v){const a=this.all(),keep={};for(const k in a)if(BYID[k]&&BYID[k].out&&+BYID[k].out>Date.now()-864e5)keep[k]=a[k];keep[f.id]=v;lsSet("contrail.inbound",keep)},
@@ -1893,7 +1844,6 @@ const Inbound={
  busy:false,
  tick(){const f=this.target(),C=this.cfg();if(!f||!ADB.key()||!C.auto||this.busy||document.hidden||!Globe.on)return;const now=Date.now();if(+f.out-now>3*36e5)return;
   const c=this.get(f);if(c&&now-c.t<30*6e4)return;this.check(f)},
- ta(type){const t=String(type||"");const C=this.cfg();return/A38|380/.test(t)?C.ta380:/7[3-9]7.*MAX|737|A3[12]\d|A2[02]|E1[79]|E2|CRJ|ATR|Dash/i.test(t)?C.taNarrow:C.taWide},
  pick(rows,fn){return(Array.isArray(rows)?rows:[]).filter(fn)},
  sched(r,side){const s=r&&r[side]||{};return ADB.utc(s.scheduledTime)},
  est(r){const a=r.arrival||{},rw=ADB.utc(a.runwayTime),rv=ADB.utc(a.revisedTime),pr=ADB.utc(a.predictedTime);return rv||pr||(rw?rw+10*6e4:0)||ADB.utc(a.scheduledTime)},
@@ -1921,33 +1871,33 @@ const Inbound={
      departed:!!ADB.utc(d.runwayTime)||/Departed|Enroute|Approaching|Arrived/i.test(ib.status||""),status:ib.status||"",reg:(ib.aircraft||{}).reg||res.reg,type:(ib.aircraft||{}).model||""};
     const L=ib.location;if(L&&L.lat!=null)res.pos={lat:L.lat,lon:L.lon,t:Date.parse(String(L.reportedAtUtc||"").replace(" ","T"))||now};
     if(!res.pos&&!res.ib.landed&&res.ib.departed&&FR24.key()&&res.ib.reg){try{const rows=await FR24.get("/live/flight-positions/full",{registrations:res.ib.reg});const r=Array.isArray(rows)&&rows[0];if(r)res.pos={lat:r.lat,lon:r.lon,trk:r.track,t:Date.parse(r.timestamp)||now}}catch(e){}}
-    const ta=this.ta(res.ourType||f.ac||res.ib.type);res.ta=ta;res.ready=res.ib.est+ta*6e4;res.delay=Math.max(0,Math.round((res.ready-f.out)/6e4))}
+    res.late=Math.round((res.ib.est-res.ib.sched)/6e4)}
    res.err="";
-  }catch(e){res.err=e.message;if(old.ib&&!res.ib){res.ib=old.ib;res.ready=old.ready;res.delay=old.delay;res.ta=old.ta;res.pos=old.pos}}
+  }catch(e){res.err=e.message;if(old.ib&&!res.ib){res.ib=old.ib;res.late=old.late;res.pos=old.pos;res.ourEst=old.ourEst}}
   finally{this.busy=false}
   this.put(f,res);Globe.card();Globe.kick();this.paint(f);return res},
+ col(m){return m>=30?"var(--x)":m>=10?"var(--dh)":"var(--ok)"},
+ lateText(m){return m>=5?`${m} min late`:m<=-5?`${-m} min early`:"on time"},
  // one line for the globe card
- line(f){const c=this.get(f);if(!c||!c.ib)return c&&c.reg&&!c.err?`<span><i style="background:var(--muted)"></i>Aircraft ${esc(c.reg)}. No inbound flight found yet.</span>`:"";
-  const I=c.ib,tz=tzOf(f.dep),late=c.delay>=15,col=c.delay>=45?"var(--x)":late?"var(--dh)":"var(--ok)";
-  const txt=I.landed?`Inbound ${esc(I.reg)} landed ${esc(hm(new Date(I.est),tz))}`:`Inbound ${esc(I.no)} from ${esc(I.from)} lands ${esc(hm(new Date(I.est),tz))}`;
-  return`<span><i style="background:${col}"></i>${txt}${late?`, departure likely ${esc(hm(new Date(c.ready),tz))} (+${c.delay} min)`:", on time"}</span>`},
- // full detail inside the trip brief
+ line(f){const c=this.get(f);if(!c||!c.ib)return c&&c.reg&&!c.err?`<span><i style="background:var(--muted)"></i>Aircraft ${esc(c.reg)}, no inbound flight found yet</span>`:"";
+  const I=c.ib,tz=tzOf(f.dep),m=c.late||0,dep=c.ourEst&&Math.abs(c.ourEst-f.out)>=5*6e4?`, departure now ${esc(hm(new Date(c.ourEst),tz))}`:"";
+  return`<span><i style="background:${this.col(I.landed?0:m)}"></i>${I.landed?`Inbound ${esc(I.reg)} landed ${esc(hm(new Date(I.est),tz))}`:`Inbound ${esc(I.no)} from ${esc(I.from)} lands ${esc(hm(new Date(I.est),tz))}${m>=5?` (+${m})`:""}`}${dep}</span>`},
+ // full detail inside the trip brief, from live data
  paint(f){const box=document.getElementById("tb-ib");if(!box)return;const c=this.get(f),now=Date.now(),tz=tzOf(f.dep);
   if(!f.out||+f.out<now-15*6e4){box.innerHTML="";return}
-  if(!ADB.key()){box.innerHTML=`<h3 style="margin:18px 0 8px">Inbound aircraft</h3><p class="note" style="margin:0">Add an AeroDataBox key in Settings to see the aircraft coming in for this flight.</p>`;return}
-  let h=`<h3 style="margin:18px 0 8px">Inbound aircraft</h3>`;
+  if(!ADB.key()){box.innerHTML=`<div class="tb-box"><h3>Inbound aircraft</h3><p class="small" style="margin:0">Add an AeroDataBox key in Settings to see the aircraft coming in for this flight.</p></div>`;return}
+  let h=`<div class="tb-box"><h3>Inbound aircraft</h3>`;
   if(!c)h+=`<p class="small" style="margin:0">${+f.out-now>24*36e5?"Available from 24 hours before departure.":"Not checked yet."}</p>`;
-  else{const I=c.ib;
-   if(c.reg)h+=`<p style="margin:0 0 6px">Aircraft for this flight: <b>${esc(c.reg)}</b>${c.ourType?" ("+esc(c.ourType)+")":""}${f.ibReg?" (entered by you)":""}.</p>`;
-   if(I){const st=I.landed?`landed at ${esc(hm(new Date(I.est),tz))}`:I.departed?`in the air, landing about ${esc(hm(new Date(I.est),tz))}`:`due to leave ${esc(I.fromName||I.from)}, landing about ${esc(hm(new Date(I.est),tz))}`;
-    const dl=Math.round((I.est-I.sched)/6e4);
-    h+=`<p style="margin:0 0 6px">${c.guess?"Probably ":""}${esc(I.no)} from ${esc(I.fromName||I.from)}: ${st}${dl>=10?` (${dl} min late)`:dl<=-10?` (${-dl} min early)`:""}.</p>`;
-    h+=`<p style="margin:0 0 6px;color:${c.delay>=45?"var(--x)":c.delay>=15?"var(--dh)":"var(--ok)"}">${c.delay>=15?`With a ${c.ta}-minute turnaround, departure is likely about <b>${esc(hm(new Date(c.ready),tz))}</b>, ${c.delay} minutes late.`:`Enough time for a ${c.ta}-minute turnaround. Departure looks on time.`}</p>`}
-   else h+=`<p class="small" style="margin:0 0 6px">${c.reg?"No flight found yet bringing this aircraft in. It may already be on the ground.":"The aircraft isn't known yet. It's usually assigned a few hours before departure."}</p>`;
-   if(c.ourEst&&Math.abs(c.ourEst-f.out)>=5*6e4)h+=`<p class="small" style="margin:0 0 6px">Airline's estimate for your departure: ${esc(hm(new Date(c.ourEst),tz))}.</p>`;
-   if(c.err)h+=`<p class="small" style="margin:0 0 6px;color:var(--x)">${esc(c.err)}</p>`;
-   h+=`<p class="small" style="margin:0">Checked ${esc(agoText(c.t))}. From AeroDataBox.</p>`}
-  h+=`<div class="d-acts" style="margin-top:8px"><button class="btn sm" id="ib-go"${this.busy?" disabled":""}>${this.busy?"Checking…":"Check now"}</button><button class="btn sm" id="ib-reg">${f.ibReg?"Change aircraft":"I know the aircraft"}</button></div>`;
+  else{const I=c.ib,C=(k,v,sub)=>Trip.cell(k,v,sub);
+   h+=`<div class="tb-grid">${C("Aircraft",c.reg?esc(c.reg):"Not assigned yet",c.reg?esc(c.ourType||(I&&I.type)||"")+(f.ibReg?" · entered by you":""):"Usually a few hours before")}`;
+   if(c.ourEst)h+=C("Your departure",esc(hm(new Date(c.ourEst),tz)),Math.abs(c.ourEst-f.out)>=5*6e4?`<span style="color:${this.col(Math.round((c.ourEst-f.out)/6e4))}">${esc(this.lateText(Math.round((c.ourEst-f.out)/6e4)))}</span>`:"as scheduled");
+   if(I){const st=I.landed?"Landed":I.departed?"In the air":"Not departed yet";
+    h+=C((c.guess?"Probably ":"")+"Inbound flight",esc(I.no),"from "+esc(I.fromName||I.from))+C(I.landed?"Landed":"Lands",esc(hm(new Date(I.est),tz)),`<span style="color:${this.col(I.landed?0:c.late||0)}">${esc(st+" · "+this.lateText(c.late||0))}</span>`)}
+   h+=`</div>`;
+   if(!I)h+=`<p class="small" style="margin:10px 0 0">${c.reg?"No flight found today bringing this aircraft in. It may already be on the ground.":"The inbound flight shows up once the aircraft is known."}</p>`;
+   if(c.err)h+=`<p class="small" style="margin:10px 0 0;color:var(--x)">${esc(c.err)}</p>`;
+   h+=`<p class="small" style="margin:10px 0 0">Checked ${esc(agoText(c.t))}. Live data from AeroDataBox.</p>`}
+  h+=`<div class="d-acts" style="margin-top:10px"><button class="btn sm" id="ib-go"${this.busy?" disabled":""}>${this.busy?"Checking…":"Check now"}</button><button class="btn sm" id="ib-reg">${f.ibReg?"Change aircraft":"I know the aircraft"}</button></div></div>`;
   box.innerHTML=h;
   box.querySelector("#ib-go").onclick=()=>{this.check(f);this.paint(f)};
   box.querySelector("#ib-reg").onclick=()=>{const r=prompt("Registration of the aircraft for "+f.flt+" (leave empty to clear):",f.ibReg||"");if(r==null)return;
@@ -1989,26 +1939,22 @@ Object.assign(Globe,{
 const Tools={
  num(obj,k,label,val,full){return`<label${full?' class="full"':""}>${esc(label)}<input type="number" inputmode="decimal" min="0" step="any" data-cfg="${obj}.${k}" value="${val||val===0?esc(val):""}" placeholder="0"></label>`},
  tog(obj,k,label,sub,val){return`<div class="it"><span class="lab">${esc(label)}${sub?`<small>${esc(sub)}</small>`:""}</span><label class="sw"><input type="checkbox" data-cfgb="${obj}.${k}" ${val?"checked":""} aria-label="${esc(label)}"><span></span></label></div>`},
- settings(){const D=Duty.cfg(),P=Pay.cfg();
+ settings(){const D=Duty.cfg();
   return`<h2>Duty and rest limits</h2>
   <div class="panel"><div class="form">${this.num("ftl","b28","Block hours in 28 days",D.b28)}${this.num("ftl","b365","Block hours in 12 months",D.b365)}${this.num("ftl","d7","Duty hours in 7 days",D.d7)}${this.num("ftl","d28","Duty hours in 28 days",D.d28)}${this.num("ftl","rest","Minimum rest, hours",D.rest)}${this.num("ftl","post","Duty after landing, minutes",D.post)}${this.num("ftl","pre","Report before departure, minutes",D.pre,true)}</div></div>
   <div class="set" style="margin-top:10px">${this.tog("ftl","restDuty","Rest at least as long as the duty before it","Otherwise only the minimum above counts",D.restDuty)}</div>
   <p class="note">Shown in Stats, flight details and the trip brief. Report before departure is used for flights without a report time. Set a limit to 0 to hide it. Check the numbers against your airline's scheme.</p>
-  <h2>Pay estimate</h2>
-  <div class="panel"><div class="form"><label>Currency<input data-cfgs="pay.cur" value="${esc(P.cur)}" maxlength="3" autocapitalize="characters" placeholder="AED"></label>${this.num("pay","basic","Basic salary, per month",P.basic)}${this.num("pay","fly","Flying pay, per block hour",P.fly)}${this.num("pay","dh","Deadhead pay, per hour",P.dh)}${this.num("pay","lay","Allowance per layover",P.lay)}${this.num("pay","layH","Allowance per layover hour",P.layH)}${this.num("pay","other","Other allowances, per month",P.other,true)}</div></div>
-  <p class="note">Fill in what applies to you; Stats then shows a monthly estimate. Leave it all at 0 to hide it.</p>`},
+`},
  inbound(){const I=Inbound.cfg();
   return`<div class="set" style="margin-top:10px">${this.tog("ib","auto","Check the inbound aircraft","In the 3 hours before departure, every 30 minutes while the globe is open",I.auto)}</div>
-  <div class="panel" style="margin-top:10px"><div class="form">${this.num("ib","ta380","A380 turnaround, minutes",I.ta380)}${this.num("ib","taWide","Other widebody, minutes",I.taWide)}${this.num("ib","taNarrow","Narrowbody, minutes",I.taNarrow)}</div></div>
-  <p class="note">Each check uses about 2 AeroDataBox units. The turnaround is the least time the aircraft needs on the ground before your flight can leave.</p>`},
+  <p class="note">Shows which aircraft is flying your next flight, where it's coming from and when it lands, from live data. Each check uses about 2 AeroDataBox units.</p>`},
  bind(W){const obj=n=>store[n]=store[n]||{};
   W.querySelectorAll("[data-cfg]").forEach(i=>i.onchange=()=>{const[o,k]=i.dataset.cfg.split(".");const v=parseFloat(i.value);obj(o)[k]=isNaN(v)?0:v;save();Duty._k=null});
-  W.querySelectorAll("[data-cfgs]").forEach(i=>i.onchange=()=>{const[o,k]=i.dataset.cfgs.split(".");const v=i.value.trim().toUpperCase();if(!/^[A-Z]{3}$/.test(v)){toast("Use a three-letter code, like AED");i.value=Pay.cfg().cur;return}obj(o)[k]=v;i.value=v;save()});
   W.querySelectorAll("[data-cfgb]").forEach(i=>i.onchange=()=>{const[o,k]=i.dataset.cfgb.split(".");obj(o)[k]=i.checked;save();Duty._k=null})}
 };
 document.getElementById("stats").addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const a=b.dataset.act;
  if(a==="ms-all")Miles.all(b.dataset.scope);else if(a==="tail")Tails.open(b.dataset.reg);else if(a==="tails-all")Tails.all();
- else if(a==="crew")Crew.person(b.dataset.key);else if(a==="crew-all")Crew.all();else if(a==="yr")Year.open(b.dataset.y)});
+ else if(a==="yr")Year.open(b.dataset.y)});
 
 /* ---------- Flightradar24 ---------- */
 // The API key stays on this phone: it isn't in backups and isn't synced.
