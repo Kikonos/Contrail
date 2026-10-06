@@ -227,6 +227,11 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border:0;border-radiu
 .toast{position:fixed;left:50%;bottom:calc(70px + max(4px,calc(var(--sab) - 14px)));transform:translate(-50%,20px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;opacity:0;transition:.2s;z-index:30;pointer-events:none;max-width:90%}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 /* crew tools */
+details.fold{margin-top:30px}
+details.fold summary{list-style:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font:700 20px/1.2 var(--round);padding:4px 0 10px}
+details.fold summary::-webkit-details-marker{display:none}
+details.fold summary::after{content:"";width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:0 6px 4px 0;transition:transform .2s}
+details.fold[open] summary::after{transform:rotate(-135deg);margin-bottom:-2px}
 .tb-box{background:var(--surface-2);border-radius:18px;padding:14px 16px 16px;margin-top:12px}
 .tb-box .btn{background:var(--surface)}
 .tb-box h3{font-size:13px;font-weight:600;color:var(--muted);margin:0 0 12px;letter-spacing:.01em}
@@ -935,7 +940,7 @@ function addAirport(code,after){
 }
 
 /* ---------- settings ---------- */
-const Settings={render(){
+const Settings={open:{},render(){
   const S=disp();const n=FL.length,u=store.add.length;
   const sw=(k,t,sub)=>`<div class="it"><span class="lab">${t}${sub?`<small>${sub}</small>`:""}</span><label class="sw"><input type="checkbox" data-k="${k}" ${S[k]?"checked":""} aria-label="${t}"><span></span></label></div>`;
   const sg=(k,t,opts)=>`<div class="it col"><span class="lab">${t}</span><div class="seg" data-k="${k}">${opts.map(([v,l])=>`<button data-v="${v}" class="${S[k]===v?"on":""}">${l}</button>`).join("")}</div></div>`;
@@ -965,14 +970,15 @@ const Settings={render(){
   <h2>Roster formats</h2>
   <div class="set">${allRecipes().map(r=>`<div class="it"><span class="lab">${esc(r.name)}<small>${r.builtin?"Built in":"Learned from your roster"}</small></span>${r.builtin?"":`<button class="btn sm" data-delrec="${esc(r.id)}">Forget</button>`}</div>`).join("")}</div>
   <p class="note">When a roster arrives in a format Contrail doesn't know, Claude reads it once and writes down how. After that it's read on your phone.</p>
-  <h2>Imported rosters</h2>
+  <details class="fold" data-fold="imps"${Settings.open.imps?" open":""}><summary>Imported rosters</summary>
   <div class="set" id="imps">${(()=>{const g=new Map();for(const a of store.add){if(a.src!=="I")continue;const k=(a.date||"").slice(0,7);const x=g.get(k)||{f:0,d:0};x.f++;g.set(k,x)}for(const d of store.duties){if(d.src!=="roster")continue;const k=d.date.slice(0,7);const x=g.get(k)||{f:0,d:0};x.d++;g.set(k,x)}
    const mf=new Intl.DateTimeFormat("en-GB",{month:"long",year:"numeric",timeZone:"UTC"});const ks=[...g.keys()].sort().reverse();
    return ks.length?ks.map(k=>`<div class="it"><span class="lab">${mf.format(new Date(k+"-01T12:00:00Z"))}<small>${g.get(k).f} flights, ${g.get(k).d} duty days</small></span><button class="btn sm" data-unimp="${k}">Remove</button></div>`).join("")+`<div class="it"><span class="lab">Everything imported from rosters<small>Your history from RosterBuster and Flighty stays</small></span><button class="btn sm" data-unimp="all" style="color:var(--x)">Remove all</button></div>`:`<div class="it"><span class="lab">No rosters imported yet</span></div>`})()}</div>
-  <p class="note">If a roster came in on the wrong dates, remove that month here and import the roster again.</p>
-  <h2>Duty codes</h2>
+  <p class="note">If a roster came in on the wrong dates, remove that month here and import the roster again.</p></details>
+  <details class="fold" data-fold="codes"${Settings.open.codes?" open":""}><summary>Duty codes</summary>
   <div class="set" id="codes">${[...new Set(Object.keys(CODES0).concat(Object.keys(store.codes)).concat(allDuties().map(d=>d.code)))].sort().map(c=>{const ci=codeInfo(c);return`<div class="it"><span class="lab">${esc(c)}<small>${esc(ci.label)}</small></span><select data-code="${esc(c)}" style="border:0;background:var(--surface-2);border-radius:9px;padding:7px 8px;font-size:14px">${KINDS.map(([k,n])=>`<option value="${k}" ${ci.kind===k?"selected":""}>${n}</option>`).join("")}</select></div>`}).join("")}
    <div class="it"><input id="code-new" placeholder="New code, e.g. BLOCK" style="border:0;background:var(--surface-2);border-radius:9px;padding:9px 10px;font-size:15px;flex:1;min-width:0;text-transform:uppercase"><input id="code-lab" placeholder="Meaning" style="border:0;background:var(--surface-2);border-radius:9px;padding:9px 10px;font-size:15px;flex:1;min-width:0"><button class="btn sm pri" id="code-add">Add</button></div></div>
+  </details>
   ${Tools.settings()}
   <h2>Appearance</h2>
   <div class="seg" id="theme">${[["system","Match iPhone"],["light","Light"],["dark","Dark"]].map(([k,l])=>`<button data-k="${k}" class="${store.theme===k?"on":""}">${l}</button>`).join("")}</div>
@@ -993,7 +999,7 @@ const Settings={render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.0 (7 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.1 (7 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -1949,6 +1955,7 @@ const Tools={
   return`<div class="set" style="margin-top:10px">${this.tog("ib","auto","Check the inbound aircraft","In the 3 hours before departure, every 30 minutes while the globe is open",I.auto)}</div>
   <p class="note">Shows which aircraft is flying your next flight, where it's coming from and when it lands, from live data. Each check uses about 2 AeroDataBox units.</p>`},
  bind(W){const obj=n=>store[n]=store[n]||{};
+  W.querySelectorAll("details.fold").forEach(d=>d.ontoggle=()=>{Settings.open[d.dataset.fold]=d.open});
   W.querySelectorAll("[data-cfg]").forEach(i=>i.onchange=()=>{const[o,k]=i.dataset.cfg.split(".");const v=parseFloat(i.value);obj(o)[k]=isNaN(v)?0:v;save();Duty._k=null});
   W.querySelectorAll("[data-cfgb]").forEach(i=>i.onchange=()=>{const[o,k]=i.dataset.cfgb.split(".");obj(o)[k]=i.checked;save();Duty._k=null})}
 };
