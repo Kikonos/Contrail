@@ -925,7 +925,7 @@ const Settings={render(){
    <p style="margin:0 0 10px">${nf0.format(n)} flights in your logbook, ${u} added since the first import.</p>
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 1.9 (6 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 1.10 (6 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -1419,10 +1419,9 @@ const FR24={
    let r;try{r=await fetch(u,{headers:{"Accept":"application/json","Accept-Version":"v1","Authorization":"Bearer "+k},cache:"no-store"})}
    catch(e){throw new Error(navigator.onLine===false?"No internet connection.":"Couldn't reach Flightradar24. If you're online, it may not accept requests from the app.")}
    if(r.status===429&&attempt<3){await new Promise(z=>setTimeout(z,8000*(attempt+1)));continue}
-   if(r.status===401)throw new Error("Flightradar24 didn't accept the API key.");
-   if(r.status===402||r.status===403)throw new Error("Flightradar24 refused the request. Check that your plan has credits left.");
-   if(r.status===429)throw new Error("Flightradar24 is limiting requests. Try again in a few minutes.");
-   if(!r.ok)throw new Error("Flightradar24 replied with an error ("+r.status+").");
+   if(!r.ok){let why="";try{const j=await r.json();why=String(j.message||j.error||j.detail||j.details||"");if(j.details&&typeof j.details==="object")why+=" "+JSON.stringify(j.details)}catch(e){}why=why.trim().slice(0,240);if(why&&!/[.!?]$/.test(why))why+=".";
+    const msg=r.status===401?"Flightradar24 didn't accept the API key.":r.status===402||r.status===403?"Flightradar24 refused the request.":r.status===429?"Flightradar24 is limiting requests. Try again in a few minutes.":"Flightradar24 replied with an error ("+r.status+").";
+    const err=new Error(msg+(why?" It said: "+why:""));err.status=r.status;throw err}
    const j=await r.json();return j&&Array.isArray(j.data)?j.data:j}},
  iso(ms){return new Date(ms).toISOString().slice(0,19)+"Z"},
  // "EK0133" and "EK 133" both become "EK133"
@@ -1461,24 +1460,26 @@ const FR24={
  pending(){try{return JSON.parse(localStorage.getItem("contrail.fr24found")||"[]").filter(x=>BYID[x.id])}catch(e){return[]}},
  setPending(a){try{a.length?localStorage.setItem("contrail.fr24found",JSON.stringify(a)):localStorage.removeItem("contrail.fr24found")}catch(e){}},
  async fill(){if(this.run)return;const list=this.missing();if(!list.length){this.say("Nothing to fill in.","done");return}
-  const recent=list.filter(f=>f.t>=this.FROM).sort((a,b)=>a.t-b.t),old=list.filter(f=>f.t<this.FROM).sort((a,b)=>b.t-a.t);
+  const recent=list.filter(f=>f.t>=this.FROM).sort((a,b)=>b.t-a.t),old=list.filter(f=>f.t<this.FROM).sort((a,b)=>b.t-a.t);
   const found=this.pending(),seen=new Set(found.map(x=>x.id)),mark=[];let done=0,oldErr="";this.run={stop:false};
+  const refused=(f,e)=>e.status&&e.status<500&&e.status!==401&&e.status!==429?`Stopped at ${f.flt} on ${fullDate(f.out,tzOf(f.dep))}. ${e.message} Your plan may not reach back that far (Explorer covers the last 30 days, Essential 2 years), or it may be out of credits.`:e.message;
   const take=async(f,r)=>{if(!r){mark.push({id:f.id,p:{fr24:"-"}});return}const p=await this.patchFrom(f,r);p.fr24=r.fr24_id||"1";
    if(Object.keys(p).length>1){if(!seen.has(f.id)){found.push({id:f.id,p});seen.add(f.id)}}else mark.push({id:f.id,p});this.setPending(found)};
   const step=()=>this.say(`Looking up flights on Flightradar24, ${done} of ${list.length}…`);
   try{
    // since April 2024: flight summaries, a few days of flights per request
    const groups=[];for(const f of recent){const g=groups[groups.length-1];
-    if(g&&f.t-g[0].t<4*864e5&&new Set(g.map(x=>this.fltNo(x.flt)).concat(this.fltNo(f.flt))).size<=15)g.push(f);else groups.push([f])}
-   for(const g of groups){if(this.run.stop)break;step();
-    const rows=await this.get("/flight-summary/full",{flights:[...new Set(g.map(x=>this.fltNo(x.flt)))].join(","),flight_datetime_from:this.iso(g[0].t-12*36e5),flight_datetime_to:this.iso(g[g.length-1].t+12*36e5),limit:200});
+    if(g&&g[0].t-f.t<4*864e5&&new Set(g.map(x=>this.fltNo(x.flt)).concat(this.fltNo(f.flt))).size<=15)g.push(f);else groups.push([f])}
+   for(const g of groups){if(this.run.stop)break;step();let rows;
+    try{rows=await this.get("/flight-summary/full",{flights:[...new Set(g.map(x=>this.fltNo(x.flt)))].join(","),flight_datetime_from:this.iso(g[g.length-1].t-12*36e5),flight_datetime_to:this.iso(Math.min(g[0].t+12*36e5,Date.now()-6e4)),limit:200})}
+    catch(e){oldErr=refused(g[0],e);break}
     for(const f of g)await take(f,this.pick(f,Array.isArray(rows)?rows:[]));
     done+=g.length;await new Promise(z=>setTimeout(z,700))}
    // before that: the position archive, asking which aircraft flew the flight halfway through it
-   for(const f of old){if(this.run.stop)break;step();
+   for(const f of oldErr?[]:old){if(this.run.stop)break;step();
     const mid=f.inn?(+f.out+ +f.inn)/2:+f.out+36e5;let rows;
     try{rows=await this.get("/historic/flight-positions/full",{timestamp:Math.round(mid/1000),flights:this.fltNo(f.flt)})}
-    catch(e){oldErr=/refused/.test(e.message)?`Flightradar24 refused the lookup for ${f.flt} on ${fullDate(f.out,tzOf(f.dep))}. Your plan may not reach back that far, or it may be out of credits.`:e.message;break}
+    catch(e){oldErr=refused(f,e);break}
     const no=this.fltNo(f.flt),list2=Array.isArray(rows)?rows:[];
     await take(f,list2.find(x=>this.fltNo(x.flight)===no&&x.orig_iata===f.dep)||list2.find(x=>this.fltNo(x.flight)===no&&!x.orig_iata)||null);
     done++;await new Promise(z=>setTimeout(z,700))}
