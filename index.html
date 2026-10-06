@@ -227,6 +227,7 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border:0;border-radiu
 .toast{position:fixed;left:50%;bottom:calc(70px + max(4px,calc(var(--sab) - 14px)));transform:translate(-50%,20px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;opacity:0;transition:.2s;z-index:30;pointer-events:none;max-width:90%}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 /* crew tools */
+.set .numin{flex:none;width:86px;height:40px;border:0;border-radius:10px;background:var(--surface-2);color:var(--text);font:700 17px var(--round);text-align:center;padding:0 8px}
 details.fold{margin-top:30px}
 details.fold summary{list-style:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font:700 20px/1.2 var(--round);padding:4px 0 10px}
 details.fold summary::-webkit-details-marker{display:none}
@@ -999,7 +1000,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.1 (7 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.2 (7 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -1876,7 +1877,10 @@ const Inbound={
     res.ib={no:ib.number||"",from:(d.airport||{}).iata||"",fromName:(d.airport||{}).shortName||(d.airport||{}).municipalityName||"",sched:this.sched(ib,"arrival"),est:this.est(ib),landed:!!ADB.utc(a.runwayTime)&&ADB.utc(a.runwayTime)<=now||/Arrived/i.test(ib.status||""),
      departed:!!ADB.utc(d.runwayTime)||/Departed|Enroute|Approaching|Arrived/i.test(ib.status||""),status:ib.status||"",reg:(ib.aircraft||{}).reg||res.reg,type:(ib.aircraft||{}).model||""};
     const L=ib.location;if(L&&L.lat!=null)res.pos={lat:L.lat,lon:L.lon,t:Date.parse(String(L.reportedAtUtc||"").replace(" ","T"))||now};
-    if(!res.pos&&!res.ib.landed&&res.ib.departed&&FR24.key()&&res.ib.reg){try{const rows=await FR24.get("/live/flight-positions/full",{registrations:res.ib.reg});const r=Array.isArray(rows)&&rows[0];if(r)res.pos={lat:r.lat,lon:r.lon,trk:r.track,t:Date.parse(r.timestamp)||now}}catch(e){}}
+    res.ib.src="AeroDataBox";
+    if(!res.ib.landed&&res.ib.departed&&FR24.key()&&res.ib.reg){try{const rows=await FR24.get("/live/flight-positions/full",{registrations:res.ib.reg});
+     const r=(Array.isArray(rows)?rows:[]).find(x=>!x.dest_iata||x.dest_iata===f.dep);
+     if(r){res.pos={lat:r.lat,lon:r.lon,trk:r.track,t:Date.parse(r.timestamp)||now};const eta=Date.parse(r.eta||"");if(eta&&Math.abs(eta-res.ib.est)<6*36e5){res.ib.est=eta;res.ib.src="Flightradar24"}}}catch(e){}}
     res.late=Math.round((res.ib.est-res.ib.sched)/6e4)}
    res.err="";
   }catch(e){res.err=e.message;if(old.ib&&!res.ib){res.ib=old.ib;res.late=old.late;res.pos=old.pos;res.ourEst=old.ourEst}}
@@ -1898,11 +1902,11 @@ const Inbound={
    h+=`<div class="tb-grid">${C("Aircraft",c.reg?esc(c.reg):"Not assigned yet",c.reg?esc(c.ourType||(I&&I.type)||"")+(f.ibReg?" · entered by you":""):"Usually a few hours before")}`;
    if(c.ourEst)h+=C("Your departure",esc(hm(new Date(c.ourEst),tz)),Math.abs(c.ourEst-f.out)>=5*6e4?`<span style="color:${this.col(Math.round((c.ourEst-f.out)/6e4))}">${esc(this.lateText(Math.round((c.ourEst-f.out)/6e4)))}</span>`:"as scheduled");
    if(I){const st=I.landed?"Landed":I.departed?"In the air":"Not departed yet";
-    h+=C((c.guess?"Probably ":"")+"Inbound flight",esc(I.no),"from "+esc(I.fromName||I.from))+C(I.landed?"Landed":"Lands",esc(hm(new Date(I.est),tz)),`<span style="color:${this.col(I.landed?0:c.late||0)}">${esc(st+" · "+this.lateText(c.late||0))}</span>`)}
+    h+=C((c.guess?"Probably ":"")+"Inbound flight",esc(I.no),"from "+esc(I.fromName||I.from))+C(I.landed?"Landed":"Lands",esc(hm(new Date(I.est),tz)),`<span style="color:${this.col(I.landed?0:c.late||0)}">${esc(st+" · "+this.lateText(c.late||0))}</span><br>${esc(I.src||"AeroDataBox")}`)}
    h+=`</div>`;
    if(!I)h+=`<p class="small" style="margin:10px 0 0">${c.reg?"No flight found today bringing this aircraft in. It may already be on the ground.":"The inbound flight shows up once the aircraft is known."}</p>`;
    if(c.err)h+=`<p class="small" style="margin:10px 0 0;color:var(--x)">${esc(c.err)}</p>`;
-   h+=`<p class="small" style="margin:10px 0 0">Checked ${esc(agoText(c.t))}. Live data from AeroDataBox.</p>`}
+   h+=`<p class="small" style="margin:10px 0 0">Checked ${esc(agoText(c.t))}. Aircraft and flights from AeroDataBox${c.ib&&c.ib.src==="Flightradar24"?", landing time from Flightradar24":""}.</p>`}
   h+=`<div class="d-acts" style="margin-top:10px"><button class="btn sm" id="ib-go"${this.busy?" disabled":""}>${this.busy?"Checking…":"Check now"}</button><button class="btn sm" id="ib-reg">${f.ibReg?"Change aircraft":"I know the aircraft"}</button></div></div>`;
   box.innerHTML=h;
   box.querySelector("#ib-go").onclick=()=>{this.check(f);this.paint(f)};
@@ -1943,13 +1947,15 @@ Object.assign(Globe,{
 
 /* ---------- crew tools: settings and wiring ---------- */
 const Tools={
+ row(obj,k,label,sub,val){return`<div class="it"><span class="lab">${esc(label)}${sub?`<small>${esc(sub)}</small>`:""}</span><input class="numin" type="number" inputmode="decimal" min="0" step="any" data-cfg="${obj}.${k}" value="${val||val===0?esc(val):""}" placeholder="0" aria-label="${esc(label+(sub?" "+sub:""))}"></div>`},
  num(obj,k,label,val,full){return`<label${full?' class="full"':""}>${esc(label)}<input type="number" inputmode="decimal" min="0" step="any" data-cfg="${obj}.${k}" value="${val||val===0?esc(val):""}" placeholder="0"></label>`},
  tog(obj,k,label,sub,val){return`<div class="it"><span class="lab">${esc(label)}${sub?`<small>${esc(sub)}</small>`:""}</span><label class="sw"><input type="checkbox" data-cfgb="${obj}.${k}" ${val?"checked":""} aria-label="${esc(label)}"><span></span></label></div>`},
  settings(){const D=Duty.cfg();
   return`<h2>Duty and rest limits</h2>
-  <div class="panel"><div class="form">${this.num("ftl","b28","Block hours in 28 days",D.b28)}${this.num("ftl","b365","Block hours in 12 months",D.b365)}${this.num("ftl","d7","Duty hours in 7 days",D.d7)}${this.num("ftl","d28","Duty hours in 28 days",D.d28)}${this.num("ftl","rest","Minimum rest, hours",D.rest)}${this.num("ftl","post","Duty after landing, minutes",D.post)}${this.num("ftl","pre","Report before departure, minutes",D.pre,true)}</div></div>
-  <div class="set" style="margin-top:10px">${this.tog("ftl","restDuty","Rest at least as long as the duty before it","Otherwise only the minimum above counts",D.restDuty)}</div>
-  <p class="note">Shown in Stats, flight details and the trip brief. Report before departure is used for flights without a report time. Set a limit to 0 to hide it. Check the numbers against your airline's scheme.</p>
+  <div class="set">${this.row("ftl","b28","Block hours","In 28 days",D.b28)}${this.row("ftl","b365","Block hours","In 12 months",D.b365)}${this.row("ftl","d7","Duty hours","In 7 days",D.d7)}${this.row("ftl","d28","Duty hours","In 28 days",D.d28)}</div>
+  <div class="set" style="margin-top:10px">${this.row("ftl","rest","Minimum rest","Hours",D.rest)}${this.tog("ftl","restDuty","Rest at least as long as the duty before it","Otherwise only the minimum counts",D.restDuty)}</div>
+  <div class="set" style="margin-top:10px">${this.row("ftl","pre","Report before departure","Minutes, when the roster has no report time",D.pre)}${this.row("ftl","post","Duty after landing","Minutes",D.post)}</div>
+  <p class="note">Used in Stats, flight details and the trip brief. Set a limit to 0 to hide it. Check the numbers against your airline's scheme.</p>
 `},
  inbound(){const I=Inbound.cfg();
   return`<div class="set" style="margin-top:10px">${this.tog("ib","auto","Check the inbound aircraft","In the 3 hours before departure, every 30 minutes while the globe is open",I.auto)}</div>
