@@ -32,7 +32,7 @@ With a Flightradar24 API key (from fr24api.flightradar24.com), Contrail can:
 
 - **Follow your flight live:** from 3 hours before departure, the globe card shows where the aircraft is, its height, speed and landing time, about once a minute while the Globe tab is open. If the connection drops after take-off, Contrail keeps going from the last report and shows an estimated position until it's back online.
 - **Save the details after landing:** registration, aircraft type, airline, and take-off and landing times.
-- **Fill in past flights:** Settings > Flightradar24 > Fill in looks up flights since April 2024 that are missing the aircraft, registration or airline. You see what was found before anything is saved, and only empty fields are filled.
+- **Fill in past flights:** Settings > Flightradar24 > Fill in looks up flights back to May 2016 that are missing the aircraft, registration or airline. Flights from April 2024 are looked up a few days at a time; older ones come from Flightradar24's position archive, one lookup per flight, so they use more credits and take longer. You can stop at any time, and you see what was found before anything is saved. Only empty fields are filled.
 
 Add the key in Settings > Flightradar24. It stays on the phone and isn't included in backups. Lookups use credits from your Flightradar24 plan.
 
