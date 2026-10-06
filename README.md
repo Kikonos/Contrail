@@ -40,6 +40,18 @@ Add the key in Settings > Flight data. It stays on the phone and isn't included 
 
 A second source for Fill in, through RapidAPI. Its free Basic plan reaches back a year and allows about 200 flight lookups a month. Fill in tries Flightradar24 first, as far back as that plan allows, then AeroDataBox for the rest. When the monthly allowance runs out, run Fill in again the next month and it carries on. Add the RapidAPI key in Settings > Flight data.
 
+## Crew tools
+
+- **Trip brief:** Brief on the globe card, or Trip brief in a flight's details. Report time, duty, rest, time difference, layover, weather at the destination (Open-Meteo), sunrise and sunset, and the local currency with a rough exchange rate.
+- **Inbound aircraft:** with an AeroDataBox key, Contrail finds the aircraft for your next flight and the flight bringing it in, from 3 hours before departure, and warns when the turnaround makes a delay likely. Turnaround times are in Settings.
+- **Duty and rest:** Stats shows rolling block and duty hours against the limits in Settings, the peak your roster reaches, and your rest before the next report. Flight details show each duty and the rest before it.
+- **Pay estimate:** enter your rates in Settings and Stats shows an estimate for each month.
+- **Crew:** add the people you flew with to a flight (and the rest of that trip in one go). Stats lists who you've flown with most; tap a name for your flights together.
+- **Aircraft:** every registration you've flown, how often and when. With an AeroDataBox key, its age and details.
+- **Milestones and year in review:** milestones as you reach them, and a summary of each year you can share as a picture or replay on the globe.
+- **Share:** sends your flight with a live tracking link.
+- **Backup reminder:** a gentle prompt when your last backup is more than two weeks old and the logbook has changed since.
+
 ## Other airlines' rosters
 
 This version reads the formats it knows. To add a new one, send the roster to Claude so the format can be built in.
