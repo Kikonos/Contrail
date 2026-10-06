@@ -1,5 +1,5 @@
 // Contrail offline cache. Bump VERSION with every release so phones pick up the new app.
-const VERSION = "contrail-1.5";
+const VERSION = "contrail-1.6";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png", "./favicon-32.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: "reload" })))));
