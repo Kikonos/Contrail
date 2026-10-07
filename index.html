@@ -239,6 +239,8 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border:0;border-radiu
 .lc-grid em{display:block;font-style:normal;font-size:12.5px}
 .lc-grid em span{display:inline;font-size:inherit}
 #t-globe.has-lcard .g-zoom,#t-globe.has-lcard .g-legend{bottom:calc(var(--lch,0px) + 24px)}
+body:has(#nudge) .lcard{bottom:84px}
+body:has(#nudge) #t-globe.has-lcard .g-zoom,body:has(#nudge) #t-globe.has-lcard .g-legend{bottom:calc(var(--lch,0px) + 96px)}
 details.fold{margin-top:30px}
 details.fold summary{list-style:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font:700 20px/1.2 var(--round);padding:4px 0 10px}
 details.fold summary::-webkit-details-marker{display:none}
@@ -368,12 +370,21 @@ function blankStore(){return{v:1,ts:0,ov:{},add:[],del:[],ap:{},theme:"system",d
 let store=blankStore();
 try{const s=JSON.parse(localStorage.getItem(LSKEY)||"null");if(s&&s.v===1)store=Object.assign(store,s)}catch(e){}
 function disp(){return store.disp=Object.assign({},DISP0,store.disp||{})}
-function fixStore(){store.duties=store.duties||[];store.codes=store.codes||{};store.recipes=store.recipes||[];disp()}
+function fixStore(){const obj=v=>v&&typeof v==="object"&&!Array.isArray(v),arr=Array.isArray;
+  for(const k of["ov","ap","codes"])if(!obj(store[k]))store[k]={};
+  for(const k of["add","del","duties","recipes"])if(!arr(store[k]))store[k]=[];
+  store.add=store.add.filter(a=>obj(a)&&a.id&&a.dep&&a.arr&&a.date);store.duties=store.duties.filter(d=>obj(d)&&typeof d.date==="string");
+  for(const k in store.ov)if(!obj(store.ov[k]))delete store.ov[k];
+  for(const k of["ftl","ib","disp"])if(store[k]!=null&&!obj(store[k]))delete store[k];
+  if(store.msSeen!=null&&!arr(store.msSeen))delete store.msSeen;
+  disp()}
 fixStore();
 let dbDoc=null,saveT=null;
 function save(){
   store.ts=Date.now();
-  try{localStorage.setItem(LSKEY,JSON.stringify(store))}catch(e){}
+  try{localStorage.setItem(LSKEY,JSON.stringify(store))}catch(e){
+   // storage full or blocked: say so once, instead of losing changes silently
+   if(!save.warned){save.warned=true;setTimeout(()=>toast("Couldn't save on this phone. Save a backup in Settings."),300)}}
   if(dbDoc){clearTimeout(saveT);saveT=setTimeout(()=>{dbDoc.set({json:JSON.stringify(store),ts:store.ts}).catch(()=>{})},600)}
 }
 const CAP={sample:null,downloads:null};
@@ -561,7 +572,7 @@ const Globe={
   this.cv=document.getElementById("globe");this.ctx=this.cv.getContext("2d");
   this.proj=d3.geoOrthographic().clipAngle(90).precision(0.6);this.path=d3.geoPath(this.proj,this.ctx);
   new ResizeObserver(()=>this.resize()).observe(this.cv);
-  const gv=lsGet("contrail.globeview",null);if(gv){if(gv.filt)this.filt=Object.assign(this.filt,gv.filt);if(gv.per)this.per=gv.per;if(gv.custom)this.custom=gv.custom;if(this.per==="custom"&&!this.custom)this.per="all"}
+  const gv=lsGet("contrail.globeview",null);if(gv){if(gv.filt&&typeof gv.filt==="object")for(const k of["O","D","P"])if(typeof gv.filt[k]==="boolean")this.filt[k]=gv.filt[k];if(gv.per)this.per=gv.per;if(Array.isArray(gv.custom)&&gv.custom.length===2&&gv.custom.every(x=>/^\d{4}-\d\d-\d\d$/.test(x)))this.custom=gv.custom;if(typeof this.per!=="string")this.per="all";if(this.per==="custom"&&!this.custom)this.per="all"}
   this.bind();this.chips();this.rebuild();this.resize();this.loadLand();
   document.getElementById("zin").onclick=()=>{this.zoom=Math.min(8,this.zoom*1.4);this.kick()};
   document.getElementById("zout").onclick=()=>{this.zoom=Math.max(.75,this.zoom/1.4);this.kick()};
@@ -1018,7 +1029,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.4 (7 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.5 (8 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -1050,7 +1061,7 @@ const Settings={open:{},render(){
   const frR=document.getElementById("fr-rev");if(frR)frR.onclick=()=>FR24.review();
   Tools.bind(W);
   document.getElementById("bk-in").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());if(j.app!=="contrail"||!j.store)throw 0;if(Array.isArray(j.hist)&&j.hist.length&&!EMBED.length){HIST=j.hist;try{localStorage.setItem("contrail.hist",JSON.stringify(HIST))}catch(e){}}
-   if(Array.isArray(j.hduties)&&j.hduties.length&&!EMBED_D.length){HDUT=j.hduties;try{localStorage.setItem("contrail.hduties",JSON.stringify(HDUT))}catch(e){}}store=Object.assign(blankStore(),j.store);fixStore();save();applyTheme();Globe.chips&&Globe.ctx&&Globe.chips();refreshAll();this.render();toast("Backup restored, "+FL.length+" flights")}catch(_){toast("That file is not a Contrail backup")}};
+   if(Array.isArray(j.hduties)&&j.hduties.length&&!EMBED_D.length){HDUT=j.hduties;try{localStorage.setItem("contrail.hduties",JSON.stringify(HDUT))}catch(e){}}store=Object.assign(blankStore(),j.store);fixStore();save();applyTheme();Globe.chips&&Globe.ctx&&Globe.chips();refreshAll();this.render();toast("Backup restored, "+FL.length+" flights")}catch(_){toast("That file is not a Contrail backup")}finally{e.target.value=""}};
 }};
 
 /* ---------- add, import, export ---------- */
@@ -1082,8 +1093,9 @@ const AddUI={rendered:false,pending:null,
   </div>
   <p class="note" style="margin-top:30px">History from your RosterBuster calendar and Flighty, cross-checked ${esc("4 Oct 2026")}.</p>`;
   const $=s=>document.getElementById(s);
-  $("froster").onchange=e=>this.roster([...e.target.files]);
-  $("fcsv").onchange=e=>this.file(e.target.files[0]);
+  // clearing the picker lets the same file be chosen again
+  $("froster").onchange=e=>{const fs=[...e.target.files];e.target.value="";this.roster(fs)};
+  $("fcsv").onchange=e=>{const f=e.target.files[0];e.target.value="";this.file(f)};
   $("m-add").onclick=()=>this.manual();
   $("ics-save").onclick=()=>exportIcs($("ics-range").value,$("ics-cats").value);
   $("m-date").value=new Date().toISOString().slice(0,10);
@@ -1923,6 +1935,7 @@ const Inbound={
    res.err="";
   }catch(e){res.err=e.message;if(old.ib&&!res.ib){res.ib=old.ib;res.late=old.late;res.pos=old.pos;res.ourEst=old.ourEst;res.live=old.live}}
   finally{this.busy=false}
+  const cur=this.get(f)||{};if(res.ib&&cur.ib&&cur.ib.no===res.ib.no){if(cur.live&&(!res.live||cur.live.t>res.live.t))res.live=cur.live;if(cur.pos&&(!res.pos||cur.pos.t>res.pos.t))res.pos=cur.pos}
   this.put(f,res);Globe.card();Globe.kick();this.paint(f);return res},
  col(m){return m>=30?"var(--x)":m>=10?"var(--dh)":"var(--ok)"},
  lateText(m){return m>=5?`${m} min late`:m<=-5?`${-m} min early`:"on time"},
@@ -2026,7 +2039,8 @@ const FR24={
    if(!r.ok){let why="";try{const j=await r.json();why=String(j.message||j.error||j.detail||j.details||"");if(j.details&&typeof j.details==="object")why+=" "+JSON.stringify(j.details)}catch(e){}why=why.trim().slice(0,240);if(why&&!/[.!?]$/.test(why))why+=".";
     const msg=r.status===401?"Flightradar24 didn't accept the API key.":r.status===402||r.status===403?"Flightradar24 refused the request.":r.status===429?"Flightradar24 is limiting requests. Try again in a few minutes.":"Flightradar24 replied with an error ("+r.status+").";
     const err=new Error(msg+(why?" It said: "+why:""));err.status=r.status;throw err}
-   const j=await r.json();return j&&Array.isArray(j.data)?j.data:j}},
+   let j;try{j=await r.json()}catch(e){throw new Error("Flightradar24 sent something that isn't flight data. On aircraft or hotel Wi-Fi you may need to log in first.")}
+   return j&&Array.isArray(j.data)?j.data:j}},
  iso(ms){return new Date(ms).toISOString().slice(0,19)+"Z"},
  // "EK0133" and "EK 133" both become "EK133"
  fltNo(s){const m=String(s||"").toUpperCase().replace(/\s+/g,"").match(/^([A-Z]{2}|[A-Z]\d|\d[A-Z])0*([1-9]\d{0,3}[A-Z]?)$/);return m?m[1]+m[2]:null},
@@ -2134,7 +2148,7 @@ const ADB={host:"aerodatabox.p.rapidapi.com",DAYS:365,
    const notSub=/not subscribed/i.test(why),quota=r.status===429&&/quota/i.test(why);
    const msg=notSub?"You're not subscribed to AeroDataBox on RapidAPI yet. Subscribe to its free Basic plan, then try again.":r.status===401||r.status===403?"RapidAPI didn't accept the key.":quota?"This month's AeroDataBox allowance is used up. Fill in can carry on next month.":r.status===429?"AeroDataBox is limiting requests. Try again in a minute.":"AeroDataBox replied with an error ("+r.status+").";
    const err=new Error(msg+(why&&!notSub&&r.status!==429?" It said: "+why+(/[.!?]$/.test(why)?"":"."):""));err.status=r.status;err.quota=quota;throw err}
-  const t=await r.text();return t?JSON.parse(t):[]},
+  const t=await r.text();try{return t?JSON.parse(t):[]}catch(e){throw new Error("AeroDataBox sent something that isn't flight data. On aircraft or hotel Wi-Fi you may need to log in first.")}},
  utc(x){return x&&x.utc?Date.parse(String(x.utc).replace(" ","T"))||0:0},
  async lookup(f){const rows=await this.get(`/flights/number/${encodeURIComponent(FR24.fltNo(f.flt))}/${ymdIn(f.out,tzOf(f.dep))}?dateLocalRole=Departure&withAircraftImage=false&withLocation=false`);
   let best=null,bd=8*36e5;
