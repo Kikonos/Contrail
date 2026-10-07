@@ -13,7 +13,7 @@
 <meta name="theme-color" content="#07111D">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{
   --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
@@ -414,9 +414,13 @@ function sunPos(t){ // subsolar point
   return [lon,dec/r];
 }
 function sunAlt(lat,lon,sp){const r=Math.PI/180;return Math.asin(Math.sin(lat*r)*Math.sin(sp[1]*r)+Math.cos(lat*r)*Math.cos(sp[1]*r)*Math.cos((lon-sp[0])*r))/r}
+// points along the great circle between two [lon,lat] points; doesn't need the d3 library, so it works offline
+function gcInterp(A,B){const r=Math.PI/180,l1=A[0]*r,p1=A[1]*r,l2=B[0]*r,p2=B[1]*r,c1=Math.cos(p1),c2=Math.cos(p2);
+ const x1=c1*Math.cos(l1),y1=c1*Math.sin(l1),z1=Math.sin(p1),x2=c2*Math.cos(l2),y2=c2*Math.sin(l2),z2=Math.sin(p2),d=Math.acos(Math.max(-1,Math.min(1,x1*x2+y1*y2+z1*z2)));
+ return t=>{if(d<1e-9)return[A[0],A[1]];const a=Math.sin((1-t)*d)/Math.sin(d),b=Math.sin(t*d)/Math.sin(d),x=a*x1+b*x2,y=a*y1+b*y2,z=a*z1+b*z2;return[Math.atan2(y,x)/r,Math.atan2(z,Math.hypot(x,y))/r]}}
 function nightMin(f){
   if(!f.out||!f.inn)return null;const A=ll(f.dep),B=ll(f.arr);if(!A||!B)return null;
-  const dur=(f.inn-f.out)/6e4;if(dur<=0)return null;const ip=d3.geoInterpolate(A,B);let n=0;const step=5;
+  const dur=(f.inn-f.out)/6e4;if(dur<=0)return null;const ip=gcInterp(A,B);let n=0;const step=5;
   for(let m=step/2;m<dur;m+=step){const p=ip(m/dur);const s=sunPos(f.out.getTime()+m*6e4);if(sunAlt(p[1],p[0],s)<-6)n+=Math.min(step,dur-m+step/2)}
   return n;
 }
@@ -1014,7 +1018,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.3 (7 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.4 (7 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -1502,6 +1506,9 @@ function exportCsv(){
 /* ---------- crew tools: shared ---------- */
 const CREWBASE={Emirates:"DXB",Ryanair:"DUB",euroAtlantic:"LIS"};
 function baseOf(f){return CREWBASE[f.emp]||CREWBASE[f.al]||"DXB"}
+// fetch with a time limit: Wi-Fi without internet would otherwise leave requests hanging
+function fetchT(u,opt,ms){const c=typeof AbortController!=="undefined"?new AbortController():null,t=c&&setTimeout(()=>c.abort(),ms||12000);
+ return fetch(u,Object.assign({},opt||{},c?{signal:c.signal}:{})).finally(()=>t&&clearTimeout(t))}
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 function agoText(ms){const m=Math.max(0,(Date.now()-ms)/6e4);if(m<1.5)return"just now";if(m<60)return Math.round(m)+" min ago";const h=m/60;if(h<36)return Math.round(h)+" h ago";const d=h/24;if(d<60)return Math.round(d)+" days ago";return Math.round(d/30.4)+" months ago"}
@@ -1775,7 +1782,7 @@ const WX={
  async get(code){const A=ap(code);if(!A)return null;const all=lsGet("contrail.wx",{})||{},hit=all[code];
   if(hit&&Date.now()-hit.t<60*6e4)return hit;
   try{const u=`https://api.open-meteo.com/v1/forecast?latitude=${A[2]}&longitude=${A[3]}&hourly=temperature_2m,weather_code,precipitation_probability,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&timezone=auto&forecast_days=16&timeformat=unixtime`;
-   const r=await fetch(u,{cache:"no-store"});if(!r.ok)throw 0;const d=await r.json();
+   const r=await fetchT(u,{cache:"no-store"});if(!r.ok)throw 0;const d=await r.json();
    const keep={};for(const k in all)if(Date.now()-all[k].t<3*864e5)keep[k]=all[k];keep[code]={t:Date.now(),d};lsSet("contrail.wx",keep);return keep[code]}
   catch(e){return hit?Object.assign({stale:true},hit):null}},
  at(w,t){const H=w&&w.d&&w.d.hourly;if(!H||!H.time)return null;const s=t/1000;let i=-1,best=5400;for(let j=0;j<H.time.length;j++){const x=Math.abs(H.time[j]-s);if(x<best){best=x;i=j}}
@@ -1791,7 +1798,7 @@ const CUR0="AE:AED AF:AFN AL:ALL AM:AMD AO:AOA AR:ARS AU:AUD AZ:AZN BA:BAM BB:BB
 const CURR={};for(const p of CUR0.split(" ")){const[a,b]=p.split(":");CURR[a]=b}
 const FX={
  async rate(from,to){if(from===to)return 1;const all=lsGet("contrail.fx",{})||{},hit=all[from];
-  if(!hit||Date.now()-hit.t>12*36e5){try{const r=await fetch("https://open.er-api.com/v6/latest/"+from,{cache:"no-store"});const d=await r.json();if(d&&d.rates){all[from]={t:Date.now(),r:d.rates};lsSet("contrail.fx",all)}}catch(e){}}
+  if(!hit||Date.now()-hit.t>12*36e5){try{const r=await fetchT("https://open.er-api.com/v6/latest/"+from,{cache:"no-store"});const d=await r.json();if(d&&d.rates){all[from]={t:Date.now(),r:d.rates};lsSet("contrail.fx",all)}}catch(e){}}
   const h=all[from];return h&&h.r[to]?h.r[to]:null},
  name(c){try{return new Intl.DisplayNames(["en"],{type:"currency"}).of(c)}catch(e){return c}}
 };
@@ -1946,7 +1953,8 @@ const Inbound={
  // the inbound aircraft on the globe, with a dashed line to your departure airport
  draw(G,C){const f=this.target(),c=this.get(f);if(!c||!c.pos||!c.ib||Date.now()-c.pos.t>3*36e5)return;
   const live=c.live&&c.live.seen&&!c.live.gone;if(c.live&&c.live.gone||(c.ib.landed&&!live))return;
-  const P=[c.pos.lon,c.pos.lat],B=ll(f.dep);if(!B)return;const ctx=G.ctx;
+  let P=[c.pos.lon,c.pos.lat];const B=ll(f.dep);if(!B)return;const ctx=G.ctx;
+  if(live&&!c.live.ground&&Date.now()-c.live.t>3*6e4){const st=LiveCard.state();if(st&&st.kind==="ib"&&st.est)P=st.p}
   ctx.beginPath();G.path({type:"LineString",coordinates:[P,B]});ctx.setLineDash([4,6]);ctx.strokeStyle=C.D;ctx.lineWidth=1.8;ctx.globalAlpha=.85;ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
   const ahead=c.pos.trk!=null?destPt(P,c.pos.trk,30):d3.geoInterpolate(P,B)(.02);G.planeAt(P,ahead,Object.assign({},C,{text:C.D}),false)}
 };
@@ -2012,7 +2020,7 @@ const FR24={
  async get(path,params){const k=this.key();if(!k)throw new Error("Add your Flightradar24 API key in Settings first.");
   const u=new URL(this.base+path);for(const p in params||{})u.searchParams.set(p,params[p]);
   for(let attempt=0;;attempt++){
-   let r;try{r=await fetch(u,{headers:{"Accept":"application/json","Accept-Version":"v1","Authorization":"Bearer "+k},cache:"no-store"})}
+   let r;try{r=await fetchT(u,{headers:{"Accept":"application/json","Accept-Version":"v1","Authorization":"Bearer "+k},cache:"no-store"})}
    catch(e){throw new Error(navigator.onLine===false?"No internet connection.":"Couldn't reach Flightradar24. If you're online, it may not accept requests from the app.")}
    if(r.status===429&&attempt<3){await new Promise(z=>setTimeout(z,8000*(attempt+1)));continue}
    if(!r.ok){let why="";try{const j=await r.json();why=String(j.message||j.error||j.detail||j.details||"");if(j.details&&typeof j.details==="object")why+=" "+JSON.stringify(j.details)}catch(e){}why=why.trim().slice(0,240);if(why&&!/[.!?]$/.test(why))why+=".";
@@ -2119,7 +2127,7 @@ const ADB={host:"aerodatabox.p.rapidapi.com",DAYS:365,
  key(){try{return localStorage.getItem("contrail.adbkey")||""}catch(e){return""}},
  setKey(k){try{k?localStorage.setItem("contrail.adbkey",k):localStorage.removeItem("contrail.adbkey")}catch(e){}},
  async get(path){const k=this.key();if(!k)throw new Error("Add your RapidAPI key in Settings first.");let r;
-  try{r=await fetch("https://"+this.host+path,{headers:{"X-RapidAPI-Key":k,"X-RapidAPI-Host":this.host,"Accept":"application/json"},cache:"no-store"})}
+  try{r=await fetchT("https://"+this.host+path,{headers:{"X-RapidAPI-Key":k,"X-RapidAPI-Host":this.host,"Accept":"application/json"},cache:"no-store"})}
   catch(e){throw new Error(navigator.onLine===false?"No internet connection.":"Couldn't reach AeroDataBox.")}
   if(r.status===204||r.status===404)return[];
   if(!r.ok){let why="";try{const j=await r.json();why=String(j.message||j.error||"").trim().slice(0,240)}catch(e){}
@@ -2149,7 +2157,11 @@ const LiveCard={closed:"",
   const T=Live.target(),s=T&&Live.mine(T);
   if(s&&!s.gone&&(s.air||s.flew||(s.gs||0)>5)&&!(s.landed&&now-s.landedAt>45*6e4)){const lp=Live.pos(T);return{kind:"own",f:T,s,p:lp?lp.p:[s.lon,s.lat]}}
   const f=Inbound.target(),c=Inbound.get(f);
-  if(c&&c.ib&&c.live&&c.live.seen&&!c.live.gone&&now-c.live.t<10*6e4)return{kind:"ib",f,c,p:[c.live.lon,c.live.lat]};
+  if(c&&c.ib&&c.live&&c.live.seen&&!c.live.gone){const L=c.live,age=now-L.t;
+   if(age<3*6e4||L.ground)return age<20*6e4?{kind:"ib",f,c,p:[L.lon,L.lat]}:null;
+   // no fresh report: estimate along the route to the airport using the landing time
+   const B=ll(f.dep),P=[L.lon,L.lat],eta=c.ib.est;if(!B||!window.d3||now>eta+30*6e4)return null;
+   const k=eta>L.t?Math.min(1,(now-L.t)/(eta-L.t)):1;return{kind:"ib",f,c,p:d3.geoInterpolate(P,B)(k),est:true,age}}
   return null},
  prog(a,p,b){const A=ll(a),B=ll(b);if(!A||!B||!window.d3)return 0;const x=d3.geoDistance(A,p),y=d3.geoDistance(p,B);return x+y>0?Math.max(0,Math.min(1,x/(x+y))):0},
  lvl(alt){return alt>=10000?"FL"+String(Math.round(alt/100)).padStart(3,"0"):nf0.format(Math.max(0,alt||0))+" ft"},
@@ -2160,16 +2172,16 @@ const LiveCard={closed:"",
   if(!st||this.closed===this.key){if(e)e.hidden=true;tab.classList.remove("has-lcard");return}
   const box=this.el(),now=Date.now();let h;
   if(st.kind==="ib"){const c=st.c,I=c.ib,L=c.live,f=st.f,tz=tzOf(f.dep),from=L.orig||I.from,pr=L.ground?1:this.prog(from,st.p,f.dep),eta=I.est;
-   h=`<div class="fc-head"><span class="fc-state">Inbound for your ${esc(f.flt)}</span><button class="lc-x" aria-label="Hide">×</button></div>
+   h=`<div class="fc-head"><span class="fc-state">Inbound for your ${esc(f.flt)}${st.est?", estimated":""}</span><button class="lc-x" aria-label="Hide">×</button></div>
     <div class="lc-top"><b class="num">${esc(L.flight||I.no)}</b><span class="lc-tag">${esc(I.reg||c.reg||"")}</span><span class="small">${esc(I.type||"")}</span></div>
     <div class="fc-route"><span class="num">${esc(from)}</span><div class="fc-line"><i style="width:${(pr*100).toFixed(1)}%"></i><b style="left:${(pr*100).toFixed(1)}%"></b></div><span class="num">${esc(f.dep)}</span></div>
-    <div class="lc-grid">${L.ground?`<div><span>Landed</span><b>${esc(hm(new Date(eta),tz))}</b></div><div><span>Now</span><b>Taxiing to the gate</b></div>`:`<div><span>Lands</span><b>${esc(hm(new Date(eta),tz))}</b><em>${this.late(c.late||0)}</em></div><div><span>Arriving in</span><b>${esc(durText(Math.max(0,(eta-now)/36e5)))}</b></div><div><span>Altitude</span><b>${esc(this.lvl(L.alt))}</b></div><div><span>Speed</span><b>${nf0.format(L.gs||0)} kt</b></div>`}</div>`}
+    <div class="lc-grid">${L.ground?`<div><span>Landed</span><b>${esc(hm(new Date(eta),tz))}</b></div><div><span>Now</span><b>Taxiing to the gate</b></div>`:`<div><span>Lands</span><b>${esc(hm(new Date(eta),tz))}</b><em>${this.late(c.late||0)}</em></div><div><span>Arriving in</span><b>${esc(durText(Math.max(0,(eta-now)/36e5)))}</b></div>${st.est?`<div style="grid-column:1/-1"><span>Offline</span><b style="font-size:14px">Last report ${esc(agoText(L.t))}</b></div>`:`<div><span>Altitude</span><b>${esc(this.lvl(L.alt))}</b></div><div><span>Speed</span><b>${nf0.format(L.gs||0)} kt</b></div>`}`}</div>`}
   else{const f=st.f,s=st.s,tzB=tzOf(f.arr),tzA=tzOf(f.dep),eta=s.landed?s.landedAt:Date.parse(s.eta||"")||+f.inn,late=Math.round((eta-f.inn)/6e4),pr=s.landed?1:s.flew?this.prog(f.dep,st.p,f.arr):0,ic=Inbound.get(f);
-   const depLate=ic&&ic.ourEst?Math.round((ic.ourEst-f.out)/6e4):0;
+   const depLate=ic&&ic.ourEst?Math.round((ic.ourEst-f.out)/6e4):0,lp=Live.pos(f),est=lp&&lp.est;
    const cells=s.landed?`<div><span>Landed</span><b>${esc(hm(new Date(s.landedAt),tzB))}</b><em>${this.late(late)}</em></div><div><span>Now</span><b>Taxiing to the gate</b></div>`
-    :s.air?`<div><span>Landing</span><b>${esc(hm(new Date(eta),tzB))}</b><em>${this.late(late)}</em></div><div><span>Arriving in</span><b>${esc(durText(Math.max(0,(eta-now)/36e5)))}</b></div><div><span>Altitude</span><b>${esc(this.lvl(s.alt))}</b></div><div><span>Speed</span><b>${nf0.format(s.gs||0)} kt</b></div>`
+    :s.air?`<div><span>Landing</span><b>${esc(hm(new Date(eta),tzB))}</b><em>${this.late(late)}</em></div><div><span>Arriving in</span><b>${esc(durText(Math.max(0,(eta-now)/36e5)))}</b></div>${est?`<div style="grid-column:1/-1"><span>Offline</span><b style="font-size:14px">Last report ${esc(agoText(s.t))}</b></div>`:`<div><span>Altitude</span><b>${esc(this.lvl(s.alt))}</b></div><div><span>Speed</span><b>${nf0.format(s.gs||0)} kt</b></div>`}`
     :`<div><span>Departure</span><b>${esc(hm(new Date(ic&&ic.ourEst||+f.out),tzA))}</b><em>${depLate>=5?`<span style="color:${depLate>=30?"var(--x)":"var(--dh)"}">Delayed by ${depLate} min</span>`:"On time"}</em></div><div><span>Landing</span><b>${esc(hm(new Date(eta),tzB))}</b><em>${this.late(late)}</em></div>`;
-   h=`<div class="fc-head"><span class="fc-state live">${s.landed?"Landed":s.air?"Your flight, in the air":"Your flight, taxiing"}</span><button class="lc-x" aria-label="Hide">×</button></div>
+   h=`<div class="fc-head"><span class="fc-state${est?"":" live"}">${s.landed?"Landed":s.air?(est?"Your flight, estimated":"Your flight, in the air"):"Your flight, taxiing"}</span><button class="lc-x" aria-label="Hide">×</button></div>
     <div class="lc-top"><b class="num">${esc(f.flt)}</b>${s.reg?`<span class="lc-tag">${esc(s.reg)}</span>`:""}<span class="small">${esc(FR24.typeName(s.type))}</span></div>
     <div class="fc-route"><span class="num">${esc(f.dep)}</span><div class="fc-line"><i style="width:${(pr*100).toFixed(1)}%"></i><b style="left:${(pr*100).toFixed(1)}%"></b></div><span class="num">${esc(f.arr)}</span></div>
     <div class="lc-grid">${cells}</div>`}
@@ -2245,7 +2257,7 @@ function boot(){
   if(window.d3){Globe.init();Live.init()}else{document.getElementById("fc").innerHTML=`<div class="fc-state">The globe needs a connection the first time it opens.</div>`}
   initCaps();
   setTimeout(()=>{Miles.check();Backup.check()},2500);
-  setInterval(()=>Inbound.tick(),60000);setInterval(()=>{if(window.d3)Inbound.follow()},20000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(()=>Inbound.tick(),1500)});setTimeout(()=>Inbound.tick(),4000);
+  setInterval(()=>Inbound.tick(),60000);setInterval(()=>{if(window.d3)Inbound.follow()},20000);addEventListener("online",()=>{if(window.d3)Inbound.follow();Inbound.tick()});document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(()=>Inbound.tick(),1500)});setTimeout(()=>Inbound.tick(),4000);
   try{if(localStorage.getItem("contrail.job"))setTimeout(()=>toast("An import is waiting for you in Add"),900)}catch(e){}
 }
 boot();
