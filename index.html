@@ -228,6 +228,17 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border:0;border-radiu
 .toast.on{opacity:1;transform:translate(-50%,0)}
 /* crew tools */
 .set .numin{flex:none;width:86px;height:40px;border:0;border-radius:10px;background:var(--surface-2);color:var(--text);font:700 17px var(--round);text-align:center;padding:0 8px}
+.lcard{position:absolute;left:12px;right:12px;bottom:12px;z-index:3;max-width:560px;margin:0 auto;cursor:pointer}
+.lcard .lc-x{border:0;background:none;color:var(--muted);font-size:22px;line-height:1;padding:0 2px}
+.lc-top{display:flex;align-items:baseline;gap:8px;margin:2px 0 4px}
+.lc-top .num{font-size:22px}
+.lc-tag{font-size:12px;font-weight:700;background:var(--surface-2);border-radius:6px;padding:2px 6px}
+.lc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:4px}
+.lc-grid span{display:block;font-size:12px;color:var(--muted)}
+.lc-grid b{display:block;font:700 17px/1.2 var(--round);font-variant-numeric:tabular-nums}
+.lc-grid em{display:block;font-style:normal;font-size:12.5px}
+.lc-grid em span{display:inline;font-size:inherit}
+#t-globe.has-lcard .g-zoom,#t-globe.has-lcard .g-legend{bottom:calc(var(--lch,0px) + 24px)}
 details.fold{margin-top:30px}
 details.fold summary{list-style:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font:700 20px/1.2 var(--round);padding:4px 0 10px}
 details.fold summary::-webkit-details-marker{display:none}
@@ -546,6 +557,7 @@ const Globe={
   this.cv=document.getElementById("globe");this.ctx=this.cv.getContext("2d");
   this.proj=d3.geoOrthographic().clipAngle(90).precision(0.6);this.path=d3.geoPath(this.proj,this.ctx);
   new ResizeObserver(()=>this.resize()).observe(this.cv);
+  const gv=lsGet("contrail.globeview",null);if(gv){if(gv.filt)this.filt=Object.assign(this.filt,gv.filt);if(gv.per)this.per=gv.per;if(gv.custom)this.custom=gv.custom;if(this.per==="custom"&&!this.custom)this.per="all"}
   this.bind();this.chips();this.rebuild();this.resize();this.loadLand();
   document.getElementById("zin").onclick=()=>{this.zoom=Math.min(8,this.zoom*1.4);this.kick()};
   document.getElementById("zout").onclick=()=>{this.zoom=Math.max(.75,this.zoom/1.4);this.kick()};
@@ -553,7 +565,7 @@ const Globe={
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{this._C=null;this.kick()});
   setInterval(()=>{if(this.on&&!document.hidden){this.card();this.kick()}},30000);
  },
- active(v){this.on=v;if(v){this.kick();if(window.d3)Live.tick();Inbound.tick()}else if(this.tour)this.stopTour()},
+ active(v){this.on=v;if(v){this.kick();if(window.d3){Live.tick();Inbound.follow()}Inbound.tick()}else if(this.tour)this.stopTour()},
  resize(){const r={width:this.cv.clientWidth,height:this.cv.clientHeight};if(!r.width)return;this.dpr=Math.min(2.5,window.devicePixelRatio||1);this.w=r.width;this.h=r.height;this.cv.width=Math.round(r.width*this.dpr);this.cv.height=Math.round(r.height*this.dpr);this.kick()},
  loadLand(){
   // world outline from echarts' map package; page works without it
@@ -587,6 +599,7 @@ const Globe={
   el.querySelector("#gyear").onchange=e=>{const v=e.target.value;if(v==="custom"){this.pickCustom();return}this.per=v;this.rebuild()};
  },
  rebuild(){
+  lsSet("contrail.globeview",{filt:this.filt,per:this.per,custom:this.custom});
   const pr=this.periodRange();const fs=FL.filter(f=>this.filt[f.cat]&&(!pr||(f.t>=pr[0]&&f.t<pr[1])));
   const rm=new Map(),am=new Map();
   for(const f of fs){
@@ -608,6 +621,7 @@ const Globe={
   return {live,next,last};
  },
  card(){
+  LiveCard.render();
   const el=document.getElementById("fc");const {live,next,last}=this.cur();const now=Date.now();
   const T=Live.target(),lp=T&&Live.pos(T);if(lp)return this.liveCard(el,T,lp);
   const f=live||next||last;if(!f){el.innerHTML=`<div class="fc-state">No flights yet</div><p class="small" style="margin:4px 0 8px">Restore your Contrail backup to bring in your history, or add a roster.</p><div class="fc-actions" style="margin-top:0"><button class="btn sm pri" id="fcrest">Restore backup</button><button class="btn sm" id="fcadd">Add a roster</button></div>`;el.querySelector("#fcrest").onclick=()=>go("set");el.querySelector("#fcadd").onclick=()=>go("add");return}
@@ -1000,7 +1014,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.2 (7 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.3 (7 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -1848,7 +1862,23 @@ const Inbound={
  put(f,v){const a=this.all(),keep={};for(const k in a)if(BYID[k]&&BYID[k].out&&+BYID[k].out>Date.now()-864e5)keep[k]=a[k];keep[f.id]=v;lsSet("contrail.inbound",keep)},
  // the next departure, from 24 h before until it leaves
  target(){const now=Date.now();return FL.filter(f=>(f.cat==="O"||f.cat==="D")&&f.out&&+f.out>now-15*6e4&&+f.out-now<24*36e5&&FR24.fltNo(f.flt)).sort((a,b)=>a.t-b.t)[0]||null},
- busy:false,
+ busy:false,following:false,
+ // between AeroDataBox checks, follow the inbound aircraft on Flightradar24 about once a minute
+ async follow(){const f=this.target(),c=this.get(f);if(!f||!c||!c.ib||!FR24.key()||this.following||document.hidden||!Globe.on)return;
+  const reg=c.ib.reg||c.reg,now=Date.now();if(!reg||(c.live&&c.live.gone)||(c.live&&now-c.live.t<55e3))return;
+  if(!c.ib.departed&&c.ib.est-now>10*36e5)return;
+  this.following=true;
+  try{const rows=await FR24.get("/live/flight-positions/full",{registrations:reg});
+   const r=(Array.isArray(rows)?rows:[]).find(x=>!x.dest_iata||x.dest_iata===f.dep),g=this.get(f)||c,B=ll(f.dep);
+   if(r){const near=B&&d3.geoDistance([r.lon,r.lat],B)*R_KM<15,ground=(r.alt||0)<=0&&(r.gspeed||0)<50;
+    g.live={t:now,seen:true,lat:r.lat,lon:r.lon,trk:r.track,alt:r.alt,gs:r.gspeed,orig:r.orig_iata||g.ib.from,flight:r.flight||g.ib.no,ground:ground&&near,gone:false};
+    g.pos={lat:r.lat,lon:r.lon,trk:r.track,t:Date.parse(r.timestamp)||now};if(!ground)g.ib.departed=true;
+    const eta=Date.parse(r.eta||"");if(eta&&!ground&&Math.abs(eta-g.ib.est)<6*36e5){g.ib.est=eta;g.ib.src="Flightradar24";g.late=Math.round((eta-g.ib.sched)/6e4)}
+    if(ground&&near&&!g.ib.landed){g.ib.landed=true;g.ib.est=Math.min(g.ib.est,now)}}
+   else if(g.live&&g.live.seen){g.live.gone=true;g.live.t=now;if(now>g.ib.est-30*6e4)g.ib.landed=true}
+   else g.live={t:now,seen:false,gone:false};
+   this.put(f,g)}catch(e){}
+  finally{this.following=false;Globe.card();Globe.kick()}},
  tick(){const f=this.target(),C=this.cfg();if(!f||!ADB.key()||!C.auto||this.busy||document.hidden||!Globe.on)return;const now=Date.now();if(+f.out-now>3*36e5)return;
   const c=this.get(f);if(c&&now-c.t<30*6e4)return;this.check(f)},
  pick(rows,fn){return(Array.isArray(rows)?rows:[]).filter(fn)},
@@ -1882,8 +1912,9 @@ const Inbound={
      const r=(Array.isArray(rows)?rows:[]).find(x=>!x.dest_iata||x.dest_iata===f.dep);
      if(r){res.pos={lat:r.lat,lon:r.lon,trk:r.track,t:Date.parse(r.timestamp)||now};const eta=Date.parse(r.eta||"");if(eta&&Math.abs(eta-res.ib.est)<6*36e5){res.ib.est=eta;res.ib.src="Flightradar24"}}}catch(e){}}
     res.late=Math.round((res.ib.est-res.ib.sched)/6e4)}
+   if(res.ib&&old.ib&&old.ib.no===res.ib.no){if(old.live)res.live=old.live;if(old.ib.landed)res.ib.landed=true;if(old.ib.src==="Flightradar24"&&old.live&&!old.live.gone&&!res.ib.landed&&res.ib.src!=="Flightradar24"){res.ib.est=old.ib.est;res.ib.src=old.ib.src;res.late=old.late}}
    res.err="";
-  }catch(e){res.err=e.message;if(old.ib&&!res.ib){res.ib=old.ib;res.late=old.late;res.pos=old.pos;res.ourEst=old.ourEst}}
+  }catch(e){res.err=e.message;if(old.ib&&!res.ib){res.ib=old.ib;res.late=old.late;res.pos=old.pos;res.ourEst=old.ourEst;res.live=old.live}}
   finally{this.busy=false}
   this.put(f,res);Globe.card();Globe.kick();this.paint(f);return res},
  col(m){return m>=30?"var(--x)":m>=10?"var(--dh)":"var(--ok)"},
@@ -1913,7 +1944,8 @@ const Inbound={
   box.querySelector("#ib-reg").onclick=()=>{const r=prompt("Registration of the aircraft for "+f.flt+" (leave empty to clear):",f.ibReg||"");if(r==null)return;
    setOv(f.id,{ibReg:Tails.norm(r)});const g=BYID[f.id];this.put(g,{t:0});this.check(g).then(()=>this.paint(BYID[f.id]))}},
  // the inbound aircraft on the globe, with a dashed line to your departure airport
- draw(G,C){const f=this.target(),c=this.get(f);if(!c||!c.pos||!c.ib||c.ib.landed||Date.now()-c.pos.t>3*36e5)return;
+ draw(G,C){const f=this.target(),c=this.get(f);if(!c||!c.pos||!c.ib||Date.now()-c.pos.t>3*36e5)return;
+  const live=c.live&&c.live.seen&&!c.live.gone;if(c.live&&c.live.gone||(c.ib.landed&&!live))return;
   const P=[c.pos.lon,c.pos.lat],B=ll(f.dep);if(!B)return;const ctx=G.ctx;
   ctx.beginPath();G.path({type:"LineString",coordinates:[P,B]});ctx.setLineDash([4,6]);ctx.strokeStyle=C.D;ctx.lineWidth=1.8;ctx.globalAlpha=.85;ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
   const ahead=c.pos.trk!=null?destPt(P,c.pos.trk,30):d3.geoInterpolate(P,B)(.02);G.planeAt(P,ahead,Object.assign({},C,{text:C.D}),false)}
@@ -2107,6 +2139,43 @@ const ADB={host:"aerodatabox.p.rapidapi.com",DAYS:365,
   if(!f.tko&&tk)p.tko=new Date(tk).toISOString();if(!f.ldg&&ld)p.ldg=new Date(ld).toISOString();return p}
 };
 
+/* ---------- live card at the bottom of the globe ---------- */
+// Like Flightradar24's: first the inbound aircraft while it flies in, then your own flight.
+// It goes away once the aircraft is at the gate and its transponder is off.
+const LiveCard={closed:"",
+ el(){let e=document.getElementById("lcard");if(!e){e=document.createElement("div");e.id="lcard";e.className="flightcard lcard";document.getElementById("t-globe").appendChild(e);
+   e.onclick=ev=>{if(ev.target.closest(".lc-x")){this.closed=this.key;this.render();return}const st=this.state();if(st&&st.p&&Globe.ctx)Globe.flyTo(st.p,Math.max(Globe.zoom,2.2))}}return e},
+ state(){if(Globe.tour)return null;const now=Date.now();
+  const T=Live.target(),s=T&&Live.mine(T);
+  if(s&&!s.gone&&(s.air||s.flew||(s.gs||0)>5)&&!(s.landed&&now-s.landedAt>45*6e4)){const lp=Live.pos(T);return{kind:"own",f:T,s,p:lp?lp.p:[s.lon,s.lat]}}
+  const f=Inbound.target(),c=Inbound.get(f);
+  if(c&&c.ib&&c.live&&c.live.seen&&!c.live.gone&&now-c.live.t<10*6e4)return{kind:"ib",f,c,p:[c.live.lon,c.live.lat]};
+  return null},
+ prog(a,p,b){const A=ll(a),B=ll(b);if(!A||!B||!window.d3)return 0;const x=d3.geoDistance(A,p),y=d3.geoDistance(p,B);return x+y>0?Math.max(0,Math.min(1,x/(x+y))):0},
+ lvl(alt){return alt>=10000?"FL"+String(Math.round(alt/100)).padStart(3,"0"):nf0.format(Math.max(0,alt||0))+" ft"},
+ late(m){return m>=5?`<span style="color:${m>=30?"var(--x)":"var(--dh)"}">${m} min late</span>`:m<=-5?`<span style="color:var(--ok)">${-m} min early</span>`:`<span style="color:var(--ok)">on time</span>`},
+ render(){const st=this.state(),tab=document.getElementById("t-globe");
+  this.key=st?st.kind+"|"+st.f.id+"|"+(st.kind==="own"?(st.s.landed?"l":st.s.air?"a":"g"):(st.c.live.ground?"g":"a")):"";
+  const e=document.getElementById("lcard");
+  if(!st||this.closed===this.key){if(e)e.hidden=true;tab.classList.remove("has-lcard");return}
+  const box=this.el(),now=Date.now();let h;
+  if(st.kind==="ib"){const c=st.c,I=c.ib,L=c.live,f=st.f,tz=tzOf(f.dep),from=L.orig||I.from,pr=L.ground?1:this.prog(from,st.p,f.dep),eta=I.est;
+   h=`<div class="fc-head"><span class="fc-state">Inbound for your ${esc(f.flt)}</span><button class="lc-x" aria-label="Hide">×</button></div>
+    <div class="lc-top"><b class="num">${esc(L.flight||I.no)}</b><span class="lc-tag">${esc(I.reg||c.reg||"")}</span><span class="small">${esc(I.type||"")}</span></div>
+    <div class="fc-route"><span class="num">${esc(from)}</span><div class="fc-line"><i style="width:${(pr*100).toFixed(1)}%"></i><b style="left:${(pr*100).toFixed(1)}%"></b></div><span class="num">${esc(f.dep)}</span></div>
+    <div class="lc-grid">${L.ground?`<div><span>Landed</span><b>${esc(hm(new Date(eta),tz))}</b></div><div><span>Now</span><b>Taxiing to the gate</b></div>`:`<div><span>Lands</span><b>${esc(hm(new Date(eta),tz))}</b><em>${this.late(c.late||0)}</em></div><div><span>Arriving in</span><b>${esc(durText(Math.max(0,(eta-now)/36e5)))}</b></div><div><span>Altitude</span><b>${esc(this.lvl(L.alt))}</b></div><div><span>Speed</span><b>${nf0.format(L.gs||0)} kt</b></div>`}</div>`}
+  else{const f=st.f,s=st.s,tzB=tzOf(f.arr),tzA=tzOf(f.dep),eta=s.landed?s.landedAt:Date.parse(s.eta||"")||+f.inn,late=Math.round((eta-f.inn)/6e4),pr=s.landed?1:s.flew?this.prog(f.dep,st.p,f.arr):0,ic=Inbound.get(f);
+   const depLate=ic&&ic.ourEst?Math.round((ic.ourEst-f.out)/6e4):0;
+   const cells=s.landed?`<div><span>Landed</span><b>${esc(hm(new Date(s.landedAt),tzB))}</b><em>${this.late(late)}</em></div><div><span>Now</span><b>Taxiing to the gate</b></div>`
+    :s.air?`<div><span>Landing</span><b>${esc(hm(new Date(eta),tzB))}</b><em>${this.late(late)}</em></div><div><span>Arriving in</span><b>${esc(durText(Math.max(0,(eta-now)/36e5)))}</b></div><div><span>Altitude</span><b>${esc(this.lvl(s.alt))}</b></div><div><span>Speed</span><b>${nf0.format(s.gs||0)} kt</b></div>`
+    :`<div><span>Departure</span><b>${esc(hm(new Date(ic&&ic.ourEst||+f.out),tzA))}</b><em>${depLate>=5?`<span style="color:${depLate>=30?"var(--x)":"var(--dh)"}">Delayed by ${depLate} min</span>`:"On time"}</em></div><div><span>Landing</span><b>${esc(hm(new Date(eta),tzB))}</b><em>${this.late(late)}</em></div>`;
+   h=`<div class="fc-head"><span class="fc-state live">${s.landed?"Landed":s.air?"Your flight, in the air":"Your flight, taxiing"}</span><button class="lc-x" aria-label="Hide">×</button></div>
+    <div class="lc-top"><b class="num">${esc(f.flt)}</b>${s.reg?`<span class="lc-tag">${esc(s.reg)}</span>`:""}<span class="small">${esc(FR24.typeName(s.type))}</span></div>
+    <div class="fc-route"><span class="num">${esc(f.dep)}</span><div class="fc-line"><i style="width:${(pr*100).toFixed(1)}%"></i><b style="left:${(pr*100).toFixed(1)}%"></b></div><span class="num">${esc(f.arr)}</span></div>
+    <div class="lc-grid">${cells}</div>`}
+  box.innerHTML=h;box.hidden=false;tab.classList.add("has-lcard");tab.style.setProperty("--lch",box.offsetHeight+"px")}
+};
+
 /* ---------- live flight ---------- */
 // Follows the current flight on Flightradar24 about once a minute while the globe is open.
 // The last report is kept, so with no connection the position is estimated from it.
@@ -2124,13 +2193,13 @@ const Live={snap:null,busy:false,err:"",last:0,
   return best},
  tick(force){const f=this.target();if(!f||!FR24.key()||document.hidden||this.busy)return;
   if(!Globe.on&&!force)return;if(!force&&Date.now()-this.last<55e3)return;
-  const s=this.mine(f);if(s&&s.landed&&s.saved)return;this.poll(f)},
+  const s=this.mine(f);if(s&&s.gone)return;this.poll(f)},
  async poll(f){this.busy=true;this.last=Date.now();
   try{const no=FR24.fltNo(f.flt),prev=this.mine(f),now=Date.now(),B=ll(f.arr);
-   if(!(prev&&prev.landed)){
-    const rows=await FR24.get("/live/flight-positions/full",{flights:no});const list=Array.isArray(rows)?rows:[];
+   {const rows=await FR24.get("/live/flight-positions/full",{flights:no});const list=Array.isArray(rows)?rows:[];
     const r=list.find(x=>x.orig_iata===f.dep&&(!x.dest_iata||x.dest_iata===f.arr))||list.find(x=>!x.orig_iata&&(!prev||!prev.fid||x.fr24_id===prev.fid))||null;
-    if(r){const air=(r.alt||0)>150||(r.gspeed||0)>70;
+    if(prev&&prev.landed){if(r){prev.lat=r.lat;prev.lon=r.lon;prev.gs=r.gspeed;prev.alt=r.alt;prev.t=Date.parse(r.timestamp)||now}else prev.gone=true}
+    else if(r){const air=(r.alt||0)>150||(r.gspeed||0)>70;
      const s={id:f.id,fid:r.fr24_id,t:Date.parse(r.timestamp)||now,lat:r.lat,lon:r.lon,trk:r.track,alt:r.alt,gs:r.gspeed,vs:r.vspeed,eta:r.eta||null,reg:r.reg||"",type:r.type||"",op:r.operating_as||r.painted_as||"",air,flew:air||!!(prev&&prev.flew),landed:false};
      if(s.flew&&!air&&B&&d3.geoDistance([s.lon,s.lat],B)*R_KM<40){s.landed=true;s.landedAt=now}
      this.snap=s}
@@ -2176,7 +2245,7 @@ function boot(){
   if(window.d3){Globe.init();Live.init()}else{document.getElementById("fc").innerHTML=`<div class="fc-state">The globe needs a connection the first time it opens.</div>`}
   initCaps();
   setTimeout(()=>{Miles.check();Backup.check()},2500);
-  setInterval(()=>Inbound.tick(),60000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(()=>Inbound.tick(),1500)});setTimeout(()=>Inbound.tick(),4000);
+  setInterval(()=>Inbound.tick(),60000);setInterval(()=>{if(window.d3)Inbound.follow()},20000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(()=>Inbound.tick(),1500)});setTimeout(()=>Inbound.tick(),4000);
   try{if(localStorage.getItem("contrail.job"))setTimeout(()=>toast("An import is waiting for you in Add"),900)}catch(e){}
 }
 boot();
