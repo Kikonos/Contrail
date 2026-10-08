@@ -1967,9 +1967,10 @@ const Inbound={
  draw(G,C){const f=this.target(),c=this.get(f);if(!c||!c.pos||!c.ib||Date.now()-c.pos.t>3*36e5)return;
   const live=c.live&&c.live.seen&&!c.live.gone;if(c.live&&c.live.gone||(c.ib.landed&&!live))return;
   let P=[c.pos.lon,c.pos.lat];const B=ll(f.dep);if(!B)return;const ctx=G.ctx;
-  if(live&&!c.live.ground&&Date.now()-c.live.t>3*6e4){const st=LiveCard.state();if(st&&st.kind==="ib"&&st.est)P=st.p}
+  let est=false;if(live&&!c.live.ground&&Date.now()-c.live.t>3*6e4){const st=LiveCard.state();if(st&&st.kind==="ib"&&st.est){P=st.p;est=true}}
   ctx.beginPath();G.path({type:"LineString",coordinates:[P,B]});ctx.setLineDash([4,6]);ctx.strokeStyle=C.D;ctx.lineWidth=1.8;ctx.globalAlpha=.85;ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
-  const ahead=c.pos.trk!=null?destPt(P,c.pos.trk,30):d3.geoInterpolate(P,B)(.02);G.planeAt(P,ahead,Object.assign({},C,{text:C.D}),false)}
+  // nose follows the reported track; an estimated position moves along the line, so it points along the line
+  const ahead=!est&&c.pos.trk!=null?destPt(P,c.pos.trk,30):d3.geoInterpolate(P,B)(.02);G.planeAt(P,ahead,Object.assign({},C,{text:C.D}),est)}
 };
 
 /* ---------- year replay on the globe ---------- */
