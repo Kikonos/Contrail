@@ -1,5 +1,5 @@
 // Contrail offline cache. Bump VERSION with every release so phones pick up the new app.
-const VERSION = "contrail-2.6";
+const VERSION = "contrail-2.7";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png", "./favicon-32.png"];
 // libraries the app needs, saved at install so the app works offline from the start
 const LIBS = ["https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js", "https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/js/world.js", "https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap"];

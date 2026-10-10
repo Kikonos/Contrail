@@ -1892,7 +1892,7 @@ const Inbound={
    if(r){const near=B&&d3.geoDistance([r.lon,r.lat],B)*R_KM<15,ground=(r.alt||0)<=0&&(r.gspeed||0)<50;
     g.live={t:now,seen:true,lat:r.lat,lon:r.lon,trk:r.track,alt:r.alt,gs:r.gspeed,orig:r.orig_iata||g.ib.from,flight:r.flight||g.ib.no,ground:ground&&near,gone:false};
     g.pos={lat:r.lat,lon:r.lon,trk:r.track,t:Date.parse(r.timestamp)||now};if(!ground)g.ib.departed=true;
-    const eta=Date.parse(r.eta||"");if(eta&&!ground&&Math.abs(eta-g.ib.est)<6*36e5){g.ib.est=eta;g.ib.src="Flightradar24";g.late=Math.round((eta-g.ib.sched)/6e4)}
+    const eta=Date.parse(r.eta||"");if(eta&&!ground&&Math.abs(eta-g.ib.est)<6*36e5){g.ib.est=eta;g.ib.src="Flightradar24";g.late=g.ib.sched?Math.round((eta-g.ib.sched)/6e4):null}
     if(ground&&near&&!g.ib.landed){g.ib.landed=true;g.ib.est=Math.min(g.ib.est,now)}}
    else if(g.live&&g.live.seen){g.live.gone=true;g.live.t=now;if(now>g.ib.est-30*6e4)g.ib.landed=true}
    else g.live={t:now,seen:false,gone:false};
@@ -1900,12 +1900,13 @@ const Inbound={
   finally{this.following=false;Globe.card();Globe.kick()}},
  tick(){const f=this.target(),C=this.cfg();if(!f||!ADB.key()||!C.auto||this.busy||document.hidden||!Globe.on)return;const now=Date.now();if(+f.out-now>3*36e5)return;
   const c=this.get(f);if(c&&now-c.t<30*6e4)return;this.check(f)},
+ same(a,b){const n=x=>String(x||"").replace(/\s/g,"").toUpperCase();return n(a)===n(b)},
  pick(rows,fn){return(Array.isArray(rows)?rows:[]).filter(fn)},
  sched(r,side){const s=r&&r[side]||{};return ADB.utc(s.scheduledTime)},
  est(r){const a=r.arrival||{},rw=ADB.utc(a.runwayTime),rv=ADB.utc(a.revisedTime),pr=ADB.utc(a.predictedTime);return rv||pr||(rw?rw+10*6e4:0)||ADB.utc(a.scheduledTime)},
  async check(f){if(this.busy)return;this.busy=true;const now=Date.now(),old=this.get(f)||{},no=FR24.fltNo(f.flt),ymd=ymdIn(f.out,tzOf(f.dep));
   const q=s=>s+"?dateLocalRole=Both&withAircraftImage=false&withLocation=true";
-  const res={t:now,reg:f.ibReg||"",regT:old.regT||0,guess:false};
+  const res={t:now,reg:f.ibReg||"",regT:old.regT||0,guess:false},prev=ymdIn(+f.out-864e5,tzOf(f.dep));
   try{
    let our=null,list=[];
    if(!res.reg&&old.reg&&now-old.regT<2*36e5){res.reg=old.reg}
@@ -1915,12 +1916,14 @@ const Inbound={
    let ib=null;
    if(res.reg){list=await ADB.get(q(`/flights/reg/${encodeURIComponent(res.reg)}/${ymd}`));
     our=our||this.pick(list,r=>(r.departure&&r.departure.airport&&r.departure.airport.iata)===f.dep&&Math.abs(this.sched(r,"departure")-f.out)<6*36e5)[0]||null;
-    const arr=this.pick(list,r=>r!==our&&(r.arrival&&r.arrival.airport&&r.arrival.airport.iata)===f.dep&&this.sched(r,"arrival")<+f.out+30*6e4).sort((a,b)=>this.sched(b,"arrival")-this.sched(a,"arrival"));
-    ib=arr[0]||null}
+    const inb=L=>this.pick(L,r=>r!==our&&(r.arrival&&r.arrival.airport&&r.arrival.airport.iata)===f.dep&&this.sched(r,"arrival")<+f.out+30*6e4&&this.sched(r,"arrival")>+f.out-24*36e5).sort((a,b)=>this.sched(b,"arrival")-this.sched(a,"arrival"))[0]||null;
+    ib=inb(list);
+    // an inbound landing before midnight is filed under the day before your departure
+    if(!ib)ib=inb(await ADB.get(q(`/flights/reg/${encodeURIComponent(res.reg)}/${prev}`)))}
    else if(f.dep!==baseOf(f)){ // away from base the same aircraft usually comes in on the paired flight number
     const m=no.match(/^(\D+|\w\d)(\d+)$/)||no.match(/^([A-Z0-9]{2})(\d+)$/);
-    if(m){const n=+m[2],ino=m[1]+(n%2?n+1:n-1),rows=await ADB.get(q(`/flights/number/${ino}/${ymd}`));
-     ib=this.pick(rows,r=>(r.arrival&&r.arrival.airport&&r.arrival.airport.iata)===f.dep&&this.sched(r,"arrival")<+f.out).sort((a,b)=>this.sched(b,"arrival")-this.sched(a,"arrival"))[0]||null;res.guess=!!ib}}
+    if(m){const n=+m[2],ino=m[1]+(n%2?n+1:n-1),inb=L=>this.pick(L,r=>(r.arrival&&r.arrival.airport&&r.arrival.airport.iata)===f.dep&&this.sched(r,"arrival")<+f.out&&this.sched(r,"arrival")>+f.out-24*36e5).sort((a,b)=>this.sched(b,"arrival")-this.sched(a,"arrival"))[0]||null;
+     ib=inb(await ADB.get(q(`/flights/number/${ino}/${ymd}`)));if(!ib)ib=inb(await ADB.get(q(`/flights/number/${ino}/${prev}`)));res.guess=!!ib}}
    if(our){res.ourEst=ADB.utc((our.departure||{}).revisedTime)||0;res.ourType=(our.aircraft||{}).model||""}
    if(ib){const a=ib.arrival||{},d=ib.departure||{};
     res.ib={no:ib.number||"",from:(d.airport||{}).iata||"",fromName:(d.airport||{}).shortName||(d.airport||{}).municipalityName||"",sched:this.sched(ib,"arrival"),est:this.est(ib),landed:!!ADB.utc(a.runwayTime)&&ADB.utc(a.runwayTime)<=now||/Arrived/i.test(ib.status||""),
@@ -1929,13 +1932,19 @@ const Inbound={
     res.ib.src="AeroDataBox";
     if(!res.ib.landed&&res.ib.departed&&FR24.key()&&res.ib.reg){try{const rows=await FR24.get("/live/flight-positions/full",{registrations:res.ib.reg});
      const r=(Array.isArray(rows)?rows:[]).find(x=>!x.dest_iata||x.dest_iata===f.dep);
-     if(r){res.pos={lat:r.lat,lon:r.lon,trk:r.track,t:Date.parse(r.timestamp)||now};const eta=Date.parse(r.eta||"");if(eta&&Math.abs(eta-res.ib.est)<6*36e5){res.ib.est=eta;res.ib.src="Flightradar24"}}}catch(e){}}
+     if(r){res.pos={lat:r.lat,lon:r.lon,trk:r.track,t:Date.parse(r.timestamp)||now};res.live={t:now,seen:true,lat:r.lat,lon:r.lon,trk:r.track,alt:r.alt,gs:r.gspeed,orig:r.orig_iata||res.ib.from,flight:r.flight||res.ib.no,ground:false,gone:false};const eta=Date.parse(r.eta||"");if(eta&&Math.abs(eta-res.ib.est)<6*36e5){res.ib.est=eta;res.ib.src="Flightradar24"}}}catch(e){}}
     res.late=Math.round((res.ib.est-res.ib.sched)/6e4)}
-   if(res.ib&&old.ib&&old.ib.no===res.ib.no){if(old.live)res.live=old.live;if(old.ib.landed)res.ib.landed=true;if(old.ib.src==="Flightradar24"&&old.live&&!old.live.gone&&!res.ib.landed&&res.ib.src!=="Flightradar24"){res.ib.est=old.ib.est;res.ib.src=old.ib.src;res.late=old.late}}
+   else if(res.reg&&FR24.key()){try{const rows=await FR24.get("/live/flight-positions/full",{registrations:res.reg});
+     const r=(Array.isArray(rows)?rows:[]).find(x=>x.dest_iata===f.dep&&!((x.alt||0)<=0&&(x.gspeed||0)<50)),B=ll(f.dep);
+     if(r){let eta=Date.parse(r.eta||"");if(!eta&&B&&window.d3)eta=now+d3.geoDistance([r.lon,r.lat],B)*R_KM/Math.max(400,(r.gspeed||0)*1.852)*36e5;
+      res.ib={no:r.flight||r.callsign||"",from:r.orig_iata||"",fromName:"",sched:0,est:eta||now,landed:false,departed:true,status:"",reg:res.reg,type:r.type||"",src:"Flightradar24"};
+      res.pos={lat:r.lat,lon:r.lon,trk:r.track,t:Date.parse(r.timestamp)||now};res.late=null;
+      res.live={t:now,seen:true,lat:r.lat,lon:r.lon,trk:r.track,alt:r.alt,gs:r.gspeed,orig:r.orig_iata||"",flight:r.flight||"",ground:false,gone:false}}}catch(e){}}
+   if(res.ib&&old.ib&&Inbound.same(old.ib.no,res.ib.no)){if(old.live)res.live=old.live;if(old.ib.landed)res.ib.landed=true;if(old.ib.src==="Flightradar24"&&old.live&&!old.live.gone&&!res.ib.landed&&res.ib.src!=="Flightradar24"){res.ib.est=old.ib.est;res.ib.src=old.ib.src;res.late=res.ib.sched?Math.round((res.ib.est-res.ib.sched)/6e4):old.late}}
    res.err="";
   }catch(e){res.err=e.message;if(old.ib&&!res.ib){res.ib=old.ib;res.late=old.late;res.pos=old.pos;res.ourEst=old.ourEst;res.live=old.live}}
   finally{this.busy=false}
-  const cur=this.get(f)||{};if(res.ib&&cur.ib&&cur.ib.no===res.ib.no){if(cur.live&&(!res.live||cur.live.t>res.live.t))res.live=cur.live;if(cur.pos&&(!res.pos||cur.pos.t>res.pos.t))res.pos=cur.pos}
+  const cur=this.get(f)||{};if(res.ib&&cur.ib&&Inbound.same(cur.ib.no,res.ib.no)){if(cur.live&&(!res.live||cur.live.t>res.live.t))res.live=cur.live;if(cur.pos&&(!res.pos||cur.pos.t>res.pos.t))res.pos=cur.pos}
   this.put(f,res);Globe.card();Globe.kick();this.paint(f);return res},
  col(m){return m>=30?"var(--x)":m>=10?"var(--dh)":"var(--ok)"},
  lateText(m){return m>=5?`${m} min late`:m<=-5?`${-m} min early`:"on time"},
@@ -1953,11 +1962,11 @@ const Inbound={
    h+=`<div class="tb-grid">${C("Aircraft",c.reg?esc(c.reg):"Not assigned yet",c.reg?esc(c.ourType||(I&&I.type)||"")+(f.ibReg?" · entered by you":""):"Usually a few hours before")}`;
    if(c.ourEst)h+=C("Your departure",esc(hm(new Date(c.ourEst),tz)),Math.abs(c.ourEst-f.out)>=5*6e4?`<span style="color:${this.col(Math.round((c.ourEst-f.out)/6e4))}">${esc(this.lateText(Math.round((c.ourEst-f.out)/6e4)))}</span>`:"as scheduled");
    if(I){const st=I.landed?"Landed":I.departed?"In the air":"Not departed yet";
-    h+=C((c.guess?"Probably ":"")+"Inbound flight",esc(I.no),"from "+esc(I.fromName||I.from))+C(I.landed?"Landed":"Lands",esc(hm(new Date(I.est),tz)),`<span style="color:${this.col(I.landed?0:c.late||0)}">${esc(st+" · "+this.lateText(c.late||0))}</span><br>${esc(I.src||"AeroDataBox")}`)}
+    h+=C((c.guess?"Probably ":"")+"Inbound flight",esc(I.no),"from "+esc(I.fromName||I.from))+C(I.landed?"Landed":"Lands",esc(hm(new Date(I.est),tz)),`<span style="color:${this.col(I.landed?0:c.late||0)}">${esc(c.late==null?st:st+" · "+this.lateText(c.late))}</span><br>${esc(I.src||"AeroDataBox")}`)}
    h+=`</div>`;
-   if(!I)h+=`<p class="small" style="margin:10px 0 0">${c.reg?"No flight found today bringing this aircraft in. It may already be on the ground.":"The inbound flight shows up once the aircraft is known."}</p>`;
+   if(!I)h+=`<p class="small" style="margin:10px 0 0">${c.reg?"No flight found bringing this aircraft in. It may already be on the ground.":"The inbound flight shows up once the aircraft is known."}</p>`;
    if(c.err)h+=`<p class="small" style="margin:10px 0 0;color:var(--x)">${esc(c.err)}</p>`;
-   h+=`<p class="small" style="margin:10px 0 0">Checked ${esc(agoText(c.t))}. Aircraft and flights from AeroDataBox${c.ib&&c.ib.src==="Flightradar24"?", landing time from Flightradar24":""}.</p>`}
+   h+=`<p class="small" style="margin:10px 0 0">Checked ${esc(agoText(c.t))}. ${c.ib&&!c.ib.sched?"Inbound flight from Flightradar24; AeroDataBox had no schedule for it":`Aircraft and flights from AeroDataBox${c.ib&&c.ib.src==="Flightradar24"?", landing time from Flightradar24":""}`}.</p>`}
   h+=`<div class="d-acts" style="margin-top:10px"><button class="btn sm" id="ib-go"${this.busy?" disabled":""}>${this.busy?"Checking…":"Check now"}</button><button class="btn sm" id="ib-reg">${f.ibReg?"Change aircraft":"I know the aircraft"}</button></div></div>`;
   box.innerHTML=h;
   box.querySelector("#ib-go").onclick=()=>{this.check(f);this.paint(f)};
@@ -2180,7 +2189,7 @@ const LiveCard={closed:"",
   return null},
  prog(a,p,b){const A=ll(a),B=ll(b);if(!A||!B||!window.d3)return 0;const x=d3.geoDistance(A,p),y=d3.geoDistance(p,B);return x+y>0?Math.max(0,Math.min(1,x/(x+y))):0},
  lvl(alt){return alt>=10000?"FL"+String(Math.round(alt/100)).padStart(3,"0"):nf0.format(Math.max(0,alt||0))+" ft"},
- late(m){return m>=5?`<span style="color:${m>=30?"var(--x)":"var(--dh)"}">${m} min late</span>`:m<=-5?`<span style="color:var(--ok)">${-m} min early</span>`:`<span style="color:var(--ok)">on time</span>`},
+ late(m){return m==null?"":m>=5?`<span style="color:${m>=30?"var(--x)":"var(--dh)"}">${m} min late</span>`:m<=-5?`<span style="color:var(--ok)">${-m} min early</span>`:`<span style="color:var(--ok)">on time</span>`},
  render(){const st=this.state(),tab=document.getElementById("t-globe");
   this.key=st?st.kind+"|"+st.f.id+"|"+(st.kind==="own"?(st.s.landed?"l":st.s.air?"a":"g"):(st.c.live.ground?"g":"a")):"";
   const e=document.getElementById("lcard");
@@ -2190,7 +2199,7 @@ const LiveCard={closed:"",
    h=`<div class="fc-head"><span class="fc-state">Inbound for your ${esc(f.flt)}${st.est?", estimated":""}</span><button class="lc-x" aria-label="Hide">×</button></div>
     <div class="lc-top"><b class="num">${esc(L.flight||I.no)}</b><span class="lc-tag">${esc(I.reg||c.reg||"")}</span><span class="small">${esc(I.type||"")}</span></div>
     <div class="fc-route"><span class="num">${esc(from)}</span><div class="fc-line"><i style="width:${(pr*100).toFixed(1)}%"></i><b style="left:${(pr*100).toFixed(1)}%"></b></div><span class="num">${esc(f.dep)}</span></div>
-    <div class="lc-grid">${L.ground?`<div><span>Landed</span><b>${esc(hm(new Date(eta),tz))}</b></div><div><span>Now</span><b>Taxiing to the gate</b></div>`:`<div><span>Lands</span><b>${esc(hm(new Date(eta),tz))}</b><em>${this.late(c.late||0)}</em></div><div><span>Arriving in</span><b>${esc(durText(Math.max(0,(eta-now)/36e5)))}</b></div>${st.est?`<div style="grid-column:1/-1"><span>Offline</span><b style="font-size:14px">Last report ${esc(agoText(L.t))}</b></div>`:`<div><span>Altitude</span><b>${esc(this.lvl(L.alt))}</b></div><div><span>Speed</span><b>${nf0.format(L.gs||0)} kt</b></div>`}`}</div>`}
+    <div class="lc-grid">${L.ground?`<div><span>Landed</span><b>${esc(hm(new Date(eta),tz))}</b></div><div><span>Now</span><b>Taxiing to the gate</b></div>`:`<div><span>Lands</span><b>${esc(hm(new Date(eta),tz))}</b><em>${this.late(c.late)}</em></div><div><span>Arriving in</span><b>${esc(durText(Math.max(0,(eta-now)/36e5)))}</b></div>${st.est?`<div style="grid-column:1/-1"><span>Offline</span><b style="font-size:14px">Last report ${esc(agoText(L.t))}</b></div>`:`<div><span>Altitude</span><b>${esc(this.lvl(L.alt))}</b></div><div><span>Speed</span><b>${nf0.format(L.gs||0)} kt</b></div>`}`}</div>`}
   else{const f=st.f,s=st.s,tzB=tzOf(f.arr),tzA=tzOf(f.dep),eta=s.landed?s.landedAt:Date.parse(s.eta||"")||+f.inn,late=Math.round((eta-f.inn)/6e4),pr=s.landed?1:s.flew?this.prog(f.dep,st.p,f.arr):0,ic=Inbound.get(f);
    const depLate=ic&&ic.ourEst?Math.round((ic.ourEst-f.out)/6e4):0,lp=Live.pos(f),est=lp&&lp.est;
    const cells=s.landed?`<div><span>Landed</span><b>${esc(hm(new Date(s.landedAt),tzB))}</b><em>${this.late(late)}</em></div><div><span>Now</span><b>Taxiing to the gate</b></div>`
