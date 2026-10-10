@@ -675,6 +675,8 @@ const Globe={
   cv.addEventListener("wheel",e=>{e.preventDefault();this.zoom=Math.max(.75,Math.min(8,this.zoom*Math.exp(-e.deltaY*.0015)));this.lastInt=performance.now();this.kick()},{passive:false});
  },
  tap(x,y){const r=Rot.rect(this.cv);x-=r.left;y-=r.top;let best=null,bd=22;
+  let hit=null,hd=28;for(const t of this.hits||[]){if(d3.geoDistance(t.p,this.center())>Math.PI/2)continue;const q=this.proj(t.p),d=Math.hypot(q[0]-x,q[1]-y);if(d<hd){hd=d;hit=t}}
+  if(hit){LiveCard.show(hit.kind);return}
   for(const a of this.aps){if(d3.geoDistance(a.p,this.center())>Math.PI/2-.02)continue;const q=this.proj(a.p);const d=Math.hypot(q[0]-x,q[1]-y);if(d<bd){bd=d;best=a}}
   if(best)openAirport(best.code);else if(this.sel){this.sel=null;this.replay=null;this.kick()}},
  liveCard(el,f,lp){const s=Live.mine(f),now=Date.now(),A=ll(f.dep),B=ll(f.arr),tzB=tzOf(f.arr);
@@ -704,7 +706,7 @@ const Globe={
   if(this.replay){const p=(t-this.replay.t0)/6000;this.replay.p=Math.max(0,Math.min(1,p));if(p<1.15)more=true;else this.replay=null;this.card()}
   this.draw();if(more)this.kick()},
  draw(){
-  const ctx=this.ctx,w=this.w,h=this.h,dpr=this.dpr;if(!w)return;
+  const ctx=this.ctx,w=this.w,h=this.h,dpr=this.dpr;if(!w)return;this.hits=[];
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
   const base=Math.min(w*.49,h*.4),cy=h*0.6,cx=w/2,r=base*this.zoom;
   this.proj.translate([cx,cy]).scale(r).rotate(this.rot);
@@ -764,7 +766,7 @@ const Globe={
   else if(sel){ctx.beginPath();this.path({type:"LineString",coordinates:[A,B]});ctx.strokeStyle=col;ctx.lineWidth=3.2;ctx.stroke()}
   const ctr=this.center();
   for(const c of[A,B]){if(d3.geoDistance(c,ctr)>Math.PI/2)continue;const q=this.proj(c);ctx.beginPath();ctx.arc(q[0],q[1],5,0,7);ctx.fillStyle=C.surf;ctx.fill();ctx.lineWidth=2.4;ctx.strokeStyle=col;ctx.stroke()}
-  if(lp.landed)return;
+  if(lp.landed)return;this.hits.push({kind:"own",p:lp.p});
   const ahead=lp.ahead||(lp.trk!=null?destPt(lp.p,lp.trk,30):d3.geoInterpolate(lp.p,B)(.01));
   this.planeAt(lp.p,ahead,C,lp.est)},
  colors(){const n=performance.now();if(this._C&&n-this._Ct<1500)return this._C;this._Ct=n;return this._C={o1:cssv("--ocean-1"),o2:cssv("--ocean-2"),land:cssv("--land"),edge:cssv("--land-edge"),night:cssv("--night"),grat:cssv("--grat"),rim:cssv("--rim"),O:cssv("--op"),D:cssv("--dh"),P:cssv("--pers"),text:cssv("--text"),muted:cssv("--muted"),surf:cssv("--surface"),sans:cssv("--sans"),halo:cssv("--ocean-2")}},
@@ -1976,9 +1978,10 @@ const Inbound={
  draw(G,C){const f=this.target(),c=this.get(f);if(!c||!c.pos||!c.ib||Date.now()-c.pos.t>3*36e5)return;
   const live=c.live&&c.live.seen&&!c.live.gone;if(c.live&&c.live.gone||(c.ib.landed&&!live))return;
   let P=[c.pos.lon,c.pos.lat];const B=ll(f.dep);if(!B)return;const ctx=G.ctx;
-  let est=false;if(live&&!c.live.ground&&Date.now()-c.live.t>3*6e4){const st=LiveCard.state();if(st&&st.kind==="ib"&&st.est){P=st.p;est=true}}
+  let est=false;if(live&&!c.live.ground&&Date.now()-c.live.t>3*6e4){const st=LiveCard.ib();if(st&&st.est){P=st.p;est=true}}
   ctx.beginPath();G.path({type:"LineString",coordinates:[P,B]});ctx.setLineDash([4,6]);ctx.strokeStyle=C.D;ctx.lineWidth=1.8;ctx.globalAlpha=.85;ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
   // nose follows the reported track; an estimated position moves along the line, so it points along the line
+  (G.hits=G.hits||[]).push({kind:"ib",p:P});
   const ahead=!est&&c.pos.trk!=null?destPt(P,c.pos.trk,30):d3.geoInterpolate(P,B)(.02);G.planeAt(P,ahead,Object.assign({},C,{text:C.D}),est)}
 };
 
@@ -2177,10 +2180,13 @@ const ADB={host:"aerodatabox.p.rapidapi.com",DAYS:365,
 const LiveCard={closed:"",
  el(){let e=document.getElementById("lcard");if(!e){e=document.createElement("div");e.id="lcard";e.className="flightcard lcard";document.getElementById("t-globe").appendChild(e);
    e.onclick=ev=>{if(ev.target.closest(".lc-x")){this.closed=this.key;this.render();return}const st=this.state();if(st&&st.p&&Globe.ctx)Globe.flyTo(st.p,Math.max(Globe.zoom,2.2))}}return e},
- state(){if(Globe.tour)return null;const now=Date.now();
-  const T=Live.target(),s=T&&Live.mine(T);
+ // tapping a plane on the globe brings its card back, even after ×
+ show(kind){this.closed="";this.pref=kind;this.render()},
+ state(){if(Globe.tour)return null;const own=this.own(),ib=this.ib();return this.pref==="ib"&&ib?ib:own||ib},
+ own(){const now=Date.now(),T=Live.target(),s=T&&Live.mine(T);
   if(s&&!s.gone&&(s.air||s.flew||(s.gs||0)>5)&&!(s.landed&&now-s.landedAt>45*6e4)){const lp=Live.pos(T);return{kind:"own",f:T,s,p:lp?lp.p:[s.lon,s.lat]}}
-  const f=Inbound.target(),c=Inbound.get(f);
+  return null},
+ ib(){const now=Date.now(),f=Inbound.target(),c=Inbound.get(f);
   if(c&&c.ib&&c.live&&c.live.seen&&!c.live.gone){const L=c.live,age=now-L.t;
    if(age<3*6e4||L.ground)return age<20*6e4?{kind:"ib",f,c,p:[L.lon,L.lat]}:null;
    // no fresh report: estimate along the route to the airport using the landing time
