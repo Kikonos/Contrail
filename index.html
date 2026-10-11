@@ -632,7 +632,8 @@ const Globe={
  },
  cur(){ // live, next or last
   const now=Date.now();let live=null,next=null,last=null;
-  for(const f of FL){if(f.cat==="X"||f.cat==="P"||!f.out||!f.inn)continue;if(f.out<=now&&f.inn>=now)live=f;else if(f.out>now){if(!next||f.out<next.out)next=f}else last=f}
+  for(const f of FL){if(f.cat==="X"||f.cat==="P"||!f.out||!f.inn)continue;const x=Sched.info(f),o=x?x.dep:+f.out,i=x?x.arr:+f.inn;
+   if(o<=now&&i>=now)live=f;else if(o>now){if(!next||o<(Sched.info(next)||{dep:+next.out}).dep)next=f}else last=f}
   return {live,next,last};
  },
  card(){
@@ -641,14 +642,18 @@ const Globe={
   const T=Live.target(),lp=T&&Live.pos(T);if(lp)return this.liveCard(el,T,lp);
   const f=live||next||last;if(!f){el.innerHTML=`<div class="fc-state">No flights yet</div><p class="small" style="margin:4px 0 8px">Restore your Contrail backup to bring in your history, or add a roster.</p><div class="fc-actions" style="margin-top:0"><button class="btn sm pri" id="fcrest">Restore backup</button><button class="btn sm" id="fcadd">Add a roster</button></div>`;el.querySelector("#fcrest").onclick=()=>go("set");el.querySelector("#fcadd").onclick=()=>go("add");return}
   const tzA=tzOf(f.dep),tzB=tzOf(f.arr);let state,prog=0,meta;
-  if(f===live){prog=(now-f.out)/(f.inn-f.out);const rem=(f.inn-now)/36e5;state=`<span class="fc-state live">In the air now</span>`;meta=`<span>${HM((now-f.out)/36e5)} flown</span><span>${HM(rem)} to go</span>`}
-  else if(f===next){const d=Math.max(0,(f.out-now)/864e5);state=`<span class="fc-state">Next flight, ${d<1?"in "+HM((f.out-now)/36e5)+" h":"in "+Math.ceil(d)+" days"}</span>`;meta=`<span>${esc(dayStr(f.out,tzA))}, ${f.rep&&(!f.repAt||f.repAt===f.dep)?"report "+esc(hm(f.rep,tzA))+", ":""}departs ${esc(hm(f.out,tzA))}</span><span>${HM(f.bh)} block</span>`}
+  const x=Sched.info(f),late=x&&x.late>=5?x.late:0,lateTxt=late?` <span style="color:${late>=30?"var(--x)":"var(--dh)"}">(${HM(late/60)} late)</span>`:"";let note="";
+  if(f===live){const k=Sched.air(f);
+   if(k!=null){prog=k;state=`<span class="fc-state live">${x&&x.flew?"In the air, estimated":x&&x.keys?"Probably in the air, estimated":"In the air now"}</span>`;meta=`<span>${HM((now-x.dep)/36e5)} flown</span><span>${HM(Math.max(0,(x.arr-now)/36e5))} to go</span>`;
+    if(x.keys&&!x.flew)note=`No live data${x.seen?" since "+esc(hm(new Date(x.seen),tzA)):""}. Estimated from departure ${esc(hm(new Date(x.dep),tzA))}.`}
+   else{state=`<span class="fc-state">${late?"Delayed":"Waiting to depart"}</span>`;meta=`<span>${now<x.dep?"Departs":"Expected"} ${esc(hm(new Date(x.dep),tzA))}${lateTxt}</span><span>Not in the air yet</span>`}}
+  else if(f===next){const dep=x?x.dep:+f.out,d=Math.max(0,(dep-now)/864e5);state=`<span class="fc-state">${late?"Delayed, next flight":"Next flight"}, ${d<1?"in "+HM((dep-now)/36e5)+" h":"in "+Math.ceil(d)+" days"}</span>`;meta=`<span>${esc(dayStr(f.out,tzA))}, ${f.rep&&(!f.repAt||f.repAt===f.dep)&&!late?"report "+esc(hm(f.rep,tzA))+", ":""}departs ${esc(hm(new Date(dep),tzA))}${late?`, not ${esc(hm(f.out,tzA))}`:""}${lateTxt}</span><span>${HM(f.bh)} block</span>`}
   else{const d=Math.floor((now-f.inn)/864e5);prog=this.replay&&this.replay.id===f.id?this.replay.p:1;state=`<span class="fc-state">Last flight, ${d===0?"today":d===1?"yesterday":d+" days ago"}</span>`;meta=`<span>${esc(dayStr(f.out,tzA))}, ${flightLine(f)}</span><span>${HM(f.bh)} block</span>`}
   el.innerHTML=`<div class="fc-head">${state}<span class="small">${esc(f.flt)}</span></div>
    <div class="fc-route"><span class="num">${esc(f.dep)}</span><div class="fc-line"><i style="width:${(prog*100).toFixed(1)}%"></i>${f===next?"":`<b style="left:${(prog*100).toFixed(1)}%"></b>`}</div><span class="num">${esc(f.arr)}</span></div>
    <div class="fc-meta">${meta}</div>
    ${(()=>{const l=f===next&&Inbound.target()===f?Inbound.line(f)||(Inbound.busy?`<span><i style="background:var(--muted)"></i>Checking the inbound aircraft…</span>`:""):"";
-    return l?`<button class="ib" id="fcib">${l}</button>`:T===f&&FR24.key()?`<div class="fc-meta" style="margin-top:4px"><span>${esc(Live.err||"Live position appears once the aircraft shows on Flightradar24.")}</span></div>`:""})()}
+    return l?`<button class="ib" id="fcib">${l}</button>`:note?`<div class="fc-meta" style="margin-top:4px"><span>${note}</span></div>`:T===f&&FR24.key()?`<div class="fc-meta" style="margin-top:4px"><span>${esc(Live.err||"Live position appears once the aircraft shows on Flightradar24.")}</span></div>`:""})()}
    <div class="fc-actions"><button class="btn sm pri" id="fcshow">Show</button>${f===last?`<button class="btn sm" id="fcplay">Replay</button>`:`<button class="btn sm" id="fcbrief">Brief</button><button class="btn sm" id="fcshare">Share</button>`}<button class="btn sm" id="fcopen">Details</button></div>`;
   el.querySelector("#fcshow").onclick=()=>this.select(f.id,true);
   el.querySelector("#fcopen").onclick=()=>openFlight(f.id);
@@ -687,7 +692,7 @@ const Globe={
   if(s.landed){state=`<span class="fc-state live">Landed in ${esc(shortCity(f.arr))}</span>`;m1=`<span>${s.landedAt?"Landed "+esc(hm(new Date(s.landedAt),tzB))+" local":""}</span><span>${s.saved?"Saved to your logbook":""}</span>`}
   else if(lp.est){state=`<span class="fc-state">${lp.landed?"Should be landing about now":"In the air"}, estimated</span>`;m1=`<span>Offline, last report ${ago}</span><span>${eta?"Lands about "+esc(hm(new Date(eta),tzB)):HM(Math.max(0,(f.inn-now)/36e5))+" to go"}</span>`}
   else if(s.air){state=`<span class="fc-state live">In the air now, live</span>`;m1=`<span>${lvl}, ${nf0.format(s.gs||0)} kt</span><span>${eta?"Lands "+esc(hm(new Date(eta),tzB)):HM(Math.max(0,(f.inn-now)/36e5))+" to go"}</span>`}
-  else{state=`<span class="fc-state live">${s.gs>5?"Taxiing":"On the ground"} in ${esc(shortCity(f.dep))}</span>`;m1=`<span>Departs ${esc(hm(f.out,tzOf(f.dep)))}</span><span>${HM(f.bh)} block</span>`}
+  else{state=`<span class="fc-state live">${s.gs>5?"Taxiing":"On the ground"} in ${esc(shortCity(f.dep))}</span>`;const x=Sched.info(f),dep=x?x.dep:+f.out,lt=Math.round((dep-f.out)/6e4);m1=`<span>${now<dep?"Departs":"Expected"} ${esc(hm(new Date(dep),tzOf(f.dep)))}${lt>=5?` <span style="color:${lt>=30?"var(--x)":"var(--dh)"}">(${HM(lt/60)} late)</span>`:""}</span><span>${HM(f.bh)} block</span>`}
   m2=`<span>${esc([s.reg,FR24.typeName(s.type)].filter(Boolean).join(", "))}</span><span>${s.landed||lp.est||Live.err?"":"Updated "+ago}</span>`;
   el.innerHTML=`<div class="fc-head">${state}<span class="small">${esc(f.flt)}</span></div>
    <div class="fc-route"><span class="num">${esc(f.dep)}</span><div class="fc-line"><i style="width:${(prog*100).toFixed(1)}%"></i><b style="left:${(prog*100).toFixed(1)}%"></b></div><span class="num">${esc(f.arr)}</span></div>
@@ -756,7 +761,7 @@ const Globe={
    let p=null;const now=Date.now();
    if(this.replay&&this.replay.id===f.id)p=this.replay.p;else if(f.out&&f.inn&&f.out<=now&&f.inn>=now)p=(now-f.out)/(f.inn-f.out);
    if(p!=null)this.plane(A,B,p,C)}}}
-  else{const T=Live.target(),lp=T&&Live.pos(T),TA=T&&ll(T.dep),TB=T&&ll(T.arr);if(lp&&TA&&TB)this.livePlane(T,TA,TB,lp,C,false);else{const L=this.cur().live;if(L){const A=ll(L.dep),B=ll(L.arr);if(A&&B)this.plane(A,B,(Date.now()-L.out)/(L.inn-L.out),C)}}}
+  else{const T=Live.target(),lp=T&&Live.pos(T),TA=T&&ll(T.dep),TB=T&&ll(T.arr);if(lp&&TA&&TB)this.livePlane(T,TA,TB,lp,C,false);else{const L=this.cur().live,k=L&&Sched.air(L);if(k!=null&&k!==false){const A=ll(L.dep),B=ll(L.arr);if(A&&B)this.plane(A,B,k,C)}}}
   Inbound.draw(this,C);
  },
  livePlane(f,A,B,lp,C,sel){const ctx=this.ctx,s=Live.mine(f),col=C[f.cat==="X"?"muted":f.cat]||C.O;
@@ -1031,7 +1036,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.8 (10 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.9 (11 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -1882,7 +1887,10 @@ const Inbound={
  get(f){return f?this.all()[f.id]||null:null},
  put(f,v){const a=this.all(),keep={};for(const k in a)if(BYID[k]&&BYID[k].out&&+BYID[k].out>Date.now()-864e5)keep[k]=a[k];keep[f.id]=v;lsSet("contrail.inbound",keep)},
  // the next departure, from 24 h before until it leaves
- target(){const now=Date.now();return FL.filter(f=>(f.cat==="O"||f.cat==="D")&&f.out&&+f.out>now-15*6e4&&+f.out-now<24*36e5&&FR24.fltNo(f.flt)).sort((a,b)=>a.t-b.t)[0]||null},
+ target(){const now=Date.now();return FL.filter(f=>(f.cat==="O"||f.cat==="D")&&f.out&&+f.out-now<24*36e5&&FR24.fltNo(f.flt)&&(+f.out>now-15*6e4||+f.out>now-12*36e5&&this.waiting(f))).sort((a,b)=>a.t-b.t)[0]||null},
+ // delayed: past the timetable departure, but the flight hasn't left yet
+ waiting(f){const now=Date.now(),c=this.get(f),s=Live.mine(f);if(s&&s.flew)return false;
+  if(!c)return now<+f.inn;if(c.ourOff)return false;if(c.ourEst)return c.ourEst>now-60*6e4;return now<+f.out+60*6e4},
  busy:false,following:false,
  // between AeroDataBox checks, follow the inbound aircraft on Flightradar24 about once a minute
  async follow(){const f=this.target(),c=this.get(f);if(!f||!c||!c.ib||!FR24.key()||this.following||document.hidden||!Globe.on)return;
@@ -1901,7 +1909,7 @@ const Inbound={
    this.put(f,g)}catch(e){}
   finally{this.following=false;Globe.card();Globe.kick()}},
  tick(){const f=this.target(),C=this.cfg();if(!f||!ADB.key()||!C.auto||this.busy||document.hidden||!Globe.on)return;const now=Date.now();if(+f.out-now>3*36e5)return;
-  const c=this.get(f);if(c&&now-c.t<30*6e4)return;this.check(f)},
+  const c=this.get(f);if(c&&now-c.t<(now>+f.out-30*6e4?15:30)*6e4)return;this.check(f)},
  same(a,b){const n=x=>String(x||"").replace(/\s/g,"").toUpperCase();return n(a)===n(b)},
  pick(rows,fn){return(Array.isArray(rows)?rows:[]).filter(fn)},
  sched(r,side){const s=r&&r[side]||{};return ADB.utc(s.scheduledTime)},
@@ -1926,7 +1934,10 @@ const Inbound={
     const m=no.match(/^(\D+|\w\d)(\d+)$/)||no.match(/^([A-Z0-9]{2})(\d+)$/);
     if(m){const n=+m[2],ino=m[1]+(n%2?n+1:n-1),inb=L=>this.pick(L,r=>(r.arrival&&r.arrival.airport&&r.arrival.airport.iata)===f.dep&&this.sched(r,"arrival")<+f.out&&this.sched(r,"arrival")>+f.out-24*36e5).sort((a,b)=>this.sched(b,"arrival")-this.sched(a,"arrival"))[0]||null;
      ib=inb(await ADB.get(q(`/flights/number/${ino}/${ymd}`)));if(!ib)ib=inb(await ADB.get(q(`/flights/number/${ino}/${prev}`)));res.guess=!!ib}}
-   if(our){res.ourEst=ADB.utc((our.departure||{}).revisedTime)||0;res.ourType=(our.aircraft||{}).model||""}
+   if(our){const d=our.departure||{},a=our.arrival||{};res.ourEst=ADB.utc(d.revisedTime)||0;res.ourType=(our.aircraft||{}).model||"";res.ourStatus=our.status||"";
+    const rw=ADB.utc(d.runwayTime);res.ourOff=rw&&rw<=now?rw:/Departed|EnRoute|Approaching|Arrived|Landed/i.test(our.status||"")?res.ourEst||+f.out:0;
+    res.ourArr=ADB.utc(a.revisedTime)||ADB.utc(a.predictedTime)||0}
+   else if(old.ourEst||old.ourOff){res.ourEst=old.ourEst;res.ourOff=old.ourOff;res.ourArr=old.ourArr;res.ourStatus=old.ourStatus;res.ourType=old.ourType}
    if(ib){const a=ib.arrival||{},d=ib.departure||{};
     res.ib={no:ib.number||"",from:(d.airport||{}).iata||"",fromName:(d.airport||{}).shortName||(d.airport||{}).municipalityName||"",sched:this.sched(ib,"arrival"),est:this.est(ib),landed:!!ADB.utc(a.runwayTime)&&ADB.utc(a.runwayTime)<=now||/Arrived/i.test(ib.status||""),
      departed:!!ADB.utc(d.runwayTime)||/Departed|Enroute|Approaching|Arrived/i.test(ib.status||""),status:ib.status||"",reg:(ib.aircraft||{}).reg||res.reg,type:(ib.aircraft||{}).model||""};
@@ -1944,7 +1955,8 @@ const Inbound={
       res.live={t:now,seen:true,lat:r.lat,lon:r.lon,trk:r.track,alt:r.alt,gs:r.gspeed,orig:r.orig_iata||"",flight:r.flight||"",ground:false,gone:false}}}catch(e){}}
    if(res.ib&&old.ib&&Inbound.same(old.ib.no,res.ib.no)){if(old.live)res.live=old.live;if(old.ib.landed)res.ib.landed=true;if(old.ib.src==="Flightradar24"&&old.live&&!old.live.gone&&!res.ib.landed&&res.ib.src!=="Flightradar24"){res.ib.est=old.ib.est;res.ib.src=old.ib.src;res.late=res.ib.sched?Math.round((res.ib.est-res.ib.sched)/6e4):old.late}}
    res.err="";
-  }catch(e){res.err=e.message;if(old.ib&&!res.ib){res.ib=old.ib;res.late=old.late;res.pos=old.pos;res.ourEst=old.ourEst;res.live=old.live}}
+  }catch(e){res.err=e.message;if(old.ib&&!res.ib){res.ib=old.ib;res.late=old.late;res.pos=old.pos;res.live=old.live}
+   for(const k of["ourEst","ourOff","ourArr","ourStatus","ourType"])if(res[k]==null&&old[k]!=null)res[k]=old[k]}
   finally{this.busy=false}
   const cur=this.get(f)||{};if(res.ib&&cur.ib&&Inbound.same(cur.ib.no,res.ib.no)){if(cur.live&&(!res.live||cur.live.t>res.live.t))res.live=cur.live;if(cur.pos&&(!res.pos||cur.pos.t>res.pos.t))res.pos=cur.pos}
   this.put(f,res);Globe.card();Globe.kick();this.paint(f);return res},
@@ -2047,7 +2059,8 @@ const FR24={
   const u=new URL(this.base+path);for(const p in params||{})u.searchParams.set(p,params[p]);
   for(let attempt=0;;attempt++){
    let r;try{r=await fetchT(u,{headers:{"Accept":"application/json","Accept-Version":"v1","Authorization":"Bearer "+k},cache:"no-store"})}
-   catch(e){throw new Error(navigator.onLine===false?"No internet connection.":"Couldn't reach Flightradar24. If you're online, it may not accept requests from the app.")}
+   catch(e){if(attempt<1&&navigator.onLine!==false){await new Promise(z=>setTimeout(z,2500));continue}
+    throw new Error(navigator.onLine===false?"No internet connection.":"Couldn't reach Flightradar24 just now. Trying again every minute.")}
    if(r.status===429&&attempt<3){await new Promise(z=>setTimeout(z,8000*(attempt+1)));continue}
    if(!r.ok){let why="";try{const j=await r.json();why=String(j.message||j.error||j.detail||j.details||"");if(j.details&&typeof j.details==="object")why+=" "+JSON.stringify(j.details)}catch(e){}why=why.trim().slice(0,240);if(why&&!/[.!?]$/.test(why))why+=".";
     const msg=r.status===401?"Flightradar24 didn't accept the API key.":r.status===402||r.status===403?"Flightradar24 refused the request.":r.status===429?"Flightradar24 is limiting requests. Try again in a few minutes.":"Flightradar24 replied with an error ("+r.status+").";
@@ -2230,8 +2243,8 @@ const Live={snap:null,busy:false,err:"",last:0,
  target(){const now=Date.now();let best=null;
   for(const f of FL){if(f.cat==="X"||!f.out||!f.inn||!FR24.fltNo(f.flt))continue;const s=this.mine(f);
    if(s&&s.landed){if(now-s.landedAt>45*6e4)continue}
-   const end=Math.max(+f.inn,s&&s.air&&s.eta?Date.parse(s.eta)||0:0)+2*36e5;
-   if(now>=f.out-3*36e5&&now<=end&&(!best||Math.abs(f.out-now)<Math.abs(best.out-now)))best=f}
+   if(now<f.out-3*36e5)continue;const x=Sched.info(f),end=Math.max(+f.inn,x?x.arr:0,s&&s.air&&s.eta?Date.parse(s.eta)||0:0)+2*36e5;
+   if(now<=end&&(!best||Math.abs(f.out-now)<Math.abs(best.out-now)))best=f}
   return best},
  tick(force){const f=this.target();if(!f||!FR24.key()||document.hidden||this.busy)return;
   if(!Globe.on&&!force)return;if(!force&&Date.now()-this.last<55e3)return;
@@ -2242,12 +2255,12 @@ const Live={snap:null,busy:false,err:"",last:0,
     const r=list.find(x=>x.orig_iata===f.dep&&(!x.dest_iata||x.dest_iata===f.arr))||list.find(x=>!x.orig_iata&&(!prev||!prev.fid||x.fr24_id===prev.fid))||null;
     if(prev&&prev.landed){if(r){prev.lat=r.lat;prev.lon=r.lon;prev.gs=r.gspeed;prev.alt=r.alt;prev.t=Date.parse(r.timestamp)||now}else prev.gone=true}
     else if(r){const air=(r.alt||0)>150||(r.gspeed||0)>70;
-     const s={id:f.id,fid:r.fr24_id,t:Date.parse(r.timestamp)||now,lat:r.lat,lon:r.lon,trk:r.track,alt:r.alt,gs:r.gspeed,vs:r.vspeed,eta:r.eta||null,reg:r.reg||"",type:r.type||"",op:r.operating_as||r.painted_as||"",air,flew:air||!!(prev&&prev.flew),landed:false};
+     const s={id:f.id,offAt:prev&&prev.offAt||(air?Date.parse(r.timestamp)||now:0),fid:r.fr24_id,t:Date.parse(r.timestamp)||now,lat:r.lat,lon:r.lon,trk:r.track,alt:r.alt,gs:r.gspeed,vs:r.vspeed,eta:r.eta||null,reg:r.reg||"",type:r.type||"",op:r.operating_as||r.painted_as||"",air,flew:air||!!(prev&&prev.flew),landed:false};
      if(s.flew&&!air&&B&&d3.geoDistance([s.lon,s.lat],B)*R_KM<40){s.landed=true;s.landedAt=now}
      this.snap=s}
     else if(prev&&prev.flew){const e=this.pos(f);if(e&&(e.k>.9||e.landed)){prev.landed=true;prev.landedAt=now}}
    }
-   this.err="";const s=this.mine(f);
+   this.err="";this.okAt=Date.now();this.okId=f.id;const s=this.mine(f);
    if(s&&s.landed&&!s.saved)await this.finish(f,s);
   }catch(e){this.err=e.message}
   finally{this.busy=false;this.keep();Globe.card();Globe.kick()}},
@@ -2267,6 +2280,22 @@ const Live={snap:null,busy:false,err:"",last:0,
   const k=eta>s.t?Math.min(1,(now-s.t)/(eta-s.t)):Math.min(1,(s.gs||450)*1.852*age/36e5/dist);
   const ip=d3.geoInterpolate(P,B),p=ip(k);
   return{p,ahead:ip(Math.min(1,k+.02)),est:true,age,k,landed:k>=1,eta}}
+};
+
+// best known times for a flight: Flightradar24 first, then AeroDataBox's revised times, then the timetable
+const Sched={
+ info(f){const now=Date.now();if(!f||!f.out||!f.inn||f.out-now>36*36e5||now-f.inn>36*36e5)return null;
+  const s=Live.mine(f),c=Inbound.get(f)||{},blk=f.inn-f.out,off=s&&s.flew&&s.offAt||c.ourOff||0,flew=!!(s&&s.flew)||!!off;
+  const est=c.ourEst&&Math.abs(c.ourEst-f.out)<18*36e5?c.ourEst:0,dep=off||est||+f.out;
+  const arr=s&&s.air&&Date.parse(s.eta||"")||(c.ourArr&&c.ourArr>dep?c.ourArr:0)||dep+blk;
+  const keys=!!(FR24.key()||ADB.key());
+  // a source has answered recently and the flight wasn't flying
+  const fresh=Live.okId===f.id&&now-Live.okAt<5*6e4||c.t&&!c.err&&now-c.t<25*6e4;
+  return{dep,arr,late:Math.round((dep-f.out)/6e4),flew,keys,fresh:!!fresh,seen:Math.max(Live.okId===f.id?Live.okAt:0,c.err?0:c.t||0)}},
+ // progress along the route if the flight has (probably) left, otherwise null
+ air(f){const x=this.info(f),now=Date.now();if(!x||now<x.dep||now>x.arr)return null;
+  if(!x.flew&&x.keys&&x.fresh)return null; // the latest data says it hasn't left
+  return Math.max(0,Math.min(1,(now-x.dep)/Math.max(6e4,x.arr-x.dep)))}
 };
 
 const Rot={a:0,
