@@ -92,9 +92,12 @@ nav.bar button.on{color:var(--op)}
 .chip{border:1px solid var(--hair);background:color-mix(in srgb,var(--surface) 85%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:999px;padding:6px 10px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
 .chip .dot{width:8px;height:8px;border-radius:50%}
 .chip.on{color:var(--text);border-color:color-mix(in srgb,var(--text) 22%,transparent)}
-.chip select{background:none;border:0;font-weight:600;color:inherit;padding:0;appearance:none;-webkit-appearance:none}
+.chip select{background:none;border:0;font-weight:600;color:inherit;padding:0;appearance:none;-webkit-appearance:none;outline:none;cursor:pointer}
+.chip.per{position:relative;padding-right:24px}.chip.per::after{content:"";position:absolute;right:11px;top:50%;width:5px;height:5px;border:solid currentColor;border-width:0 1.6px 1.6px 0;transform:translateY(-70%) rotate(45deg);pointer-events:none;opacity:.7}
 .g-legend{position:absolute;left:14px;bottom:12px;font-size:12px;color:var(--muted);pointer-events:none}
 .g-zoom{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:6px}
+.sh-prev{display:flex;justify-content:center}.sh-prev img{height:min(56vh,560px);aspect-ratio:9/16;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.35);background:#07111D;-webkit-touch-callout:default}
+.g-zoom #gmode{display:grid;place-items:center;margin-bottom:6px}.g-zoom #gmode svg{width:20px;height:20px}
 .g-zoom button{width:38px;height:38px;border-radius:12px;border:1px solid var(--hair);background:color-mix(in srgb,var(--surface) 85%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font-size:20px;line-height:1;color:var(--text)}
 
 /* buttons */
@@ -304,7 +307,7 @@ details.fold[open] summary::after{transform:rotate(-135deg);margin-bottom:-2px}
       <div class="chips" id="gchips"></div>
     </div>
     <div class="g-legend" id="glegend"></div>
-    <div class="g-zoom"><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">&minus;</button></div>
+    <div class="g-zoom"><button id="gmode" aria-label="Show as a flat map"></button><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">&minus;</button></div>
   </section>
   <section class="tab" id="t-log" aria-label="Logbook"><div class="wrap">
     <h1>Logbook</h1>
@@ -490,6 +493,9 @@ function HM(h){if(h==null||isNaN(h))return"–";const m=Math.round(h*60);return 
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function city(c){const A=ap(c);return A?A[0]:c}
 function shortCity(c){const n=city(c);const m={"London Heathrow":"London","London Gatwick":"Gatwick","London Stansted":"Stansted","Paris Orly":"Orly","Istanbul Sabiha":"Sabiha","Warsaw Modlin":"Modlin","Tenerife South":"Tenerife","Tokyo Haneda":"Tokyo","Tokyo Narita":"Narita","Ho Chi Minh City":"Saigon","Thiruvananthapuram":"Trivandrum"};return m[n]||n}
+// a select as wide as the option showing, not the longest one
+function fitSelect(s){try{const cs=getComputedStyle(s),c=fitSelect.c||(fitSelect.c=document.createElement("canvas").getContext("2d"));c.font=`${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+ const o=s.options[s.selectedIndex];s.style.width=Math.ceil(c.measureText(o?o.text:"").width+2)+"px"}catch(e){}}
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("on"),2600)}
 function catColor(c){return getComputedStyle(document.documentElement).getPropertyValue({O:"--op",D:"--dh",P:"--pers",X:"--muted"}[c]).trim()}
 function cssv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
@@ -580,13 +586,14 @@ function updateBadge(){const n=FL.filter(needsReview).length;const b=document.ge
 
 /* ---------- globe ---------- */
 const Globe={
- cv:null,ctx:null,proj:null,path:null,w:0,h:0,dpr:1,zoom:1,rot:[-28,-30,0],vel:[0,0],raf:0,on:true,land:null,
+ cv:null,ctx:null,proj:null,path:null,w:0,h:0,dpr:1,zoom:1,rot:[-28,-30,0],vel:[0,0],raf:0,on:true,land:null,flat:false,
  filt:{O:true,D:true,P:false},year:"all",routes:[],aps:[],sel:null,replay:null,lastInt:0,spin:!matchMedia("(prefers-reduced-motion: reduce)").matches,
  init(){
   this.cv=document.getElementById("globe");this.ctx=this.cv.getContext("2d");
-  this.proj=d3.geoOrthographic().clipAngle(90).precision(0.6);this.path=d3.geoPath(this.proj,this.ctx);
+  this.projG=d3.geoOrthographic().clipAngle(90).precision(0.6);this.projF=d3.geoMercator().precision(0.6);
   new ResizeObserver(()=>this.resize()).observe(this.cv);
-  const gv=lsGet("contrail.globeview",null);if(gv){if(gv.filt&&typeof gv.filt==="object")for(const k of["O","D","P"])if(typeof gv.filt[k]==="boolean")this.filt[k]=gv.filt[k];if(gv.per)this.per=gv.per;if(Array.isArray(gv.custom)&&gv.custom.length===2&&gv.custom.every(x=>/^\d{4}-\d\d-\d\d$/.test(x)))this.custom=gv.custom;if(typeof this.per!=="string")this.per="all";if(this.per==="custom"&&!this.custom)this.per="all"}
+  const gv=lsGet("contrail.globeview",null);if(gv){if(gv.filt&&typeof gv.filt==="object")for(const k of["O","D","P"])if(typeof gv.filt[k]==="boolean")this.filt[k]=gv.filt[k];if(gv.per)this.per=gv.per;if(Array.isArray(gv.custom)&&gv.custom.length===2&&gv.custom.every(x=>/^\d{4}-\d\d-\d\d$/.test(x)))this.custom=gv.custom;if(typeof this.per!=="string")this.per="all";if(this.per==="custom"&&!this.custom)this.per="all";this.flat=gv.flat===true}
+  this.setMode(this.flat,true);document.getElementById("gmode").onclick=()=>this.setMode(!this.flat);
   this.bind();this.chips();this.rebuild();this.resize();this.loadLand();
   document.getElementById("zin").onclick=()=>{this.zoom=Math.min(8,this.zoom*1.4);this.kick()};
   document.getElementById("zout").onclick=()=>{this.zoom=Math.max(.75,this.zoom/1.4);this.kick()};
@@ -594,6 +601,15 @@ const Globe={
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{this._C=null;this.kick()});
   setInterval(()=>{if(this.on&&!document.hidden){this.card();this.kick()}},30000);
  },
+ // globe or flat map; the flat map is Mercator, panned sideways by turning the world and up and down by its centre
+ setMode(flat,quiet){this.flat=!!flat;this.proj=this.flat?this.projF:this.projG;this.path=d3.geoPath(this.proj,this.ctx);
+  if(this.flat){this.zoom=Math.max(1,this.zoom);this.rot[1]=Math.max(-60,Math.min(60,this.rot[1]))}
+  const b=document.getElementById("gmode");if(b){b.setAttribute("aria-label",this.flat?"Show as a globe":"Show as a flat map");b.title=b.getAttribute("aria-label");
+   b.innerHTML=this.flat?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.6 2.6 2.6 14.4 0 17M12 3.5c-2.6 2.6-2.6 14.4 0 17"/></svg>'
+    :'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M3 6.5l5.5-2 7 2.5 5.5-2v13l-5.5 2-7-2.5-5.5 2z"/><path d="M8.5 4.5v13M15.5 7v13"/></svg>'}
+  if(!quiet){lsSet("contrail.globeview",{filt:this.filt,per:this.per,custom:this.custom,flat:this.flat});this.vel=[0,0];this.anim=null;this.kick()}},
+ // is this point on the visible side of the globe, or inside the flat map's view
+ vis(p,m){if(!p)return false;if(!this.flat)return d3.geoDistance(p,this.center())<=Math.PI/2-(m||0);const q=this.proj(p);return!!q&&q[0]>=-30&&q[0]<=this.w+30&&q[1]>=-30&&q[1]<=this.h+30},
  active(v){this.on=v;if(v){this.kick();if(window.d3){Live.tick();Inbound.follow()}Inbound.tick()}else if(this.tour)this.stopTour()},
  resize(){const r={width:this.cv.clientWidth,height:this.cv.clientHeight};if(!r.width)return;this.dpr=Math.min(2.5,window.devicePixelRatio||1);this.w=r.width;this.h=r.height;this.cv.width=Math.round(r.width*this.dpr);this.cv.height=Math.round(r.height*this.dpr);this.kick()},
  loadLand(){
@@ -624,12 +640,13 @@ const Globe={
   const years=[...new Set(FL.filter(f=>f.cat==="O"||f.cat==="D").map(f=>f.year))].sort().reverse();
   const opts=[["all","All time"],["ahead","Ahead"],["tm","This month"],["lm","Last month"],["p6","Past 6 months"],["ty","This year"]].concat(years.map(y=>[y,y])).concat([["custom",this.customLabel()]]);
   el.innerHTML=["O","D","P"].map(c=>`<button class="chip ${this.filt[c]?"on":""}" data-c="${c}" aria-pressed="${this.filt[c]}"><i class="dot c-${c}"></i>${CATN[c]}</button>`).join("")+
-   `<label class="chip on"><select id="gyear" aria-label="Period">${opts.map(([v,l])=>`<option value="${v}" ${this.per===v?"selected":""}>${esc(l)}</option>`).join("")}</select></label>`;
+   `<label class="chip on per"><select id="gyear" aria-label="Period">${opts.map(([v,l])=>`<option value="${v}" ${this.per===v?"selected":""}>${esc(l)}</option>`).join("")}</select></label>`;
   el.querySelectorAll("button").forEach(b=>b.onclick=()=>{this.filt[b.dataset.c]=!this.filt[b.dataset.c];this.chips();this.rebuild()});
-  el.querySelector("#gyear").onchange=e=>{const v=e.target.value;if(v==="custom"){this.pickCustom();return}this.per=v;this.rebuild()};
+  const sel=el.querySelector("#gyear");fitSelect(sel);
+  sel.onchange=e=>{const v=e.target.value;if(v==="custom"){this.pickCustom();return}this.per=v;fitSelect(sel);this.rebuild()};
  },
  rebuild(){
-  lsSet("contrail.globeview",{filt:this.filt,per:this.per,custom:this.custom});
+  lsSet("contrail.globeview",{filt:this.filt,per:this.per,custom:this.custom,flat:this.flat});
   const pr=this.periodRange();const fs=FL.filter(f=>this.filt[f.cat]&&(!pr||(f.t>=pr[0]&&f.t<pr[1])));
   const rm=new Map(),am=new Map();
   for(const f of fs){
@@ -689,16 +706,16 @@ const Globe={
    if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:this.zoom}}});
   cv.addEventListener("pointermove",ev=>{const e=P(ev);if(!ptrs.has(e.pointerId))return;const p=ptrs.get(e.pointerId),dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
    if(ptrs.size===2&&pinch){const[a,b]=[...ptrs.values()];this.zoom=Math.max(.75,Math.min(8,pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d));this.kick();return}
-   if(ptrs.size===1){if(start)start.moved+=Math.abs(dx)+Math.abs(dy);const k=90/this.proj.scale();this.rot[0]+=dx*k;this.rot[1]=Math.max(-89,Math.min(89,this.rot[1]-dy*k));const now=performance.now(),dt=Math.max(8,now-lastMove);lastMove=now;this.vel=[dx*k/dt*16,-dy*k/dt*16];this.lastInt=now;this.kick()}});
+   if(ptrs.size===1){if(start)start.moved+=Math.abs(dx)+Math.abs(dy);const k=(this.flat?57.3:90)/this.proj.scale();this.rot[0]+=dx*k;this.rot[1]=Math.max(-89,Math.min(89,this.rot[1]-dy*k));const now=performance.now(),dt=Math.max(8,now-lastMove);lastMove=now;this.vel=[dx*k/dt*16,-dy*k/dt*16];this.lastInt=now;this.kick()}});
   const end=ev=>{const e=P(ev);if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;
    if(ptrs.size===0&&start){if(start.moved<8&&performance.now()-start.t<450)this.tap(e.clientX,e.clientY);if(performance.now()-lastMove>60)this.vel=[0,0];start=null;this.kick()}};
   cv.addEventListener("pointerup",end);cv.addEventListener("pointercancel",end);
   cv.addEventListener("wheel",e=>{e.preventDefault();this.zoom=Math.max(.75,Math.min(8,this.zoom*Math.exp(-e.deltaY*.0015)));this.lastInt=performance.now();this.kick()},{passive:false});
  },
  tap(x,y){const r=Rot.rect(this.cv);x-=r.left;y-=r.top;let best=null,bd=22;
-  let hit=null,hd=28;for(const t of this.hits||[]){if(d3.geoDistance(t.p,this.center())>Math.PI/2)continue;const q=this.proj(t.p),d=Math.hypot(q[0]-x,q[1]-y);if(d<hd){hd=d;hit=t}}
+  let hit=null,hd=28;for(const t of this.hits||[]){if(!this.vis(t.p))continue;const q=this.proj(t.p),d=Math.hypot(q[0]-x,q[1]-y);if(d<hd){hd=d;hit=t}}
   if(hit){LiveCard.show(hit.kind);return}
-  for(const a of this.aps){if(d3.geoDistance(a.p,this.center())>Math.PI/2-.02)continue;const q=this.proj(a.p);const d=Math.hypot(q[0]-x,q[1]-y);if(d<bd){bd=d;best=a}}
+  for(const a of this.aps){if(!this.vis(a.p,.02))continue;const q=this.proj(a.p);const d=Math.hypot(q[0]-x,q[1]-y);if(d<bd){bd=d;best=a}}
   if(best)openAirport(best.code);else if(this.sel){this.sel=null;this.replay=null;this.kick()}},
  liveCard(el,f,lp){const s=Live.mine(f),now=Date.now(),A=ll(f.dep),B=ll(f.arr),tzB=tzOf(f.arr);
   let prog=0;if(lp.landed)prog=1;else if(A&&B&&s.flew){const a=d3.geoDistance(A,lp.p),b=d3.geoDistance(lp.p,B);prog=a+b>0?a/(a+b):0}
@@ -723,19 +740,27 @@ const Globe={
  frame(t){this.raf=0;if(!this.on||document.hidden)return;let more=!!this.tour;
   if(this.anim){if(!this.anim.step(t))this.anim=null;more=true}
   else if(Math.abs(this.vel[0])+Math.abs(this.vel[1])>.01){this.rot[0]+=this.vel[0];this.rot[1]=Math.max(-89,Math.min(89,this.rot[1]+this.vel[1]));this.vel[0]*=.93;this.vel[1]*=.93;more=true}
-  else if(this.spin&&disp().spin&&!this.sel&&t-this.lastInt>5000){this.rot[0]+=.04;more=true}
+  else if(this.spin&&!this.flat&&disp().spin&&!this.sel&&t-this.lastInt>5000){this.rot[0]+=.04;more=true}
   if(this.replay){const p=(t-this.replay.t0)/6000;this.replay.p=Math.max(0,Math.min(1,p));if(p<1.15)more=true;else this.replay=null;this.card()}
   this.draw();if(more)this.kick()},
  draw(){
   const ctx=this.ctx,w=this.w,h=this.h,dpr=this.dpr;if(!w)return;this.hits=[];
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
   const base=Math.min(w*.49,h*.4),cy=h*0.6,cx=w/2,r=base*this.zoom;
-  this.proj.translate([cx,cy]).scale(r).rotate(this.rot);
   const C=this.colors();
+  if(this.flat){
+   // the map always fills the view: at least the height of 80°N to 80°S, and never narrower than the screen
+   if(this.zoom<1)this.zoom=1;const Y=Math.log(Math.tan(Math.PI/4+80*Math.PI/360)),s=Math.max(w/(2*Math.PI),h/(2*Y))*this.zoom,ty=h*.58;
+   const lo=(h-ty)/s-Y,hi=Y-ty/s;let yc=Math.log(Math.tan(Math.PI/4+Math.max(-85,Math.min(85,-this.rot[1]))*Math.PI/360));yc=lo>hi?(lo+hi)/2:Math.max(lo,Math.min(hi,yc));
+   this.rot[1]=-(2*Math.atan(Math.exp(yc))-Math.PI/2)*180/Math.PI;this.rot[0]=((this.rot[0]+540)%360)-180;
+   this.proj.rotate([this.rot[0],0]).center([0,-this.rot[1]]).translate([cx,ty]).scale(s).clipExtent([[-20,-20],[w+20,h+20]]);
+   const g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,C.o1);g.addColorStop(1,C.o2);ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+  }else{
+  this.proj.translate([cx,cy]).scale(r).rotate(this.rot);
   // halo
   const halo=ctx.createRadialGradient(cx,cy,r*.96,cx,cy,r*1.16);halo.addColorStop(0,C.rim);halo.addColorStop(1,"rgba(0,0,0,0)");ctx.fillStyle=halo;ctx.beginPath();ctx.arc(cx,cy,r*1.16,0,7);ctx.fill();
   const g=ctx.createRadialGradient(cx-r*.35,cy-r*.4,r*.05,cx,cy,r);g.addColorStop(0,C.o1);g.addColorStop(1,C.o2);
-  ctx.beginPath();this.path({type:"Sphere"});ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();this.path({type:"Sphere"});ctx.fillStyle=g;ctx.fill()}
   ctx.beginPath();this.path(d3.geoGraticule10());ctx.strokeStyle=C.grat;ctx.lineWidth=1;ctx.stroke();
   if(this.land){ctx.beginPath();this.path(this.land);ctx.fillStyle=C.land;ctx.fill();ctx.strokeStyle=C.edge;ctx.lineWidth=.6;ctx.stroke()}
   const sp=sunPos(Date.now());const anti=[sp[0]+180,-sp[1]];
@@ -762,10 +787,10 @@ const Globe={
   const labelMin=this.zoom>3?D3[0]:this.zoom>1.8?D3[1]:D3[2];
   ctx.font=`600 11.5px ${C.sans}`;ctx.textBaseline="middle";
   const placed=[];
-  for(const a of this.aps){if(!S.dots)break;if(d3.geoDistance(a.p,ctr)>Math.PI/2-.03)continue;const q=this.proj(a.p);const rr=Math.min(5,1.6+Math.sqrt(a.n)*.28)*Math.min(1.4,Math.sqrt(this.zoom));
+  for(const a of this.aps){if(!S.dots)break;if(!this.vis(a.p,.03))continue;const q=this.proj(a.p);const rr=Math.min(5,1.6+Math.sqrt(a.n)*.28)*Math.min(1.4,Math.sqrt(this.zoom));
    ctx.beginPath();ctx.arc(q[0],q[1],rr,0,7);ctx.fillStyle=C.text;ctx.globalAlpha=dimSel?.5:.9;ctx.fill();ctx.globalAlpha=1}
   ctx.lineJoin="round";
-  for(let i=this.aps.length-1;i>=0&&S.labels!=="off";i--){const a=this.aps[i];if(a.n<labelMin)break;if(d3.geoDistance(a.p,ctr)>Math.PI/2-.1)continue;const q=this.proj(a.p);
+  for(let i=this.aps.length-1;i>=0&&S.labels!=="off";i--){const a=this.aps[i];if(a.n<labelMin)break;if(!this.vis(a.p,.1))continue;const q=this.proj(a.p);
    const txt=S.labels==="city"?shortCity(a.code):a.code;const tw=ctx.measureText(txt).width;
    const bx=[q[0]+4,q[1]-8,q[0]+8+tw,q[1]+8];
    if(placed.some(b=>!(bx[2]<b[0]||bx[0]>b[2]||bx[3]<b[1]||bx[1]>b[3])))continue;placed.push(bx);
@@ -773,7 +798,7 @@ const Globe={
   // selected flight
   if(this.sel){const f=BYID[this.sel];if(f){const A=ll(f.dep),B=ll(f.arr);const lp=!(this.replay&&this.replay.id===f.id)&&Live.pos(f);if(A&&B&&lp)this.livePlane(f,A,B,lp,C,true);else if(A&&B){
    ctx.beginPath();this.path({type:"LineString",coordinates:[A,B]});ctx.strokeStyle=C[f.cat==="X"?"muted":f.cat]||C.O;ctx.lineWidth=3.2;ctx.globalAlpha=1;ctx.stroke();
-   for(const c of[A,B]){if(d3.geoDistance(c,ctr)>Math.PI/2)continue;const q=this.proj(c);ctx.beginPath();ctx.arc(q[0],q[1],5,0,7);ctx.fillStyle=C.surf;ctx.fill();ctx.lineWidth=2.4;ctx.strokeStyle=C[f.cat]||C.O;ctx.stroke()}
+   for(const c of[A,B]){if(!this.vis(c))continue;const q=this.proj(c);ctx.beginPath();ctx.arc(q[0],q[1],5,0,7);ctx.fillStyle=C.surf;ctx.fill();ctx.lineWidth=2.4;ctx.strokeStyle=C[f.cat]||C.O;ctx.stroke()}
    let p=null;const now=Date.now();
    if(this.replay&&this.replay.id===f.id)p=this.replay.p;else if(f.out&&f.inn&&f.out<=now&&f.inn>=now)p=(now-f.out)/(f.inn-f.out);
    if(p!=null)this.plane(A,B,p,C)}}}
@@ -786,13 +811,13 @@ const Globe={
    ctx.beginPath();this.path({type:"LineString",coordinates:[lp.p,B]});ctx.setLineDash([5,5]);ctx.lineWidth=2;ctx.globalAlpha=.8;ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1}
   else if(sel){ctx.beginPath();this.path({type:"LineString",coordinates:[A,B]});ctx.strokeStyle=col;ctx.lineWidth=3.2;ctx.stroke()}
   const ctr=this.center();
-  for(const c of[A,B]){if(d3.geoDistance(c,ctr)>Math.PI/2)continue;const q=this.proj(c);ctx.beginPath();ctx.arc(q[0],q[1],5,0,7);ctx.fillStyle=C.surf;ctx.fill();ctx.lineWidth=2.4;ctx.strokeStyle=col;ctx.stroke()}
+  for(const c of[A,B]){if(!this.vis(c))continue;const q=this.proj(c);ctx.beginPath();ctx.arc(q[0],q[1],5,0,7);ctx.fillStyle=C.surf;ctx.fill();ctx.lineWidth=2.4;ctx.strokeStyle=col;ctx.stroke()}
   if(lp.landed)return;this.hits.push({kind:"own",p:lp.p});
   const ahead=lp.ahead||(lp.trk!=null?destPt(lp.p,lp.trk,30):d3.geoInterpolate(lp.p,B)(.01));
   this.planeAt(lp.p,ahead,C,lp.est)},
  colors(){const n=performance.now();if(this._C&&n-this._Ct<1500)return this._C;this._Ct=n;return this._C={o1:cssv("--ocean-1"),o2:cssv("--ocean-2"),land:cssv("--land"),edge:cssv("--land-edge"),night:cssv("--night"),grat:cssv("--grat"),rim:cssv("--rim"),O:cssv("--op"),D:cssv("--dh"),P:cssv("--pers"),text:cssv("--text"),muted:cssv("--muted"),surf:cssv("--surface"),sans:cssv("--sans"),halo:cssv("--ocean-2")}},
  plane(A,B,p,C){const ip=d3.geoInterpolate(A,B);this.planeAt(ip(Math.min(.999,p)),ip(Math.min(1,p+.01)),C)},
- planeAt(pos,ahead,C,est){if(d3.geoDistance(pos,this.center())>Math.PI/2)return;
+ planeAt(pos,ahead,C,est){if(!this.vis(pos))return;
   const q=this.proj(pos),q2=this.proj(ahead);const ang=Math.atan2(q2[1]-q[1],q2[0]-q[0]);const ctx=this.ctx;
   ctx.save();ctx.translate(q[0],q[1]);ctx.rotate(ang+Math.PI/2);ctx.scale(1.15,1.15);
   ctx.beginPath();ctx.arc(0,0,13,0,7);ctx.fillStyle=C.O;ctx.globalAlpha=.18;ctx.fill();ctx.globalAlpha=1;
@@ -1054,7 +1079,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.14 (18 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.15 (18 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -1714,8 +1739,8 @@ function layoversAll(){const fl=FL.filter(f=>(f.cat==="O"||f.cat==="D")&&f.out&&
 /* ---------- year in review ---------- */
 const Year={
  years(){return[...new Set(FL.filter(f=>f.cat!=="X"&&f.out&&+f.out<=Date.now()).map(f=>f.year))].sort().reverse()},
- data(y){const now=Date.now(),fl=FL.filter(f=>f.cat!=="X"&&f.out&&+f.out<=now&&f.year===y).sort((a,b)=>a.t-b.t);
-  const before=FL.filter(f=>f.cat!=="X"&&f.out&&f.year<y);const oldAps=new Set(before.flatMap(f=>[f.dep,f.arr])),oldCts=new Set([...oldAps].map(c=>ap(c)&&ap(c)[1]).filter(Boolean));
+ data(y){const now=Date.now(),all=y==="all",fl=FL.filter(f=>f.cat!=="X"&&f.out&&+f.out<=now&&(all||f.year===y)).sort((a,b)=>a.t-b.t);
+  const before=all?[]:FL.filter(f=>f.cat!=="X"&&f.out&&f.year<y);const oldAps=new Set(before.flatMap(f=>[f.dep,f.arr])),oldCts=new Set([...oldAps].map(c=>ap(c)&&ap(c)[1]).filter(Boolean));
   const O=fl.filter(f=>f.cat==="O"),aps=new Set(fl.flatMap(f=>[f.dep,f.arr])),cts=new Set([...aps].map(c=>ap(c)&&ap(c)[1]).filter(Boolean));
   const km=fl.reduce((s,f)=>s+(f.km||0),0),bh=O.reduce((s,f)=>s+(f.bh||0),0),allH=fl.reduce((s,f)=>s+(f.bh||0),0),night=O.reduce((s,f)=>s+(f.nightH||0),0);
   const dest=new Map();for(const f of fl)if(f.arr!==baseOf(f))dest.set(f.arr,(dest.get(f.arr)||0)+1);
@@ -1724,19 +1749,21 @@ const Year={
   const longest=fl.filter(f=>f.bh!=null).sort((a,b)=>b.bh-a.bh)[0];
   const types=new Map(),regs=new Map();for(const f of fl){if(f.ac)types.set(f.ac,(types.get(f.ac)||0)+1);if(f.reg){const r=Tails.norm(f.reg);regs.set(r,(regs.get(r)||0)+1)}}
   const top=m=>[...m.entries()].sort((a,b)=>b[1]-a[1])[0]||null;
-  const lays=layoversAll().filter(l=>new Date(l.from).toISOString().slice(0,4)===y);
-  const ms=Miles.compute().got.filter(m=>m.f.year===y);
-  return{y,fl,O,bh,allH,km,night,aps,cts,newAps:[...aps].filter(c=>!oldAps.has(c)),newCts:[...cts].filter(c=>!oldCts.has(c)),dest:[...dest.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5),bm,longest,type:top(types),reg:top(regs),lays,ms}},
+  const lays=layoversAll().filter(l=>all||new Date(l.from).toISOString().slice(0,4)===y);
+  const ms=Miles.compute().got.filter(m=>all||m.f.year===y);
+  return{y,all,first:fl[0]&&fl[0].out,fl,O,bh,allH,km,night,aps,cts,newAps:[...aps].filter(c=>!oldAps.has(c)),newCts:[...cts].filter(c=>!oldCts.has(c)),dest:[...dest.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5),bm,longest,type:top(types),reg:top(regs),lays,ms}},
  section(scope){const ys=this.years();if(!ys.length||scope!=="all")return"";
-  return`<h2>Year in review</h2><div class="panel"><p style="margin:0 0 10px">Your year in the air, to look back on or share.</p><div class="d-acts" style="margin-top:0">${ys.slice(0,6).map(y=>`<button class="btn sm${y===ys[0]?" pri":""}" data-act="yr" data-y="${esc(y)}">${esc(y)}</button>`).join("")}</div></div>`},
- open(y){const D=this.data(y),ys=this.years();if(!D.fl.length){toast("No flights in "+y);return}
+  return`<h2>Year in review</h2><div class="panel"><p style="margin:0 0 10px">Your year in the air, or every flight since the start, to look back on or share.</p><div class="d-acts" style="margin-top:0">${ys.slice(0,6).map(y=>`<button class="btn sm${y===ys[0]?" pri":""}" data-act="yr" data-y="${esc(y)}">${esc(y)}</button>`).join("")}<button class="btn sm" data-act="yr" data-y="all">All time</button></div></div>`},
+ name(D){return D.all?"All time":D.y},
+ since(D){return D.first?new Intl.DateTimeFormat("en-GB",{month:"long",year:"numeric",timeZone:"UTC"}).format(D.first):""},
+ open(y){const D=this.data(y),ys=this.years();if(!D.fl.length){toast(D.all?"No flights yet":"No flights in "+y);return}
   const mf=new Intl.DateTimeFormat("en-GB",{month:"long",timeZone:"UTC"});
   const row=(k,v)=>v?`<div class="r"><span>${esc(k)}</span><b>${v}</b></div>`:"";
-  Sheet.open(`<div class="seg" id="yr-seg" style="margin:2px 0 12px">${ys.map(x=>`<button data-y="${esc(x)}" class="${x===y?"on":""}">${esc(x)}</button>`).join("")}</div>
-   <div class="yr-hero"><span class="small">${y===String(new Date().getUTCFullYear())?"Your year so far":"Your year in the air"}</span><div class="num" style="font-size:56px;line-height:1">${esc(y)}</div></div>
-   <div class="kv" style="margin-top:14px"><div><span class="num">${HM(D.bh)}</span><span>block hours operating</span></div><div><span class="num">${nf0.format(D.O.length)}</span><span>operating sectors</span></div>
-    <div><span class="num">${nf0.format(D.km)}</span><span>km, ${nf1.format(D.km/Miles.EARTH)} times around the Earth</span></div><div><span class="num">${D.cts.size}</span><span>countries${D.newCts.length?", "+D.newCts.length+" new":""}</span></div>
-    <div><span class="num">${D.aps.size}</span><span>airports${D.newAps.length?", "+D.newAps.length+" new":""}</span></div><div><span class="num">${moonText(D.km)}</span><span>${moonLabel(D.km)}</span></div></div>
+  Sheet.open(`<div class="seg" id="yr-seg" style="margin:2px 0 12px;overflow-x:auto">${ys.slice(0,5).map(x=>`<button data-y="${esc(x)}" class="${x===y?"on":""}">${esc(x)}</button>`).join("")}<button data-y="all" class="${D.all?"on":""}">All time</button></div>
+   <div class="yr-hero"><span class="small">${D.all?"Every flight since "+esc(this.since(D)):y===String(new Date().getUTCFullYear())?"Your year so far":"Your year in the air"}</span><div class="num" style="font-size:${D.all?44:56}px;line-height:1">${esc(this.name(D))}</div></div>
+   <div class="kv" style="margin-top:14px"><div><span class="num">${HM(D.bh)}</span><span>block hours operating</span></div><div><span class="num">${nf0.format(D.O.length)}</span><span>operating sector${D.O.length===1?"":"s"}</span></div>
+    <div><span class="num">${nf0.format(D.km)}</span><span>km, ${nf1.format(D.km/Miles.EARTH)} times around the Earth</span></div><div><span class="num">${D.cts.size}</span><span>${D.cts.size===1?"country":"countries"}${D.newCts.length?", "+D.newCts.length+" new":""}</span></div>
+    <div><span class="num">${D.aps.size}</span><span>${D.aps.size===1?"airport":"airports"}${D.newAps.length?", "+D.newAps.length+" new":""}</span></div><div><span class="num">${moonText(D.km)}</span><span>${moonLabel(D.km)}</span></div></div>
    <div class="panel records" style="margin-top:16px">
     ${row("Most visited",esc(D.dest.map(([c,n])=>shortCity(c)+" ("+n+")").join(", ")))}
     ${row("Layovers",D.lays.length?D.lays.length+", "+nf0.format(Math.round(D.lays.reduce((s,l)=>s+l.h,0)/24))+" days away":"")}
@@ -1746,34 +1773,65 @@ const Year={
     ${row("Favourite tail",D.reg&&D.reg[1]>1?esc(D.reg[0]+", "+D.reg[1]+" times"):"")}
     ${row("New countries",D.newCts.length&&D.newCts.length<=8?esc(D.newCts.map(c=>CN[c]||c).join(", ")):"")}
    </div>
-   ${D.ms.length?`<h2 style="font-size:17px">Milestones in ${esc(y)}</h2><div class="ms">${D.ms.slice().reverse().slice(0,6).map(m=>Miles.card(m)).join("")}</div>`:""}
+   ${D.ms.length?`<h2 style="font-size:17px">${D.all?"Milestones":"Milestones in "+esc(y)}</h2><div class="ms">${D.ms.slice().reverse().slice(0,6).map(m=>Miles.card(m)).join("")}</div>`:""}
    <div class="d-acts" style="margin-top:18px"><button class="btn pri" id="yr-share">Share image</button><button class="btn" id="yr-play"${window.d3&&Globe.ctx?"":" disabled"}>Replay on the globe</button></div>`,el=>{
    el.querySelector("#yr-seg").onclick=e=>{const b=e.target.closest("[data-y]");if(b)this.open(b.dataset.y)};
    el.querySelector("#yr-share").onclick=()=>this.share(D);
-   el.querySelector("#yr-play").onclick=()=>{Sheet.close();Globe.startTour(D.fl,y)}})},
- // a 1080 × 1350 picture of the year: the globe with the year's routes and the main numbers
- image(D){const W=1080,H=1350,cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
+   el.querySelector("#yr-play").onclick=()=>{Sheet.close();Globe.startTour(D.fl,D.all?"all time":y)}})},
+ // a 1080 × 1920 picture (a full iPhone screen or a story) of the year or of all time, on the globe or a flat map
+ image(D,mode){const W=1080,H=1920,cv=document.createElement("canvas");cv.width=W;cv.height=H;const x=cv.getContext("2d");
   const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,"#0B1B2E");g.addColorStop(1,"#050C16");x.fillStyle=g;x.fillRect(0,0,W,H);
   const F=(w,s)=>`${w} ${s}px -apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",Arial,sans-serif`;
-  x.fillStyle="#8A9DB5";x.font=F(600,34);x.fillText("My year in the air",72,108);x.fillStyle="#E8EFF7";x.font=F(800,120);x.fillText(D.y,66,226);
-  if(window.d3){const pts=D.fl.flatMap(f=>[ll(f.dep),ll(f.arr)]).filter(Boolean);let cx=0,cy=0,cz=0;
-   for(const p of pts){const l=p[0]*Math.PI/180,t=p[1]*Math.PI/180;cx+=Math.cos(t)*Math.cos(l);cy+=Math.cos(t)*Math.sin(l);cz+=Math.sin(t)}
-   const lon=Math.atan2(cy,cx)*180/Math.PI,lat=Math.max(-50,Math.min(50,Math.atan2(cz,Math.hypot(cx,cy))*180/Math.PI)),R=330,ox=W/2,oy=610;
-   const pr=d3.geoOrthographic().clipAngle(90).translate([ox,oy]).scale(R).rotate([-lon,-lat]),pa=d3.geoPath(pr,x);
-   const halo=x.createRadialGradient(ox,oy,R*.95,ox,oy,R*1.18);halo.addColorStop(0,"rgba(77,166,234,.35)");halo.addColorStop(1,"rgba(77,166,234,0)");x.fillStyle=halo;x.beginPath();x.arc(ox,oy,R*1.18,0,7);x.fill();
-   const sg=x.createRadialGradient(ox-R*.35,oy-R*.4,R*.05,ox,oy,R);sg.addColorStop(0,"#0E2440");sg.addColorStop(1,"#081629");x.beginPath();pa({type:"Sphere"});x.fillStyle=sg;x.fill();
-   if(Globe.land){x.beginPath();pa(Globe.land);x.fillStyle="#1A3150";x.fill();x.strokeStyle="#2C4A6E";x.lineWidth=1;x.stroke()}
-   x.lineCap="round";const col={O:"#4DA6EA",D:"#F3A84A",P:"#A896F2"};
-   for(const f of D.fl){const A=ll(f.dep),B=ll(f.arr);if(!A||!B)continue;x.beginPath();pa({type:"LineString",coordinates:[A,B]});x.strokeStyle=col[f.cat]||col.O;x.globalAlpha=.25;x.lineWidth=7;x.stroke();x.globalAlpha=.95;x.lineWidth=2.6;x.stroke()}
-   x.globalAlpha=1;for(const c of D.aps){const p=ll(c);if(!p||d3.geoDistance(p,[lon,lat])>Math.PI/2)continue;const q=pr(p);x.beginPath();x.arc(q[0],q[1],5,0,7);x.fillStyle="#E8EFF7";x.fill()}}
-  const stats=[[HM(D.bh),"block hours"],[nf0.format(D.O.length),"sectors"],[nf0.format(D.km),"kilometres"],[String(D.cts.size),"countries"],[String(D.aps.size),"airports"],[D.dest[0]?shortCity(D.dest[0][0]):"–","most visited"]];
-  stats.forEach((s,i)=>{const cx=72+(i%3)*330,cy=1030+Math.floor(i/3)*150;x.fillStyle="#E8EFF7";let fs=58;x.font=F(800,fs);while(fs>28&&x.measureText(s[0]).width>300){fs-=2;x.font=F(800,fs)}x.fillText(s[0],cx,cy);x.fillStyle="#8A9DB5";x.font=F(600,28);x.fillText(s[1],cx,cy+42)});
-  x.fillStyle="#4DA6EA";x.font=F(700,28);x.fillText("Contrail",72,H-56);
+  x.textBaseline="alphabetic";x.fillStyle="#8A9DB5";x.font=F(600,38);x.fillText(D.all?"All my flights":"My year in the air",72,300);
+  x.fillStyle="#E8EFF7";x.font=F(800,D.all?132:160);x.fillText(this.name(D),64,D.all?430:450);
+  if(D.all&&D.first){x.fillStyle="#8A9DB5";x.font=F(600,36);x.fillText("Since "+this.since(D),72,492)}
+  const col={O:"#4DA6EA",D:"#F3A84A",P:"#A896F2"},pts=D.fl.flatMap(f=>[ll(f.dep),ll(f.arr)]).filter(Boolean);
+  if(window.d3&&pts.length){
+   // the middle of all the airports, so the routes sit in the centre of the picture
+   let cx=0,cy=0,cz=0;for(const p of pts){const l=p[0]*Math.PI/180,t=p[1]*Math.PI/180;cx+=Math.cos(t)*Math.cos(l);cy+=Math.cos(t)*Math.sin(l);cz+=Math.sin(t)}
+   const lon=Math.atan2(cy,cx)*180/Math.PI,lat=Math.max(-50,Math.min(50,Math.atan2(cz,Math.hypot(cx,cy))*180/Math.PI));
+   const lines=D.fl.map(f=>[ll(f.dep),ll(f.arr)]).filter(l=>l[0]&&l[1]);let pr,vis;
+   if(mode==="map"){const top=540,bot=1390;
+    const p0=d3.geoMercator().rotate([-lon,0]).scale(1).translate([0,0]),b=d3.geoPath(p0).bounds({type:"MultiLineString",coordinates:lines});
+    const sc=Math.max(W/(2*Math.PI),Math.min(1700,Math.min((W-150)/Math.max(1e-6,b[1][0]-b[0][0]),(bot-top-150)/Math.max(1e-6,b[1][1]-b[0][1]))));
+    pr=d3.geoMercator().rotate([-lon,0]).scale(sc).translate([W/2-sc*(b[0][0]+b[1][0])/2,(top+bot)/2-sc*(b[0][1]+b[1][1])/2]).clipExtent([[-20,top-20],[W+20,bot+20]]);
+    x.save();x.beginPath();x.rect(0,top,W,bot-top);x.clip();
+    const og=x.createLinearGradient(0,top,0,bot);og.addColorStop(0,"#0E2440");og.addColorStop(1,"#081629");x.fillStyle=og;x.fillRect(0,top,W,bot-top);
+    const pa=d3.geoPath(pr,x);x.beginPath();pa(d3.geoGraticule().extentMajor([[-180,-80],[180,80.001]]).step([10,10])());x.strokeStyle="rgba(232,239,247,.05)";x.lineWidth=1.5;x.stroke();
+    if(Globe.land){x.beginPath();pa(Globe.land);x.fillStyle="#1A3150";x.fill();x.strokeStyle="#2C4A6E";x.lineWidth=1.2;x.stroke()}
+    vis=p=>{const q=pr(p);return!!q&&q[0]>=0&&q[0]<=W&&q[1]>=top+8&&q[1]<=bot-8};this.routes(x,pa,D,col);x.restore();
+    // soft top and bottom edges that melt into the background
+    const fade=(y0,y1,c)=>{const fg=x.createLinearGradient(0,y0,0,y1);fg.addColorStop(0,c);fg.addColorStop(1,c.replace(/,1\)$/,",0)"));x.fillStyle=fg;x.fillRect(0,Math.min(y0,y1),W,Math.abs(y1-y0))};
+    fade(top,top+110,"rgba(9,22,38,1)");fade(bot,bot-110,"rgba(7,17,31,1)")}
+   else{const R=380,ox=W/2,oy=950;pr=d3.geoOrthographic().clipAngle(90).translate([ox,oy]).scale(R).rotate([-lon,-lat]);const pa=d3.geoPath(pr,x);
+    const halo=x.createRadialGradient(ox,oy,R*.95,ox,oy,R*1.2);halo.addColorStop(0,"rgba(77,166,234,.35)");halo.addColorStop(1,"rgba(77,166,234,0)");x.fillStyle=halo;x.beginPath();x.arc(ox,oy,R*1.2,0,7);x.fill();
+    const sg=x.createRadialGradient(ox-R*.35,oy-R*.4,R*.05,ox,oy,R);sg.addColorStop(0,"#0E2440");sg.addColorStop(1,"#081629");x.beginPath();pa({type:"Sphere"});x.fillStyle=sg;x.fill();
+    x.beginPath();pa(d3.geoGraticule10());x.strokeStyle="rgba(232,239,247,.05)";x.lineWidth=1.2;x.stroke();
+    if(Globe.land){x.beginPath();pa(Globe.land);x.fillStyle="#1A3150";x.fill();x.strokeStyle="#2C4A6E";x.lineWidth=1;x.stroke()}
+    vis=p=>d3.geoDistance(p,[lon,lat])<=Math.PI/2;this.routes(x,pa,D,col)}
+   x.globalAlpha=1;for(const c of D.aps){const p=ll(c);if(!p||!vis(p))continue;const q=pr(p);if(!q)continue;x.beginPath();x.arc(q[0],q[1],6,0,7);x.fillStyle="#E8EFF7";x.fill()}}
+  const pl=(n,a,b)=>n===1?a:b,stats=[[HM(D.bh),"block hours"],[nf0.format(D.O.length),pl(D.O.length,"sector","sectors")],[nf0.format(D.km),"kilometres"],[String(D.cts.size),pl(D.cts.size,"country","countries")],[String(D.aps.size),pl(D.aps.size,"airport","airports")],[D.dest[0]?shortCity(D.dest[0][0]):"–","most visited"]];
+  stats.forEach((st,i)=>{const sx=72+(i%3)*330,sy=1500+Math.floor(i/3)*160;x.fillStyle="#E8EFF7";let fs=62;x.font=F(800,fs);while(fs>28&&x.measureText(st[0]).width>300){fs-=2;x.font=F(800,fs)}x.fillText(st[0],sx,sy);x.fillStyle="#8A9DB5";x.font=F(600,30);x.fillText(st[1],sx,sy+46)});
+  x.fillStyle="#4DA6EA";x.font=F(700,32);x.fillText("Contrail",72,1790);
   return cv},
- async share(D){let blob;try{const u=this.image(D).toDataURL("image/png"),b=atob(u.split(",")[1]),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);blob=new Blob([a],{type:"image/png"})}catch(e){toast("Couldn't make the image");return}
-  const name="contrail-"+D.y+".png";
-  try{const file=new File([blob],name,{type:"image/png"});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"My "+D.y+" in the air"});return}}catch(e){if(e&&e.name==="AbortError")return}
-  saveFile(name,blob,"image/png")}
+ routes(x,pa,D,col){x.lineCap="round";const n=D.fl.length,w=n>400?1.8:n>150?2.2:2.6;
+  for(const f of D.fl){const A=ll(f.dep),B=ll(f.arr);if(!A||!B)continue;x.beginPath();pa({type:"LineString",coordinates:[A,B]});x.strokeStyle=col[f.cat]||col.O;x.globalAlpha=n>400?.12:.22;x.lineWidth=w*2.8;x.stroke();x.globalAlpha=.95;x.lineWidth=w;x.stroke()}
+  x.globalAlpha=1},
+ blob(url){const b=atob(url.split(",")[1]),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return new Blob([a],{type:"image/png"})},
+ // preview first; save or share only when asked
+ share(D,mode){mode=mode||lsGet("contrail.shareview","globe");if(mode!=="map")mode="globe";let url;
+  try{url=this.image(D,mode).toDataURL("image/png")}catch(e){toast("Couldn't make the image");return}
+  const name="contrail-"+(D.all?"all-time":D.y)+".png";
+  Sheet.open(`<h2 style="margin-top:6px">Share image</h2>
+   <div class="seg" id="sh-mode" style="margin:0 0 14px">${[["globe","Globe"],["map","Flat map"]].map(([k,l])=>`<button data-k="${k}" class="${k===mode?"on":""}">${l}</button>`).join("")}</div>
+   <div class="sh-prev"><img id="sh-img" src="${url}" alt="Preview of your ${esc(D.all?"all-time":D.y)} image"></div>
+   <p class="note" style="text-align:center">Sized for a full iPhone screen and Instagram stories. Touch and hold the picture to save it to Photos.</p>
+   <div class="d-acts"><button class="btn pri" id="sh-save">Save or share</button><button class="btn" id="sh-x">Not now</button></div>`,el=>{
+   el.querySelector("#sh-mode").onclick=e=>{const b=e.target.closest("[data-k]");if(!b||b.dataset.k===mode)return;lsSet("contrail.shareview",b.dataset.k);this.share(D,b.dataset.k)};
+   el.querySelector("#sh-x").onclick=()=>this.open(D.all?"all":D.y);
+   el.querySelector("#sh-save").onclick=async()=>{const blob=this.blob(url);
+    try{const file=new File([blob],name,{type:"image/png"});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:D.all?"All my flights":"My "+D.y+" in the air"});return}}catch(e){if(e&&e.name==="AbortError")return}
+    saveFile(name,blob,"image/png")}})}
 };
 
 /* ---------- duty and rest ---------- */
@@ -2025,14 +2083,14 @@ Object.assign(Globe,{
   this.tour={fl:list,t0:performance.now()+600,per:Math.max(120,Math.min(1200,26000/list.length)),label,end:0};this.sel=null;this.replay=null;
   document.getElementById("fc").hidden=true;document.getElementById("gchips").style.display="none";document.getElementById("glegend").style.visibility="hidden";
   let el=document.getElementById("gtour");if(!el){el=document.createElement("div");el.id="gtour";el.className="flightcard gtour";document.querySelector("#t-globe .g-top").prepend(el)}
-  el.hidden=false;el.innerHTML=`<div class="fc-head"><span class="fc-state live">Replaying ${esc(label)}</span><button class="btn sm" id="gt-x">Stop</button></div><div class="num" id="gt-d" style="font-size:24px;margin-top:2px"></div><div class="fc-meta" id="gt-m"></div>`;
+  el.hidden=false;el.innerHTML=`<div class="fc-head"><span class="fc-state live">Replaying ${esc(label==="all time"?"every flight":label)}</span><button class="btn sm" id="gt-x">Stop</button></div><div class="num" id="gt-d" style="font-size:24px;margin-top:2px"></div><div class="fc-meta" id="gt-m"></div>`;
   el.querySelector("#gt-x").onclick=()=>this.stopTour();this.kick()},
  stopTour(){this.tour=null;const el=document.getElementById("gtour");if(el)el.hidden=true;document.getElementById("fc").hidden=false;document.getElementById("gchips").style.display="";document.getElementById("glegend").style.visibility="";this.card();this.kick()},
  tourDraw(C){const T=this.tour,ctx=this.ctx,now=performance.now(),k=Math.max(0,(now-T.t0)/T.per),i=Math.min(T.fl.length,Math.floor(k)),fr=k-Math.floor(k);
   ctx.lineCap="round";
   for(let j=0;j<i;j++){const f=T.fl[j];ctx.beginPath();this.path({type:"LineString",coordinates:[ll(f.dep),ll(f.arr)]});ctx.strokeStyle=C[f.cat]||C.O;ctx.globalAlpha=.75;ctx.lineWidth=1.6;ctx.stroke()}
   ctx.globalAlpha=1;const ctr=this.center(),seen=new Set();
-  for(let j=0;j<Math.min(T.fl.length,i+1);j++)for(const c of[T.fl[j].dep,T.fl[j].arr]){if(seen.has(c))continue;seen.add(c);const p=ll(c);if(d3.geoDistance(p,ctr)>Math.PI/2-.03)continue;const q=this.proj(p);ctx.beginPath();ctx.arc(q[0],q[1],2.2,0,7);ctx.fillStyle=C.text;ctx.globalAlpha=.85;ctx.fill();ctx.globalAlpha=1}
+  for(let j=0;j<Math.min(T.fl.length,i+1);j++)for(const c of[T.fl[j].dep,T.fl[j].arr]){if(seen.has(c))continue;seen.add(c);const p=ll(c);if(!this.vis(p,.03))continue;const q=this.proj(p);ctx.beginPath();ctx.arc(q[0],q[1],2.2,0,7);ctx.fillStyle=C.text;ctx.globalAlpha=.85;ctx.fill();ctx.globalAlpha=1}
   const done=T.fl.slice(0,i),bh=done.filter(f=>f.cat==="O").reduce((s,f)=>s+(f.bh||0),0),km=done.reduce((s,f)=>s+(f.km||0),0);
   if(i<T.fl.length){const f=T.fl[i],A=ll(f.dep),B=ll(f.arr),ip=d3.geoInterpolate(A,B),pos=ip(fr);
    ctx.beginPath();this.path({type:"LineString",coordinates:[A,pos]});ctx.strokeStyle=C[f.cat]||C.O;ctx.lineWidth=3;ctx.stroke();
@@ -2040,7 +2098,7 @@ Object.assign(Globe,{
    // follow the aircraft
    const tr=[-pos[0],-pos[1]*.7];let dx=tr[0]-this.rot[0];dx=((dx+540)%360)-180;this.rot[0]+=dx*.06;this.rot[1]+=(tr[1]-this.rot[1])*.06;this.lastInt=now;
    const d=document.getElementById("gt-d");if(d)d.textContent=dtf(tzOf(f.dep),{day:"numeric",month:"long"}).format(f.out)+" · "+f.dep+"–"+f.arr}
-  else{if(!T.end)T.end=now;const d=document.getElementById("gt-d");if(d)d.textContent=T.label+": "+T.fl.length+" flights";if(now-T.end>4000){this.stopTour();return}}
+  else{if(!T.end)T.end=now;const d=document.getElementById("gt-d");if(d)d.textContent=(T.label==="all time"?"All time":T.label)+": "+nf0.format(T.fl.length)+" flights";if(now-T.end>4000){this.stopTour();return}}
   const m=document.getElementById("gt-m");if(m)m.innerHTML=`<span>${i} of ${T.fl.length} flights</span><span>${HM(bh)} block · ${nf0.format(km)} km</span>`}
 });
 

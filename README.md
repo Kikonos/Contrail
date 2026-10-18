@@ -1,6 +1,6 @@
 # Contrail
 
-Your crew logbook: a 3D globe of your flights, logbook, statistics, roster import and Apple Calendar export.
+Your crew logbook: a 3D globe or flat map of your flights, logbook, statistics, roster import and Apple Calendar export.
 
 ## Put it online (once)
 
@@ -46,7 +46,8 @@ A second source for Fill in, through RapidAPI. Its free Basic plan reaches back 
 - **Inbound aircraft:** with an AeroDataBox key, Contrail finds the aircraft for your next flight and the flight bringing it in, from 3 hours before departure, with live landing times and the airline's estimate for your departure.
 - **Duty and rest:** Stats shows rolling block and duty hours against the limits in Settings, the peak your roster reaches, and your rest before the next report. Flight details show each duty and the rest before it.
 - **Aircraft:** every registration you've flown, how often and when. With an AeroDataBox key, its age and details.
-- **Milestones and year in review:** milestones as you reach them, and a summary of each year you can share as a picture or replay on the globe.
+- **Milestones and year in review:** milestones as you reach them, and a summary of each year or of all time. Share it as a full-screen picture (1080 × 1920, the size of an iPhone screen and Instagram stories) on the globe or a flat map, with a preview first, or replay it on the globe.
+- **Globe or flat map:** the button above the zoom buttons switches the Globe tab between the 3D globe and a flat map. The choice is remembered.
 - **Share:** sends your flight with a live tracking link.
 - **Backup reminder:** a gentle prompt when your last backup is more than two weeks old and the logbook has changed since.
 
