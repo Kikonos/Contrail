@@ -231,6 +231,7 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border:0;border-radiu
 .lcard{position:absolute;left:12px;right:12px;bottom:12px;z-index:3;max-width:560px;margin:0 auto;cursor:pointer}
 .rf{border:0;background:none;color:var(--muted);padding:2px;line-height:0;cursor:pointer;align-self:center}.rf.spin svg{animation:rf .9s linear infinite}@keyframes rf{to{transform:rotate(360deg)}}
 .fc-r{display:flex;align-items:center;gap:8px}
+.quota{margin-top:12px;font-size:15px;line-height:1.45}.quota .small{display:block}
 .lcard .lc-x{border:0;background:none;color:var(--muted);font-size:22px;line-height:1;padding:0 2px}
 .lc-top{display:flex;align-items:baseline;gap:8px;margin:2px 0 4px}
 .lc-top .num{font-size:22px}
@@ -1026,10 +1027,11 @@ const Settings={open:{},render(){
   <h2>Flight data</h2>
   <div class="panel"><h3 style="margin-bottom:8px">Flightradar24</h3>${FR24.key()?`<p style="margin:0 0 10px">Your API key is saved on this phone.</p><div class="d-acts" style="margin-top:0"><button class="btn sm" id="fr-test">Test connection</button><button class="btn sm" id="fr-del" style="color:var(--x)">Remove key</button></div>`
    :`<div class="form"><label class="full">API key<input id="fr-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste your Flightradar24 API key"></label></div><div class="d-acts"><button class="btn sm pri" id="fr-save">Save key</button></div>`}
-   <div class="live" id="fr-tst"></div></div>
+   <div class="live" id="fr-tst"></div>${FR24.key()?`<div class="quota" id="fr-q">${Quota.frHtml()}</div>
+   <div class="form" style="margin-top:8px"><label>Credits a month<input type="number" inputmode="numeric" min="0" step="1000" id="fr-cr" value="${Quota.fr().credits}"></label><label>Renews or ends<input type="date" id="fr-rn" value="${esc(Quota.fr().renews)}"></label></div>`:""}</div>
   <div class="panel" style="margin-top:10px"><h3 style="margin-bottom:8px">AeroDataBox</h3>${ADB.key()?`<p style="margin:0 0 10px">Your RapidAPI key is saved on this phone.</p><div class="d-acts" style="margin-top:0"><button class="btn sm" id="adb-test">Test connection</button><button class="btn sm" id="adb-del" style="color:var(--x)">Remove key</button></div>`
    :`<div class="form"><label class="full">RapidAPI key<input id="adb-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste your RapidAPI key"></label></div><div class="d-acts"><button class="btn sm pri" id="adb-save">Save key</button></div>`}
-   <div class="live" id="adb-tst"></div></div>
+   <div class="live" id="adb-tst"></div>${ADB.key()?`<div class="quota" id="adb-q">${Quota.adbHtml()}</div>`:""}</div>
   ${FR24.key()||ADB.key()?(()=>{const m=FR24.missing().length;return`<div class="set" style="margin-top:10px"><div class="it"><span class="lab">Fill in past flights<small>${m?nf0.format(m)+" past flights are missing the aircraft, registration or airline":"Nothing left that your keys can look up"}</small></span>${FR24.run?`<button class="btn sm" id="fr-stop">Stop</button>`:`<button class="btn sm pri" id="fr-fill" ${m?"":"disabled"}>Fill in</button>`}</div><div class="it col" style="border-bottom:0;min-height:0;padding-top:0"><div class="live${FR24.state?" "+FR24.state:""}" id="fr-stat" style="margin-top:0">${esc(FR24.status)}</div></div>${(()=>{const n=FR24.pending().length;return n&&!FR24.run?`<div class="it"><span class="lab">Found, not saved yet<small>${nf0.format(n)} flights with new details</small></span><button class="btn sm" id="fr-rev">Review</button></div>`:""})()}</div>`})():""}
   <p class="note">Flightradar24 follows your flight live on the globe. Fill in tries Flightradar24 first, as far back as your plan allows, then AeroDataBox for the rest of the last year (its free plan allows about 200 flights a month). You can leave Settings while it works. Keys stay on this phone and aren't included in backups.</p>
   <h2>Inbound aircraft</h2>
@@ -1040,7 +1042,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.11 (18 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.12 (18 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -1063,10 +1065,13 @@ const Settings={open:{},render(){
   const frS=document.getElementById("fr-save");if(frS)frS.onclick=()=>{const k=document.getElementById("fr-key").value.trim();if(k.length<20){toast("That doesn't look like a full API key");return}FR24.setKey(k);FR24.say("");this.render();Live.tick(true);toast("API key saved")};
   const frD=document.getElementById("fr-del");if(frD)frD.onclick=()=>{if(!confirm("Remove the Flightradar24 API key from this phone?"))return;FR24.setKey("");FR24.say("");this.render();toast("API key removed")};
   const line=(id,t,st)=>{const e=document.getElementById(id);if(e){e.textContent=t;e.className="live"+(st?" "+st:"")}};
-  const frT=document.getElementById("fr-test");if(frT)frT.onclick=async()=>{line("fr-tst","Connecting to Flightradar24…");try{const a=await FR24.get("/static/airlines/UAE/light");line("fr-tst",a&&a.name?"Connected. Flightradar24 accepted the key.":"Connected, but the reply was unexpected.","done")}catch(e){line("fr-tst",e.message,"err")}};
+  const frT=document.getElementById("fr-test");if(frT)frT.onclick=async()=>{line("fr-tst","Connecting to Flightradar24…");try{const a=await FR24.get("/static/airlines/UAE/light");line("fr-tst",a&&a.name?"Connected. Flightradar24 accepted the key.":"Connected, but the reply was unexpected.","done");await Quota.frLoad(true).catch(()=>{});Quota.paint()}catch(e){line("fr-tst",e.message,"err")}};
+  if(FR24.key())Quota.frLoad(false).then(()=>Quota.paint()).catch(()=>{});
+  const frCr=document.getElementById("fr-cr");if(frCr)frCr.onchange=()=>{const v=Math.round(+frCr.value);store.fr24plan=Object.assign({},store.fr24plan,{credits:v>0?v:0});save();Quota.paint()};
+  const frRn=document.getElementById("fr-rn");if(frRn)frRn.onchange=()=>{store.fr24plan=Object.assign({},store.fr24plan,{renews:/^\d{4}-\d\d-\d\d$/.test(frRn.value)?frRn.value:""});save();Quota.paint()};
   const adS=document.getElementById("adb-save");if(adS)adS.onclick=()=>{const k=document.getElementById("adb-key").value.trim();if(k.length<20){toast("That doesn't look like a full RapidAPI key");return}ADB.setKey(k);this.render();toast("RapidAPI key saved")};
   const adD=document.getElementById("adb-del");if(adD)adD.onclick=()=>{if(!confirm("Remove the RapidAPI key from this phone?"))return;ADB.setKey("");this.render();toast("RapidAPI key removed")};
-  const adT=document.getElementById("adb-test");if(adT)adT.onclick=async()=>{line("adb-tst","Connecting to AeroDataBox…");try{await ADB.get("/health/services/airports/OMDB/feeds");line("adb-tst","Connected. AeroDataBox accepted the key.","done")}catch(e){line("adb-tst",e.message,"err")}};
+  const adT=document.getElementById("adb-test");if(adT)adT.onclick=async()=>{line("adb-tst","Connecting to AeroDataBox…");try{await ADB.get("/health/services/airports/OMDB/feeds");line("adb-tst","Connected. AeroDataBox accepted the key.","done");Quota.paint()}catch(e){line("adb-tst",e.message,"err")}};
   const frF=document.getElementById("fr-fill");if(frF)frF.onclick=async()=>{const p=FR24.fill();this.render();await p;if(CUR==="set")this.render()};
   const frX=document.getElementById("fr-stop");if(frX)frX.onclick=()=>{if(FR24.run)FR24.run.stop=true;frX.disabled=true;FR24.say("Stopping after this lookup…")};
   const frR=document.getElementById("fr-rev");if(frR)frR.onclick=()=>FR24.review();
@@ -2173,6 +2178,7 @@ const ADB={host:"aerodatabox.p.rapidapi.com",DAYS:365,
  async get(path){const k=this.key();if(!k)throw new Error("Add your RapidAPI key in Settings first.");let r;
   try{r=await fetchT("https://"+this.host+path,{headers:{"X-RapidAPI-Key":k,"X-RapidAPI-Host":this.host,"Accept":"application/json"},cache:"no-store"})}
   catch(e){throw new Error(navigator.onLine===false?"No internet connection.":"Couldn't reach AeroDataBox.")}
+  Quota.adbNote(r,path);
   if(r.status===204||r.status===404)return[];
   if(!r.ok){let why="";try{const j=await r.json();why=String(j.message||j.error||"").trim().slice(0,240)}catch(e){}
    const notSub=/not subscribed/i.test(why),quota=r.status===429&&/quota/i.test(why);
@@ -2285,6 +2291,33 @@ const Live={snap:null,busy:false,err:"",last:0,
   const k=eta>s.t?Math.min(1,(now-s.t)/(eta-s.t)):Math.min(1,(s.gs||450)*1.852*age/36e5/dist);
   const ip=d3.geoInterpolate(P,B),p=ip(k);
   return{p,ahead:ip(Math.min(1,k+.02)),est:true,age,k,landed:k>=1,eta}}
+};
+
+// credits left on each API, shown in Settings
+const Quota={
+ // Flightradar24 reports credits used, not the plan; the allowance and renewal date come from Settings
+ fr(){const p=store.fr24plan||{};return{credits:p.credits>0?p.credits:Date.now()<Date.UTC(2027,0,1)?60000:30000,renews:p.renews||""}},
+ async frLoad(force){if(!FR24.key())return;const u=lsGet("contrail.fr24use",null);if(!force&&u&&Date.now()-u.t<10*6e4)return;
+  const rows=await FR24.get("/usage",{period:"30d"});const used=(Array.isArray(rows)?rows:[]).reduce((a,r)=>a+(+r.credits||0),0);lsSet("contrail.fr24use",{used,t:Date.now()})},
+ days(ms){return Math.ceil((ms-Date.now())/864e5)},
+ frHtml(){const p=this.fr(),u=lsGet("contrail.fr24use",null);let h;
+  if(u&&typeof u.used==="number"){h=`<b>${nf0.format(Math.max(0,p.credits-u.used))}</b> of ${nf0.format(p.credits)} credits left<span class="small">${nf0.format(u.used)} used in the last 30 days, checked ${esc(agoText(u.t))}</span>`}
+  else h=`<span class="small">Credits left show after the next check.</span>`;
+  if(p.renews){const d=Date.parse(p.renews+"T00:00:00Z"),n=this.days(d);h+=`<span class="small">${n>=0?`Subscription renews or ends ${esc(dateLong(d))}, ${n===0?"today":n===1?"tomorrow":"in "+n+" days"}`:`The renewal date you set, ${esc(dateLong(d))}, has passed. Update it below.`}</span>`}
+  else h+=`<span class="small">Flightradar24 doesn't share the renewal date. Add it below from your account page to see it here.</span>`;
+  return h},
+ adbNote(r,path){try{const q={};r.headers.forEach((v,k)=>{const m=k.toLowerCase().match(/^x-ratelimit-([a-z0-9_-]+)-(limit|remaining|reset)$/);if(m)(q[m[1]]=q[m[1]]||{})[m[2]]=+v});
+  const st=lsGet("contrail.adbuse",{})||{},o=q.units||q.requests||Object.values(q).find(x=>x.limit>0);
+  if(o&&o.limit>0&&o.remaining>=0)st.hdr={limit:o.limit,remaining:o.remaining,reset:o.reset>0?Date.now()+o.reset*1000:0,t:Date.now(),what:q.units?"units":"requests"};
+  const mon=new Date().toISOString().slice(0,7);if(st.mon!==mon){st.mon=mon;st.units=0}
+  if(r.status<400&&!/^\/health\//.test(path))st.units=(st.units||0)+(/^\/flights\//.test(path)?2:1);
+  lsSet("contrail.adbuse",st)}catch(e){}},
+ adbHtml(){const st=lsGet("contrail.adbuse",{})||{},h=st.hdr;let out;
+  if(h&&!(h.reset&&h.reset<Date.now())){out=`<b>${nf0.format(h.remaining)}</b> of ${nf0.format(h.limit)} ${h.what} left<span class="small">${h.reset?`Allowance renews ${esc(dateLong(h.reset))}, ${this.days(h.reset)<=1?"within a day":"in "+this.days(h.reset)+" days"}. `:""}Checked ${esc(agoText(h.t))}.</span>`}
+  else if(st.units&&st.mon===new Date().toISOString().slice(0,7)){out=`About <b>${nf0.format(st.units)}</b> units used by Contrail on this phone this month<span class="small">The free Basic plan has 400 a month. RapidAPI didn't share the exact number left; your RapidAPI dashboard has it.</span>`}
+  else out=`<span class="small">Units left show after the next AeroDataBox lookup.</span>`;
+  return out+`<span class="small">The free Basic plan doesn't expire; the allowance renews every month.</span>`},
+ paint(){const a=document.getElementById("fr-q");if(a)a.innerHTML=this.frHtml();const b=document.getElementById("adb-q");if(b)b.innerHTML=this.adbHtml()}
 };
 
 // the refresh button on the flight cards: pull live data now instead of waiting for the next update
