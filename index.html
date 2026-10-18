@@ -590,6 +590,7 @@ const Globe={
  },
  per:"all",custom:null,
  periodRange(){const k=this.per,n=new Date(),y=n.getUTCFullYear(),m=n.getUTCMonth();
+  if(k==="ahead")return[Date.now(),Infinity]; // flights still to come, by this phone's clock
   if(k==="tm")return[Date.UTC(y,m,1),Date.UTC(y,m+1,1)];
   if(k==="lm")return[Date.UTC(y,m-1,1),Date.UTC(y,m,1)];
   if(k==="p6")return[Date.UTC(y,m-6,n.getUTCDate()),Date.now()];
@@ -607,7 +608,7 @@ const Globe={
  chips(){
   const el=document.getElementById("gchips");
   const years=[...new Set(FL.filter(f=>f.cat==="O"||f.cat==="D").map(f=>f.year))].sort().reverse();
-  const opts=[["all","All time"],["tm","This month"],["lm","Last month"],["p6","Past 6 months"],["ty","This year"]].concat(years.map(y=>[y,y])).concat([["custom",this.customLabel()]]);
+  const opts=[["all","All time"],["ahead","Ahead"],["tm","This month"],["lm","Last month"],["p6","Past 6 months"],["ty","This year"]].concat(years.map(y=>[y,y])).concat([["custom",this.customLabel()]]);
   el.innerHTML=["O","D","P"].map(c=>`<button class="chip ${this.filt[c]?"on":""}" data-c="${c}" aria-pressed="${this.filt[c]}"><i class="dot c-${c}"></i>${CATN[c]}</button>`).join("")+
    `<label class="chip on"><select id="gyear" aria-label="Period">${opts.map(([v,l])=>`<option value="${v}" ${this.per===v?"selected":""}>${esc(l)}</option>`).join("")}</select></label>`;
   el.querySelectorAll("button").forEach(b=>b.onclick=()=>{this.filt[b.dataset.c]=!this.filt[b.dataset.c];this.chips();this.rebuild()});
@@ -1036,7 +1037,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.9 (11 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.10 (18 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -2316,7 +2317,7 @@ function boot(){
   if(window.d3){Globe.init();Live.init()}else{document.getElementById("fc").innerHTML=`<div class="fc-state">The globe needs a connection the first time it opens.</div>`}
   initCaps();
   setTimeout(()=>{Miles.check();Backup.check()},2500);
-  setInterval(()=>Inbound.tick(),60000);setInterval(()=>{if(window.d3)Inbound.follow()},20000);addEventListener("online",()=>{if(window.d3)Inbound.follow();Inbound.tick()});document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(()=>Inbound.tick(),1500)});setTimeout(()=>Inbound.tick(),4000);
+  setInterval(()=>Inbound.tick(),60000);setInterval(()=>{if(Globe.per==="ahead"&&Globe.on&&!document.hidden)Globe.rebuild()},60000);setInterval(()=>{if(window.d3)Inbound.follow()},20000);addEventListener("online",()=>{if(window.d3)Inbound.follow();Inbound.tick()});document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(()=>Inbound.tick(),1500)});setTimeout(()=>Inbound.tick(),4000);
   try{if(localStorage.getItem("contrail.job"))setTimeout(()=>toast("An import is waiting for you in Add"),900)}catch(e){}
 }
 boot();
