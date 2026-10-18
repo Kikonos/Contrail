@@ -411,9 +411,13 @@ async function initCaps(){
     }
   }catch(e){}
 }
-function applyTheme(){const r=document.documentElement;if(store.theme==="light"||store.theme==="dark")r.setAttribute("data-theme",store.theme);else r.removeAttribute("data-theme");themeMeta()}
-// tell iPhone which look the app has, so the status bar above it follows the app instead of the phone
-function themeMeta(){const dark=store.theme==="dark"||store.theme!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches;
+// On the home-screen app iPhone colours the status bar from its own look when Contrail opens, and keeps that
+// colour while it stays open. So with Match iPhone the app keeps the look it opened with, and the two always agree.
+const STANDALONE=navigator.standalone===true||matchMedia("(display-mode: standalone)").matches;let LAUNCH_DARK=null;
+function applyTheme(){const r=document.documentElement;let t=store.theme;
+ if(t!=="light"&&t!=="dark"&&STANDALONE){if(LAUNCH_DARK===null)LAUNCH_DARK=matchMedia("(prefers-color-scheme: dark)").matches;t=LAUNCH_DARK?"dark":"light"}
+ if(t==="light"||t==="dark")r.setAttribute("data-theme",t);else r.removeAttribute("data-theme");themeMeta()}
+function themeMeta(){const a=document.documentElement.getAttribute("data-theme"),dark=a==="dark"||!a&&matchMedia("(prefers-color-scheme: dark)").matches;
  const set=(n,v)=>{const m=document.querySelector(`meta[name="${n}"]`);if(m&&m.content!==v)m.content=v};
  set("theme-color",dark?"#07111D":"#EEF2F7");set("color-scheme",dark?"dark":"light")}
 applyTheme();
@@ -1031,6 +1035,7 @@ const Settings={open:{},render(){
   ${Tools.settings()}
   <h2>Appearance</h2>
   <div class="seg" id="theme">${[["system","Match iPhone"],["light","Light"],["dark","Dark"]].map(([k,l])=>`<button data-k="${k}" class="${store.theme===k?"on":""}">${l}</button>`).join("")}</div>
+  ${STANDALONE?`<p class="note">The strip with the time and battery follows your iPhone's look from when Contrail opened. With Match iPhone the app does the same, so they always match; it changes the next time you open Contrail.</p>`:""}
   <h2>Flight data</h2>
   <div class="panel"><h3 style="margin-bottom:8px">Flightradar24</h3>${FR24.key()?`<p style="margin:0 0 10px">Your API key is saved on this phone.</p><div class="d-acts" style="margin-top:0"><button class="btn sm" id="fr-test">Test connection</button><button class="btn sm" id="fr-del" style="color:var(--x)">Remove key</button></div>`
    :`<div class="form"><label class="full">API key<input id="fr-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste your Flightradar24 API key"></label></div><div class="d-acts"><button class="btn sm pri" id="fr-save">Save key</button></div>`}
@@ -1049,7 +1054,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.13 (18 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.14 (18 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
