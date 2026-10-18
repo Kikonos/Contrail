@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="favicon-32.png">
 <meta name="theme-color" content="#07111D">
+<meta name="color-scheme" content="light dark">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -410,8 +411,14 @@ async function initCaps(){
     }
   }catch(e){}
 }
-function applyTheme(){const r=document.documentElement;if(store.theme==="light"||store.theme==="dark")r.setAttribute("data-theme",store.theme);else r.removeAttribute("data-theme")}
+function applyTheme(){const r=document.documentElement;if(store.theme==="light"||store.theme==="dark")r.setAttribute("data-theme",store.theme);else r.removeAttribute("data-theme");themeMeta()}
+// tell iPhone which look the app has, so the status bar above it follows the app instead of the phone
+function themeMeta(){const dark=store.theme==="dark"||store.theme!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches;
+ const set=(n,v)=>{const m=document.querySelector(`meta[name="${n}"]`);if(m&&m.content!==v)m.content=v};
+ set("theme-color",dark?"#07111D":"#EEF2F7");set("color-scheme",dark?"dark":"light")}
 applyTheme();
+try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",themeMeta)}catch(e){}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)themeMeta()});
 
 /* ---------- airports & geo ---------- */
 function ap(c){return store.ap[c]||AP0[c]||null}
@@ -1042,7 +1049,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.12 (18 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.13 (18 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
