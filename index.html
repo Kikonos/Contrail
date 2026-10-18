@@ -706,7 +706,7 @@ const Globe={
    if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:this.zoom}}});
   cv.addEventListener("pointermove",ev=>{const e=P(ev);if(!ptrs.has(e.pointerId))return;const p=ptrs.get(e.pointerId),dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
    if(ptrs.size===2&&pinch){const[a,b]=[...ptrs.values()];this.zoom=Math.max(.75,Math.min(8,pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d));this.kick();return}
-   if(ptrs.size===1){if(start)start.moved+=Math.abs(dx)+Math.abs(dy);const k=(this.flat?57.3:90)/this.proj.scale();this.rot[0]+=dx*k;this.rot[1]=Math.max(-89,Math.min(89,this.rot[1]-dy*k));const now=performance.now(),dt=Math.max(8,now-lastMove);lastMove=now;this.vel=[dx*k/dt*16,-dy*k/dt*16];this.lastInt=now;this.kick()}});
+   if(ptrs.size===1){if(start)start.moved+=Math.abs(dx)+Math.abs(dy);const k=(this.flat?57.3:90)/this.proj.scale();this.rot[0]+=dx*k;this.rot[1]=Math.max(-89,Math.min(89,this.rot[1]-dy*k*(this.flat?Math.cos(this.rot[1]*Math.PI/180):1)));const now=performance.now(),dt=Math.max(8,now-lastMove);lastMove=now;this.vel=[dx*k/dt*16,-dy*k/dt*16];this.lastInt=now;this.kick()}});
   const end=ev=>{const e=P(ev);if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;
    if(ptrs.size===0&&start){if(start.moved<8&&performance.now()-start.t<450)this.tap(e.clientX,e.clientY);if(performance.now()-lastMove>60)this.vel=[0,0];start=null;this.kick()}};
   cv.addEventListener("pointerup",end);cv.addEventListener("pointercancel",end);
@@ -818,7 +818,7 @@ const Globe={
  colors(){const n=performance.now();if(this._C&&n-this._Ct<1500)return this._C;this._Ct=n;return this._C={o1:cssv("--ocean-1"),o2:cssv("--ocean-2"),land:cssv("--land"),edge:cssv("--land-edge"),night:cssv("--night"),grat:cssv("--grat"),rim:cssv("--rim"),O:cssv("--op"),D:cssv("--dh"),P:cssv("--pers"),text:cssv("--text"),muted:cssv("--muted"),surf:cssv("--surface"),sans:cssv("--sans"),halo:cssv("--ocean-2")}},
  plane(A,B,p,C){const ip=d3.geoInterpolate(A,B);this.planeAt(ip(Math.min(.999,p)),ip(Math.min(1,p+.01)),C)},
  planeAt(pos,ahead,C,est){if(!this.vis(pos))return;
-  const q=this.proj(pos),q2=this.proj(ahead);const ang=Math.atan2(q2[1]-q[1],q2[0]-q[0]);const ctx=this.ctx;
+  const q=this.proj(pos),q2=this.proj(ahead);if(this.flat){const ww=2*Math.PI*this.proj.scale();if(Math.abs(q2[0]-q[0])>ww/2)q2[0]+=q2[0]>q[0]?-ww:ww}const ang=Math.atan2(q2[1]-q[1],q2[0]-q[0]);const ctx=this.ctx;
   ctx.save();ctx.translate(q[0],q[1]);ctx.rotate(ang+Math.PI/2);ctx.scale(1.15,1.15);
   ctx.beginPath();ctx.arc(0,0,13,0,7);ctx.fillStyle=C.O;ctx.globalAlpha=.18;ctx.fill();ctx.globalAlpha=1;
   ctx.beginPath();ctx.moveTo(0,-9);ctx.lineTo(1.4,-6);ctx.lineTo(1.4,-2);ctx.lineTo(8,2.5);ctx.lineTo(8,4.2);ctx.lineTo(1.4,2.3);ctx.lineTo(1.2,6.4);ctx.lineTo(3.3,8);ctx.lineTo(3.3,9.2);ctx.lineTo(0,8.3);ctx.lineTo(-3.3,9.2);ctx.lineTo(-3.3,8);ctx.lineTo(-1.2,6.4);ctx.lineTo(-1.4,2.3);ctx.lineTo(-8,4.2);ctx.lineTo(-8,2.5);ctx.lineTo(-1.4,-2);ctx.lineTo(-1.4,-6);ctx.closePath();
@@ -1079,7 +1079,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.15 (18 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.16 (18 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -1749,17 +1749,17 @@ const Year={
   const longest=fl.filter(f=>f.bh!=null).sort((a,b)=>b.bh-a.bh)[0];
   const types=new Map(),regs=new Map();for(const f of fl){if(f.ac)types.set(f.ac,(types.get(f.ac)||0)+1);if(f.reg){const r=Tails.norm(f.reg);regs.set(r,(regs.get(r)||0)+1)}}
   const top=m=>[...m.entries()].sort((a,b)=>b[1]-a[1])[0]||null;
-  const lays=layoversAll().filter(l=>all||new Date(l.from).toISOString().slice(0,4)===y);
+  const lays=layoversAll().filter(l=>+l.from<=now&&(all||new Date(l.from).toISOString().slice(0,4)===y));
   const ms=Miles.compute().got.filter(m=>all||m.f.year===y);
-  return{y,all,first:fl[0]&&fl[0].out,fl,O,bh,allH,km,night,aps,cts,newAps:[...aps].filter(c=>!oldAps.has(c)),newCts:[...cts].filter(c=>!oldCts.has(c)),dest:[...dest.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5),bm,longest,type:top(types),reg:top(regs),lays,ms}},
+  return{y,all,first:fl[0]&&fl[0].out,fl,O,bh,allH,km,night,aps,cts,newAps:all?[]:[...aps].filter(c=>!oldAps.has(c)),newCts:all?[]:[...cts].filter(c=>!oldCts.has(c)),dest:[...dest.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5),bm,longest,type:top(types),reg:top(regs),lays,ms}},
  section(scope){const ys=this.years();if(!ys.length||scope!=="all")return"";
   return`<h2>Year in review</h2><div class="panel"><p style="margin:0 0 10px">Your year in the air, or every flight since the start, to look back on or share.</p><div class="d-acts" style="margin-top:0">${ys.slice(0,6).map(y=>`<button class="btn sm${y===ys[0]?" pri":""}" data-act="yr" data-y="${esc(y)}">${esc(y)}</button>`).join("")}<button class="btn sm" data-act="yr" data-y="all">All time</button></div></div>`},
  name(D){return D.all?"All time":D.y},
  since(D){return D.first?new Intl.DateTimeFormat("en-GB",{month:"long",year:"numeric",timeZone:"UTC"}).format(D.first):""},
  open(y){const D=this.data(y),ys=this.years();if(!D.fl.length){toast(D.all?"No flights yet":"No flights in "+y);return}
-  const mf=new Intl.DateTimeFormat("en-GB",{month:"long",timeZone:"UTC"});
+  const mf=new Intl.DateTimeFormat("en-GB",D.all?{month:"long",year:"numeric",timeZone:"UTC"}:{month:"long",timeZone:"UTC"});
   const row=(k,v)=>v?`<div class="r"><span>${esc(k)}</span><b>${v}</b></div>`:"";
-  Sheet.open(`<div class="seg" id="yr-seg" style="margin:2px 0 12px;overflow-x:auto">${ys.slice(0,5).map(x=>`<button data-y="${esc(x)}" class="${x===y?"on":""}">${esc(x)}</button>`).join("")}<button data-y="all" class="${D.all?"on":""}">All time</button></div>
+  Sheet.open(`<div class="seg" id="yr-seg" style="margin:2px 0 12px;overflow-x:auto">${ys.map(x=>`<button data-y="${esc(x)}" class="${x===y?"on":""}">${esc(x)}</button>`).join("")}<button data-y="all" class="${D.all?"on":""}">All time</button></div>
    <div class="yr-hero"><span class="small">${D.all?"Every flight since "+esc(this.since(D)):y===String(new Date().getUTCFullYear())?"Your year so far":"Your year in the air"}</span><div class="num" style="font-size:${D.all?44:56}px;line-height:1">${esc(this.name(D))}</div></div>
    <div class="kv" style="margin-top:14px"><div><span class="num">${HM(D.bh)}</span><span>block hours operating</span></div><div><span class="num">${nf0.format(D.O.length)}</span><span>operating sector${D.O.length===1?"":"s"}</span></div>
     <div><span class="num">${nf0.format(D.km)}</span><span>km, ${nf1.format(D.km/Miles.EARTH)} times around the Earth</span></div><div><span class="num">${D.cts.size}</span><span>${D.cts.size===1?"country":"countries"}${D.newCts.length?", "+D.newCts.length+" new":""}</span></div>
@@ -1776,6 +1776,7 @@ const Year={
    ${D.ms.length?`<h2 style="font-size:17px">${D.all?"Milestones":"Milestones in "+esc(y)}</h2><div class="ms">${D.ms.slice().reverse().slice(0,6).map(m=>Miles.card(m)).join("")}</div>`:""}
    <div class="d-acts" style="margin-top:18px"><button class="btn pri" id="yr-share">Share image</button><button class="btn" id="yr-play"${window.d3&&Globe.ctx?"":" disabled"}>Replay on the globe</button></div>`,el=>{
    el.querySelector("#yr-seg").onclick=e=>{const b=e.target.closest("[data-y]");if(b)this.open(b.dataset.y)};
+   const on=el.querySelector("#yr-seg .on");if(on){const sg=on.parentNode;sg.scrollLeft=on.offsetLeft-(sg.clientWidth-on.offsetWidth)/2}
    el.querySelector("#yr-share").onclick=()=>this.share(D);
    el.querySelector("#yr-play").onclick=()=>{Sheet.close();Globe.startTour(D.fl,D.all?"all time":y)}})},
  // a 1080 × 1920 picture (a full iPhone screen or a story) of the year or of all time, on the globe or a flat map
@@ -1786,7 +1787,7 @@ const Year={
   x.fillStyle="#E8EFF7";x.font=F(800,D.all?132:160);x.fillText(this.name(D),64,D.all?430:450);
   if(D.all&&D.first){x.fillStyle="#8A9DB5";x.font=F(600,36);x.fillText("Since "+this.since(D),72,492)}
   const col={O:"#4DA6EA",D:"#F3A84A",P:"#A896F2"},pts=D.fl.flatMap(f=>[ll(f.dep),ll(f.arr)]).filter(Boolean);
-  if(window.d3&&pts.length){
+  if(window.d3&&pts.length&&D.fl.some(f=>ll(f.dep)&&ll(f.arr))){
    // the middle of all the airports, so the routes sit in the centre of the picture
    let cx=0,cy=0,cz=0;for(const p of pts){const l=p[0]*Math.PI/180,t=p[1]*Math.PI/180;cx+=Math.cos(t)*Math.cos(l);cy+=Math.cos(t)*Math.sin(l);cz+=Math.sin(t)}
    const lon=Math.atan2(cy,cx)*180/Math.PI,lat=Math.max(-50,Math.min(50,Math.atan2(cz,Math.hypot(cx,cy))*180/Math.PI));
@@ -2080,7 +2081,7 @@ const Inbound={
 Object.assign(Globe,{
  tour:null,
  startTour(fl,label){if(!this.ctx||!fl.length)return;go("globe");const list=fl.filter(f=>ll(f.dep)&&ll(f.arr));
-  this.tour={fl:list,t0:performance.now()+600,per:Math.max(120,Math.min(1200,26000/list.length)),label,end:0};this.sel=null;this.replay=null;
+  this.tour={fl:list,t0:performance.now()+600,per:Math.max(list.length>300?35:120,Math.min(1200,26000/list.length)),label,end:0};this.sel=null;this.replay=null;
   document.getElementById("fc").hidden=true;document.getElementById("gchips").style.display="none";document.getElementById("glegend").style.visibility="hidden";
   let el=document.getElementById("gtour");if(!el){el=document.createElement("div");el.id="gtour";el.className="flightcard gtour";document.querySelector("#t-globe .g-top").prepend(el)}
   el.hidden=false;el.innerHTML=`<div class="fc-head"><span class="fc-state live">Replaying ${esc(label==="all time"?"every flight":label)}</span><button class="btn sm" id="gt-x">Stop</button></div><div class="num" id="gt-d" style="font-size:24px;margin-top:2px"></div><div class="fc-meta" id="gt-m"></div>`;
