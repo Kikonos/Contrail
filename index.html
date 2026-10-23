@@ -114,6 +114,52 @@ nav.bar button.on{color:var(--op)}
 .seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 
 /* logbook */
+.lhead{display:flex;align-items:center;justify-content:space-between;gap:12px}.lhead .seg{flex:0 0 auto}.lhead .seg button{padding:6px 14px}
+.cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 12px}
+.cal-title{border:0;background:none;padding:4px 2px;color:var(--text);font:800 24px/1.1 var(--round);display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.cal-title svg{width:16px;height:16px;color:var(--muted);transition:transform .2s}
+.cal-nav{display:flex;gap:6px;align-items:center}
+.cal-nav button{height:36px;min-width:36px;border-radius:12px;border:1px solid var(--hair);background:var(--surface);color:var(--text);font-size:20px;line-height:1;display:grid;place-items:center;padding:0 10px}
+.cal-nav .cal-today{font-size:13px;font-weight:700;color:var(--op)}
+.cal-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 14px}
+.cal-sum div{background:var(--surface);border-radius:14px;padding:9px 10px 8px}
+.cal-sum b{display:block;font:700 17px/1.15 var(--round);font-variant-numeric:tabular-nums}
+.cal-sum span{font-size:11.5px;color:var(--muted)}
+.cal-wd{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:6px;text-align:center;font-size:11.5px;font-weight:700;color:var(--muted)}
+.cal-wd .we{color:color-mix(in srgb,var(--muted) 70%,transparent)}
+.cal-grid{touch-action:pan-y}
+.cal-grid.go-l{animation:calL .24s ease-out}.cal-grid.go-r{animation:calR .24s ease-out}
+@keyframes calL{from{opacity:.2;transform:translateX(28px)}}@keyframes calR{from{opacity:.2;transform:translateX(-28px)}}
+.cal-wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-bottom:5px}
+.cal-band{grid-row:1;border-radius:13px;background:color-mix(in srgb,var(--op) 30%,var(--surface));z-index:0}
+.cal-band.D{background:color-mix(in srgb,var(--dh) 28%,var(--surface))}
+.cal-band.past{background:color-mix(in srgb,var(--op) 16%,var(--surface))}.cal-band.D.past{background:color-mix(in srgb,var(--dh) 15%,var(--surface))}
+.cal-band.now{background:color-mix(in srgb,var(--op) 55%,var(--surface));box-shadow:0 6px 18px color-mix(in srgb,var(--op) 28%,transparent)}
+.cal-band.cl{border-top-left-radius:0;border-bottom-left-radius:0}.cal-band.cr{border-top-right-radius:0;border-bottom-right-radius:0}
+.cal-d{grid-row:1;position:relative;z-index:1;height:64px;min-width:0;border-radius:13px;border:1px solid var(--hair);background:var(--surface);padding:5px 2px 5px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;color:var(--text);font:inherit;cursor:pointer}
+.cal-d.in{background:transparent;border-color:transparent}
+.cal-d.out{opacity:.38}
+.cal-d .n{align-self:flex-start;margin-left:5px;min-width:20px;height:18px;padding:0 4px;border-radius:9px;font:700 11.5px/18px var(--round);color:var(--muted);text-align:center}
+.cal-d.in .n{color:color-mix(in srgb,var(--text) 75%,transparent)}
+.cal-d.today .n{background:var(--op);color:#fff}
+.cal-d.sel{box-shadow:inset 0 0 0 2px var(--text)}
+.cal-d .ic{height:19px;display:grid;place-items:center}.cal-d .ic svg{width:19px;height:19px}
+.cal-d .c{font-size:10.5px;font-weight:800;letter-spacing:.02em;line-height:12px;height:12px;max-width:100%;overflow:hidden;text-overflow:clip;white-space:nowrap}
+.cal-d .dim{opacity:.55}
+.cal-dh{display:flex;justify-content:space-between;align-items:baseline;margin:18px 2px 8px;font-weight:800;font-size:15px;color:var(--op)}
+.ag{background:var(--surface);border-radius:16px;overflow:hidden}
+.ag-trip{padding:12px 14px;border-bottom:1px solid var(--hair);background:color-mix(in srgb,var(--op) 10%,var(--surface))}
+.ag-trip b{font:800 16px var(--round);letter-spacing:.01em;display:block}.ag-trip span{font-size:12.5px;color:var(--muted)}
+.ag-r{display:grid;grid-template-columns:26px 1fr auto;gap:12px;align-items:center;width:100%;padding:12px 14px;border:0;border-bottom:1px solid var(--hair);background:none;text-align:left;color:var(--text);font:inherit}
+button.ag-r{cursor:pointer}.ag-r:last-child{border-bottom:0}
+.ag-r>svg{width:22px;height:22px;color:var(--muted)}
+.ag-r .t{display:block;font-weight:700}.ag-r .s{display:block;font-size:12.5px;color:var(--muted)}
+.ag-r .tm{font:700 14px var(--round);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}.ag-r .tm sup{font-size:9px;color:var(--muted);margin-left:1px}
+.mp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 4px}
+.mp-grid button{border:1px solid var(--hair);background:var(--surface-2);color:var(--text);border-radius:14px;padding:12px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;font:inherit}
+.mp-grid b{font:700 16px var(--round)}.mp-grid span{font-size:11.5px;color:var(--muted);min-height:14px}
+.mp-grid .cur{border-color:var(--op)}
+.mp-grid .on{background:var(--op);border-color:var(--op);color:#fff}.mp-grid .on span{color:rgba(255,255,255,.85)}
 .logtools{position:sticky;top:0;z-index:2;background:var(--bg);padding:8px 0 10px;display:flex;flex-direction:column;gap:8px}
 .search{width:100%;border:0;background:var(--surface-2);border-radius:11px;padding:10px 12px;font-size:15px}
 .month{display:flex;justify-content:space-between;align-items:baseline;margin:18px 2px 6px;font-weight:700;font-size:13.5px;color:var(--muted)}
@@ -310,8 +356,9 @@ details.fold[open] summary::after{transform:rotate(-135deg);margin-bottom:-2px}
     <div class="g-zoom"><button id="gmode" aria-label="Show as a flat map"></button><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">&minus;</button></div>
   </section>
   <section class="tab" id="t-log" aria-label="Logbook"><div class="wrap">
-    <h1>Logbook</h1>
-    <div class="logtools">
+    <div class="lhead"><h1>Logbook</h1><div class="seg" id="lview"></div></div>
+    <div id="lmonth"></div>
+    <div class="logtools" id="ltools">
       <input class="search" id="q" type="search" placeholder="Search flight, airport, aircraft or year" autocomplete="off">
       <div class="seg" id="lseg"></div>
     </div>
@@ -855,7 +902,105 @@ function openAirport(code){
 }
 
 /* ---------- logbook ---------- */
-const Log={q:"",cat:"all",
+// little icons for the calendar
+const CICO={
+ plane:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>',
+ home:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4h2.9V20h5v-5.6h3V20h5v-8.6h2.9z"/></svg>',
+ bed:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h2v7h6V8h7a3 3 0 0 1 3 3v8h-2v-3H5v3H3zm5 6.2a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4z"/></svg>',
+ clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+ sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4" fill="currentColor"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>',
+ book:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v16H6.5a1 1 0 0 0 0 2H20v2H6.5A2.5 2.5 0 0 1 4 19.5z"/></svg>',
+ sick:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9.5" opacity=".9"/><path d="M5.5 12.5c2 1.4 4.2 2 6.5 2s4.5-.6 6.5-2v2.3c-2 1.3-4.2 1.9-6.5 1.9s-4.5-.6-6.5-1.9z" fill="var(--surface)"/><path d="M8 9.6h2.4M13.6 9.6H16" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round"/></svg>',
+ dot:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/></svg>',
+ chev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>'};
+const CALK={off:["home","var(--ok)"],free:["home","var(--muted)"],leave:["sun","var(--ok)"],rest:["bed","var(--muted)"],sby:["clock","var(--dh)"],avd:["clock","var(--dh)"],training:["book","var(--pers)"],ground:["book","var(--pers)"],sick:["sick","color-mix(in srgb,var(--dh) 70%,var(--x))"],other:["dot","var(--muted)"]};
+
+/* ---------- logbook: month calendar, like a roster, and the full list ---------- */
+const Cal={
+ home(){const o=FL.filter(f=>f.cat==="O");return baseOf(o.length?o[o.length-1]:{})},
+ // every day that has something: flights by their local departure day, duties, and the trip it belongs to
+ data(){const key=FL.length+":"+(store.duties||[]).length+":"+HDUT.length+":"+(store.del||[]).length;if(this._f===FL&&this._k===key)return this._d;
+  const D=new Map(),get=k=>{let x=D.get(k);if(!x){x={fl:[],du:[],trip:null};D.set(k,x)}return x};
+  const fl=FL.filter(f=>f.cat!=="X"&&(f.out||f.date)).sort((a,b)=>(a.out?+a.out:Date.parse(a.date))-(b.out?+b.out:Date.parse(b.date)));
+  for(const f of fl)get(f.out?ymdIn(f.out,tzOf(f.dep)):f.date).fl.push(f);
+  // a trip leaves base and ends back at base; a long gap or two weeks away starts a new one
+  const trips=[];let cur=null;
+  for(const f of fl){if(f.cat==="P"||!f.out)continue;const b=baseOf(f);
+   if(!cur||cur.done||+f.out-cur.end>5*864e5||+f.out-cur.start>14*864e5){cur={fl:[],start:+f.out,end:+f.out,done:false};trips.push(cur)}
+   cur.fl.push(f);cur.end=+(f.inn||f.out);if(f.arr===b)cur.done=true}
+  for(const t of trips){const a=t.fl[0],z=t.fl[t.fl.length-1];t.d0=ymdIn(t.start,tzOf(a.dep));t.d1=ymdIn(t.end,tzOf(z.arr));if(t.d1<t.d0)t.d1=t.d0;
+   t.kind=t.fl.every(f=>f.cat==="D")?"D":"O";t.route=[a.dep];for(const f of t.fl){if(t.route[t.route.length-1]!==f.dep)t.route.push(f.dep);t.route.push(f.arr)}
+   t.bh=t.fl.filter(f=>f.cat==="O").reduce((s,f)=>s+(f.bh||0),0);
+   for(let d=t.d0,i=0;d<=t.d1&&i<20;d=addDays(d,1),i++)get(d).trip=t}
+  for(const d of allDuties())if(/^\d{4}-\d\d-\d\d$/.test(d.date))get(d.date).du.push(d);
+  this._lay=layoversAll();this._f=FL;this._k=key;return this._d=D},
+ today(){return ymdIn(new Date(),tzOf(this.home()))},
+ shift(n,el){const[y,m]=Log.ym.split("-").map(Number),d=new Date(Date.UTC(y,m-1+n,1));Log.ym=d.toISOString().slice(0,7);Log.sel=null;Log.render();
+  const g=document.querySelector("#lmonth .cal-grid");if(g){g.classList.add(n>0?"go-l":"go-r")}},
+ cell(d,x){const fl=x.fl;
+  if(fl.length){const a=fl[0],z=fl[fl.length-1],b=baseOf(a);const code=z.arr===b&&a.dep===b&&fl.length>1?a.arr:z.arr;
+   const col=x.trip?"currentColor":fl.some(f=>f.cat==="O")?"var(--op)":fl.some(f=>f.cat==="D")?"var(--dh)":"var(--pers)";
+   return`<span class="ic" style="color:${col}">${CICO.plane}</span><span class="c">${esc(code)}</span>`}
+  if(x.du.length){const ci=codeInfo(x.du[0].code),k=CALK[ci.kind]||CALK.other;return`<span class="ic" style="color:${k[1]}">${CICO[k[0]]}</span><span class="c">${esc(x.du[0].code)}</span>`}
+  if(x.trip){const prev=x.trip.fl.filter(f=>ymdIn(f.out,tzOf(f.dep))<d).pop();return`<span class="ic dim">${CICO.bed}</span><span class="c dim">${esc(prev?prev.arr:"")}</span>`}
+  return`<span class="ic"></span><span class="c"></span>`},
+ render(el){const D=this.data(),now=Date.now(),today=this.today();
+  if(!Log.ym)Log.ym=today.slice(0,7);
+  const[Y,M]=Log.ym.split("-").map(Number),first=Log.ym+"-01",dow=(new Date(first+"T12:00:00Z").getUTCDay()+6)%7,dim=new Date(Date.UTC(Y,M,0)).getUTCDate(),weeks=Math.ceil((dow+dim)/7),start=addDays(first,-dow);
+  if(!Log.sel||Log.sel.slice(0,7)!==Log.ym){if(today.slice(0,7)===Log.ym)Log.sel=today;else{let s=first;for(let i=0;i<dim;i++){const d=addDays(first,i),x=D.get(d);if(x&&(x.fl.length||x.trip)){s=d;break}}Log.sel=s}}
+  // the month in numbers
+  const inM=f=>(f.out?ymdIn(f.out,tzOf(f.dep)):f.date).slice(0,7)===Log.ym,mf=FL.filter(f=>f.cat!=="X"&&inM(f)),O=mf.filter(f=>f.cat==="O");
+  let off=0;for(let i=0;i<dim;i++){const x=D.get(addDays(first,i));if(x&&!x.fl.length&&!x.trip&&x.du.some(d=>codeInfo(d.code).kind==="off"))off++}
+  const lays=(this._lay||[]).filter(l=>ymdIn(new Date(l.from),"UTC").slice(0,7)===Log.ym).length;
+  const mname=new Intl.DateTimeFormat("en-GB",{month:"long",year:"numeric",timeZone:"UTC"}).format(new Date(first+"T12:00:00Z"));
+  let h=`<div class="cal-head"><button class="cal-title" id="cal-pick" aria-label="Choose a month, now ${esc(mname)}">${esc(mname)}${CICO.chev}</button>
+   <div class="cal-nav">${today.slice(0,7)!==Log.ym?`<button class="cal-today" id="cal-now">Today</button>`:""}<button data-m="-1" aria-label="Previous month">‹</button><button data-m="1" aria-label="Next month">›</button></div></div>
+   <div class="cal-sum"><div><b>${HM(O.reduce((s,f)=>s+(f.bh||0),0))}</b><span>block</span></div><div><b>${O.length}</b><span>sector${O.length===1?"":"s"}</span></div><div><b>${lays}</b><span>layover${lays===1?"":"s"}</span></div><div><b>${off}</b><span>day${off===1?"":"s"} off</span></div></div>
+   <div class="cal-wd">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>`<span class="${i>4?"we":""}">${d}</span>`).join("")}</div><div class="cal-grid">`;
+  const lf=new Intl.DateTimeFormat("en-GB",{weekday:"long",day:"numeric",month:"long",timeZone:"UTC"});
+  for(let w=0;w<weeks;w++){const days=[];for(let i=0;i<7;i++)days.push(addDays(start,w*7+i));let r="";
+   for(let i=0;i<7;){const t=(D.get(days[i])||{}).trip;if(!t){i++;continue}let j=i;while(j<6&&(D.get(days[j+1])||{}).trip===t)j++;
+    r+=`<div class="cal-band ${t.kind}${t.end<now?" past":t.start<=now+12*36e5?" now":""}${days[i]>t.d0?" cl":""}${days[j]<t.d1?" cr":""}" style="grid-column:${i+1}/${j+2}"></div>`;i=j+1}
+   for(let i=0;i<7;i++){const d=days[i],x=D.get(d)||{fl:[],du:[],trip:null};
+    r+=`<button class="cal-d${x.trip?" in":""}${d.slice(0,7)===Log.ym?"":" out"}${d===today?" today":""}${d===Log.sel?" sel":""}" style="grid-column:${i+1}" data-d="${d}" aria-label="${esc(lf.format(new Date(d+"T12:00:00Z")))}"${d===Log.sel?' aria-pressed="true"':""}><span class="n">${+d.slice(8)}</span>${this.cell(d,x)}</button>`}
+   h+=`<div class="cal-wk">${r}</div>`}
+  h+=`</div>`+this.agenda(Log.sel,D);
+  el.innerHTML=h},
+ // what happens on one day, like a roster's day view
+ agenda(d,D){const x=D.get(d)||{fl:[],du:[],trip:null},t=x.trip;
+  const df=new Intl.DateTimeFormat("en-GB",{weekday:"short",day:"numeric",month:"long",year:"numeric",timeZone:"UTC"}),sf=new Intl.DateTimeFormat("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"});
+  const row=(ic,a,b,tm,attr)=>`<${attr?"button":"div"} class="ag-r"${attr||""}>${ic}<span><span class="t">${a}</span>${b?`<span class="s">${b}</span>`:""}</span><span class="tm">${tm||""}</span></${attr?"button":"div"}>`;
+  let h=`<div class="cal-dh"><span>${esc(df.format(new Date(d+"T12:00:00Z")))}</span>${x.fl.length?`<span class="small">Local times</span>`:""}</div><div class="ag">`;
+  if(t){const n=Math.round((Date.parse(t.d1)-Date.parse(t.d0))/864e5)+1,rf=new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",timeZone:"UTC"});
+   h+=`<div class="ag-trip"><b>${esc(t.route.join(" – "))}</b><span>${t.d0===t.d1?esc(rf.format(new Date(t.d0+"T12:00:00Z"))):esc(rf.format(new Date(t.d0+"T12:00:00Z"))+" to "+rf.format(new Date(t.d1+"T12:00:00Z")))}, ${n} day${n===1?"":"s"}${t.bh?", "+HM(t.bh)+" block":""}${t.kind==="D"?", deadhead":""}</span></div>`}
+  const rows=[],fl=x.fl;
+  for(let i=0;i<fl.length;i++){const f=fl[i],p=fl[i-1];
+   if(f.rep&&!(p&&p.rep&&+p.rep===+f.rep)){const at=f.repAt||f.dep;rows.push(row(CICO.clock,"Report",esc(shortCity(at)+" ("+at+")"),esc(hm(f.rep,tzOf(at)))))}
+   const tA=tzOf(f.dep),tB=tzOf(f.arr),nx=f.out&&f.inn&&ymdIn(f.inn,tB)!==ymdIn(f.out,tA);
+   rows.push(row(`<span style="color:${f.cat==="O"?"var(--op)":f.cat==="D"?"var(--dh)":"var(--pers)"};display:grid">${CICO.plane}</span>`,esc(f.dep+" – "+f.arr),esc([f.flt,f.cat==="D"?"Deadhead":f.cat==="P"?"Personal":"",f.ac].filter(Boolean).join(" · ")),
+    f.out?esc(hm(f.out,tA))+" – "+(f.inn?esc(hm(f.inn,tB))+(nx?"<sup>+1</sup>":""):"–"):"",` data-f="${esc(f.id)}"`))}
+  if(fl.length){const z=fl[fl.length-1],L=z.inn&&(this._lay||[]).find(l=>l.from===+z.inn);if(L)rows.push(row(CICO.bed,"Layover in "+esc(shortCity(L.st)),esc("Until "+sf.format(new Date(L.to))+", "+hm(new Date(L.to),tzOf(L.st))),esc(durText(L.h))))}
+  else if(t){const prev=t.fl.filter(f=>ymdIn(f.out,tzOf(f.dep))<d).pop(),next=t.fl.find(f=>ymdIn(f.out,tzOf(f.dep))>d);
+   if(prev)rows.push(row(CICO.bed,"Layover in "+esc(shortCity(prev.arr)),next?esc("Next flight "+sf.format(next.out)+", "+hm(next.out,tzOf(next.dep))):"",""))}
+  for(const du of x.du){const ci=codeInfo(du.code),k=CALK[ci.kind]||CALK.other;rows.push(row(`<span style="color:${k[1]};display:grid">${CICO[k[0]]}</span>`,esc(ci.label),esc(du.code),""))}
+  if(!rows.length)rows.push(`<div class="ag-r"><span></span><span class="s">Nothing on this day</span><span></span></div>`);
+  return h+rows.join("")+`</div>`},
+ // month and year at a glance
+ pick(){let y=+Log.ym.slice(0,4);const now=this.today(),ys=new Set([+now.slice(0,4)]);for(const f of FL)if(f.cat!=="X"){const k=f.out?f.out.getUTCFullYear():+String(f.date).slice(0,4);if(k>1990&&k<2100)ys.add(k)}
+  for(const d of allDuties()){const k=+String(d.date).slice(0,4);if(k>1990&&k<2100)ys.add(k)}
+  const years=[...ys].sort((a,b)=>a-b),cnt=new Map();for(const f of FL)if(f.cat==="O"||f.cat==="D"){const k=(f.out?ymdIn(f.out,tzOf(f.dep)):f.date).slice(0,7);cnt.set(k,(cnt.get(k)||0)+1)}
+  const mn=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const draw=()=>Sheet.open(`<h2 style="margin-top:6px">Go to a month</h2><div class="seg" id="mp-y">${years.map(v=>`<button data-y="${v}" class="${v===y?"on":""}">${v}</button>`).join("")}</div>
+   <div class="mp-grid">${mn.map((n,i)=>{const k=y+"-"+String(i+1).padStart(2,"0"),c=cnt.get(k)||0;return`<button data-k="${k}" class="${k===Log.ym?"on":""}${k===now.slice(0,7)?" cur":""}"><b>${n}</b><span>${c?c+" flight"+(c===1?"":"s"):""}</span></button>`}).join("")}</div>
+   <div class="d-acts"><button class="btn" id="mp-now">This month</button></div>`,el=>{
+   const sg=el.querySelector("#mp-y"),on=sg.querySelector(".on");if(on)sg.scrollLeft=on.offsetLeft-(sg.clientWidth-on.offsetWidth)/2;
+   sg.onclick=e=>{const b=e.target.closest("[data-y]");if(b){y=+b.dataset.y;draw()}};
+   el.querySelector(".mp-grid").onclick=e=>{const b=e.target.closest("[data-k]");if(!b)return;Log.ym=b.dataset.k;Log.sel=null;Sheet.close();Log.render()};
+   el.querySelector("#mp-now").onclick=()=>{Log.ym=now.slice(0,7);Log.sel=null;Sheet.close();Log.render()}});
+  draw()}
+};
+
+const Log={q:"",cat:"all",view:"month",ym:null,sel:null,
  renderDuties(){
   const q=this.q.toUpperCase();let ds=allDuties().sort((a,b)=>b.date.localeCompare(a.date));
   if(q)ds=ds.filter(d=>(d.code+" "+codeInfo(d.code).label+" "+d.date).toUpperCase().includes(q));
@@ -869,8 +1014,23 @@ const Log={q:"",cat:"all",
  init(){const s=document.getElementById("lseg");s.innerHTML=[["all","All"],["O","Operating"],["D","Deadhead"],["P","Personal"],["duty","Duties"],["X","Excluded"]].map(([k,n])=>`<button data-k="${k}" class="${k===this.cat?"on":""}">${n}</button>`).join("");
   s.querySelectorAll("button").forEach(b=>b.onclick=()=>{this.cat=b.dataset.k;s.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));this.render()});
   let t;document.getElementById("q").addEventListener("input",e=>{clearTimeout(t);t=setTimeout(()=>{this.q=e.target.value.trim();this.render()},120)});
-  document.getElementById("loglist").addEventListener("click",e=>{const b=e.target.closest(".row");if(b)openFlight(b.dataset.id)})},
+  document.getElementById("loglist").addEventListener("click",e=>{const b=e.target.closest(".row");if(b)openFlight(b.dataset.id)});
+  this.view=lsGet("contrail.logview","month")==="list"?"list":"month";
+  document.getElementById("lview").onclick=e=>{const b=e.target.closest("[data-v]");if(!b||b.dataset.v===this.view)return;this.view=b.dataset.v;lsSet("contrail.logview",this.view);this.render()};
+  const M=document.getElementById("lmonth");let sw=null,swiped=0;
+  M.addEventListener("click",e=>{if(Date.now()-swiped<350)return;const t=e.target;
+   const d=t.closest("[data-d]");if(d){if(d.dataset.d.slice(0,7)!==this.ym){this.ym=d.dataset.d.slice(0,7)}this.sel=d.dataset.d;this.render();return}
+   const f=t.closest("[data-f]");if(f){openFlight(f.dataset.f);return}
+   const m=t.closest("[data-m]");if(m){Cal.shift(+m.dataset.m);return}
+   if(t.closest("#cal-now")){this.ym=null;this.sel=null;this.render();return}
+   if(t.closest("#cal-pick"))Cal.pick()});
+  M.addEventListener("pointerdown",e=>{if(e.target.closest(".cal-grid"))sw={x:e.clientX,y:e.clientY,t:Date.now()}});
+  M.addEventListener("pointerup",e=>{if(!sw)return;const dx=e.clientX-sw.x,dy=e.clientY-sw.y;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.6&&Date.now()-sw.t<800){swiped=Date.now();Cal.shift(dx<0?1:-1)}sw=null});
+  M.addEventListener("pointercancel",()=>{sw=null})},
  render(){
+  const v=document.getElementById("lview");v.innerHTML=[["month","Month"],["list","List"]].map(([k,n])=>`<button data-v="${k}" class="${k===this.view?"on":""}" aria-pressed="${k===this.view}">${n}</button>`).join("");
+  const month=this.view==="month";document.getElementById("lmonth").style.display=month?"":"none";document.getElementById("ltools").style.display=month?"none":"";document.getElementById("loglist").style.display=month?"none":"";
+  if(month)return Cal.render(document.getElementById("lmonth"));
   if(this.cat==="duty")return this.renderDuties();
   const q=this.q.toUpperCase();let fs=FL.filter(f=>this.cat==="all"||f.cat===this.cat);
   if(q)fs=fs.filter(f=>(f.flt+" "+f.dep+" "+f.arr+" "+(f.ac||"")+" "+(f.reg||"")+" "+(f.emp||"")+" "+(f.al||"")+" "+f.year+" "+city(f.dep)+" "+city(f.arr)).toUpperCase().includes(q));
@@ -1079,7 +1239,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.16 (18 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.17 (23 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};

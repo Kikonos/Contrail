@@ -49,6 +49,7 @@ A second source for Fill in, through RapidAPI. Its free Basic plan reaches back 
 - **Milestones and year in review:** milestones as you reach them, and a summary of each year or of all time. Share it as a full-screen picture (1080 × 1920, the size of an iPhone screen and Instagram stories) on the globe or a flat map, with a preview first, or replay it on the globe.
 - **Globe or flat map:** the button above the zoom buttons switches the Globe tab between the 3D globe and a flat map. The choice is remembered.
 - **Share:** sends your flight with a live tracking link.
+- **Logbook month view:** a roster-style calendar. Trips show as one band across their days, with the destination under each flight, days off, standby, sick and leave as icons, and the month's block hours, sectors, layovers and days off on top. Tap a day for report time, flights in local time and layovers. Tap the month name to jump to any month and year, swipe or use the arrows to move a month, and switch to List for search and filters.
 - **Backup reminder:** a gentle prompt when your last backup is more than two weeks old and the logbook has changed since.
 
 ## Other airlines' rosters
