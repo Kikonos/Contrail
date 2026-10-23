@@ -970,15 +970,15 @@ const Cal={
  agenda(d,D){const x=D.get(d)||{fl:[],du:[],trip:null},t=x.trip;
   const df=new Intl.DateTimeFormat("en-GB",{weekday:"short",day:"numeric",month:"long",year:"numeric",timeZone:"UTC"}),sf=new Intl.DateTimeFormat("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"});
   const row=(ic,a,b,tm,attr)=>`<${attr?"button":"div"} class="ag-r"${attr||""}>${ic}<span><span class="t">${a}</span>${b?`<span class="s">${b}</span>`:""}</span><span class="tm">${tm||""}</span></${attr?"button":"div"}>`;
-  let h=`<div class="cal-dh"><span>${esc(df.format(new Date(d+"T12:00:00Z")))}</span>${x.fl.length?`<span class="small">Local times</span>`:""}</div><div class="ag">`;
+  let h=`<div class="cal-dh"><span>${esc(df.format(new Date(d+"T12:00:00Z")))}</span>${x.fl.length?`<span class="small">L = local time</span>`:""}</div><div class="ag">`;
   if(t){const n=Math.round((Date.parse(t.d1)-Date.parse(t.d0))/864e5)+1,rf=new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",timeZone:"UTC"});
    h+=`<div class="ag-trip"><b>${esc(t.route.join(" – "))}</b><span>${t.d0===t.d1?esc(rf.format(new Date(t.d0+"T12:00:00Z"))):esc(rf.format(new Date(t.d0+"T12:00:00Z"))+" to "+rf.format(new Date(t.d1+"T12:00:00Z")))}, ${n} day${n===1?"":"s"}${t.bh?", "+HM(t.bh)+" block":""}${t.kind==="D"?", deadhead":""}</span></div>`}
   const rows=[],fl=x.fl;
   for(let i=0;i<fl.length;i++){const f=fl[i],p=fl[i-1];
-   if(f.rep&&!(p&&p.rep&&+p.rep===+f.rep)){const at=f.repAt||f.dep;rows.push(row(CICO.clock,"Report",esc(shortCity(at)+" ("+at+")"),esc(hm(f.rep,tzOf(at)))))}
+   if(f.rep&&!(p&&p.rep&&+p.rep===+f.rep)){const at=f.repAt||f.dep;rows.push(row(CICO.clock,"Report",esc(shortCity(at)+" ("+at+")"),esc(hm(f.rep,tzOf(at)))+"L"))}
    const tA=tzOf(f.dep),tB=tzOf(f.arr),nx=f.out&&f.inn&&ymdIn(f.inn,tB)!==ymdIn(f.out,tA);
    rows.push(row(`<span style="color:${f.cat==="O"?"var(--op)":f.cat==="D"?"var(--dh)":"var(--pers)"};display:grid">${CICO.plane}</span>`,esc(f.dep+" – "+f.arr),esc([f.flt,f.cat==="D"?"Deadhead":f.cat==="P"?"Personal":"",f.ac].filter(Boolean).join(" · ")),
-    f.out?esc(hm(f.out,tA))+" – "+(f.inn?esc(hm(f.inn,tB))+(nx?"<sup>+1</sup>":""):"–"):"",` data-f="${esc(f.id)}"`))}
+    f.out?esc(hm(f.out,tA))+"L – "+(f.inn?esc(hm(f.inn,tB))+"L"+(nx?"<sup>+1</sup>":""):"–"):"",` data-f="${esc(f.id)}"`))}
   if(fl.length){const z=fl[fl.length-1],L=z.inn&&(this._lay||[]).find(l=>l.from===+z.inn);if(L)rows.push(row(CICO.bed,"Layover in "+esc(shortCity(L.st)),esc("Until "+sf.format(new Date(L.to))+", "+hm(new Date(L.to),tzOf(L.st))),esc(durText(L.h))))}
   else if(t){const prev=t.fl.filter(f=>ymdIn(f.out,tzOf(f.dep))<d).pop(),next=t.fl.find(f=>ymdIn(f.out,tzOf(f.dep))>d);
    if(prev)rows.push(row(CICO.bed,"Layover in "+esc(shortCity(prev.arr)),next?esc("Next flight "+sf.format(next.out)+", "+hm(next.out,tzOf(next.dep))):"",""))}
@@ -1239,7 +1239,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.17 (23 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.18 (23 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
