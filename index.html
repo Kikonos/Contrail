@@ -114,7 +114,11 @@ nav.bar button.on{color:var(--op)}
 .seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 
 /* logbook */
-.lhead{display:flex;align-items:center;justify-content:space-between;gap:12px}.lhead .seg{flex:0 0 auto}.lhead .seg button{padding:6px 14px}
+.lhead{display:flex;align-items:center;justify-content:space-between;gap:12px}.lhead-r{display:flex;align-items:center;gap:8px}
+.ladd{width:36px;height:36px;border-radius:12px;border:0;background:var(--op);color:#fff;display:grid;place-items:center;flex:0 0 auto}.ladd svg{width:18px;height:18px}
+.ag-add{color:var(--op);font-weight:700}
+.af-leg{grid-template-columns:18px 1fr auto}.af-leg .af-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--hair);align-self:center}.af-leg.on .af-dot{border:5px solid var(--op)}
+.lhead .seg{flex:0 0 auto}.lhead .seg button{padding:6px 14px}
 .cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 12px}
 .cal-title{border:0;background:none;padding:4px 2px;color:var(--text);font:800 24px/1.1 var(--round);display:inline-flex;align-items:center;gap:8px;cursor:pointer}
 .cal-title svg{width:16px;height:16px;color:var(--muted);transition:transform .2s}
@@ -357,7 +361,7 @@ details.fold[open] summary::after{transform:rotate(-135deg);margin-bottom:-2px}
     <div class="g-zoom"><button id="gmode" aria-label="Show as a flat map"></button><button id="zin" aria-label="Zoom in">+</button><button id="zout" aria-label="Zoom out">&minus;</button></div>
   </section>
   <section class="tab" id="t-log" aria-label="Logbook"><div class="wrap">
-    <div class="lhead"><h1>Logbook</h1><div class="seg" id="lview"></div></div>
+    <div class="lhead"><h1>Logbook</h1><div class="lhead-r"><div class="seg" id="lview"></div><button class="ladd" id="ladd" aria-label="Add a flight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div></div>
     <div id="lmonth"></div>
     <div class="logtools" id="ltools">
       <input class="search" id="q" type="search" placeholder="Search flight, airport, aircraft or year" autocomplete="off">
@@ -521,7 +525,7 @@ function build(){
   for(const o of store.add){if(del.has(o.id))continue;FL.push(objToF(o))}
   for(const f of FL){
     const ov=store.ov[f.id];
-    if(ov){if(ov.c)f.cat=ov.c;if(ov.ac)f.ac=ov.ac;if(ov.reg)f.reg=ov.reg;if(ov.emp)f.emp=ov.emp;if(ov.al)f.al=ov.al;if(ov.tko)f.tko=new Date(ov.tko);if(ov.ldg)f.ldg=new Date(ov.ldg);if(ov.fr24)f.fr24=ov.fr24;if(ov.adb)f.adb=ov.adb;if(ov.ibReg)f.ibReg=ov.ibReg;if(ov.out)f.out=new Date(ov.out);if(ov.inn)f.inn=new Date(ov.inn);if(ov.rep){f.rep=new Date(ov.rep);f.repAt=ov.repAt||f.dep}f.ok=!!ov.ok}
+    if(ov){if(ov.c)f.cat=ov.c;if(ov.flt)f.flt=ov.flt;if(ov.dep)f.dep=ov.dep;if(ov.arr)f.arr=ov.arr;for(const k of["ac","reg","emp","al"])if(typeof ov[k]==="string")f[k]=ov[k];if(ov.tko)f.tko=new Date(ov.tko);if(ov.ldg)f.ldg=new Date(ov.ldg);if(ov.fr24)f.fr24=ov.fr24;if(ov.adb)f.adb=ov.adb;if(ov.ibReg)f.ibReg=ov.ibReg;if(ov.out)f.out=new Date(ov.out);if(ov.inn)f.inn=new Date(ov.inn);if(ov.rep){f.rep=new Date(ov.rep);f.repAt=ov.repAt||f.dep}else if(ov.rep===null)f.rep=null;f.ok=!!ov.ok}
     f.t=f.out?f.out.getTime():Date.parse(f.date+"T12:00:00Z");
     const key=f.id+"|"+f.t+"|"+(f.inn?f.inn.getTime():0)+"|"+f.dep+f.arr;
     let dv=derived[f.id];
@@ -565,7 +569,7 @@ function openFlight(id){
   const tzA=tzOf(f.dep),tzB=tzOf(f.arr);
   const segs=CATS.map(c=>`<button data-c="${c}" class="${f.cat===c?"on":""}">${CATN[c]}</button>`).join("");
   const srcN={RF:"Roster and Flighty",R:"Roster",F:"Flighty",M:"Added by you",I:"Imported"}[f.src]||f.src;
-  const tb={r:"roster block times",g:"Flighty gate times",a:"Flighty airborne times, approximate",m:"entered by you",i:"from the import"}[f.tb]||"";
+  const tb={r:"roster block times",g:"Flighty gate times",a:"airborne times, approximate",m:"entered by you",i:"from the import",s:"scheduled, from AeroDataBox"}[f.tb]||"";
   Sheet.open(`
   <div class="d-route"><span class="num">${esc(f.dep)}</span><div class="mid">${f.km?nf0.format(f.km)+" km":""}<br>${f.bh!=null?HM(f.bh)+" block":""}</div><span class="num">${esc(f.arr)}</span></div>
   <div class="d-city"><span>${esc(city(f.dep))}</span><span>${esc(city(f.arr))}</span></div>
@@ -595,7 +599,7 @@ function openFlight(id){
    <button class="btn sm" id="dedit">Edit details</button>
    <button class="btn sm" id="dshare">Share</button>
    ${f.out&&+f.out>Date.now()-36*36e5?`<button class="btn sm" id="dbrief">Trip brief</button>`:""}
-   ${f.user?`<button class="btn sm" id="ddel" style="color:var(--x)">Delete flight</button>`:""}
+   <button class="btn sm" id="ddel" style="color:var(--x)">Delete flight</button>
   </div>`,el=>{
     el.querySelectorAll("#dseg button").forEach(b=>b.onclick=()=>{setOv(f.id,{c:b.dataset.c});openFlight(f.id)});
     el.querySelector("#dglobe").onclick=()=>{Sheet.close();go("globe");Globe.select(f.id,true)};
@@ -605,24 +609,101 @@ function openFlight(id){
     const br=el.querySelector("#dbrief");if(br)br.onclick=()=>Trip.open(f.id);
     el.querySelectorAll("[data-tail]").forEach(b=>b.onclick=()=>Tails.open(b.dataset.tail));
 
-    const dl=el.querySelector("#ddel");if(dl)dl.onclick=()=>{store.add=store.add.filter(x=>x.id!==f.id);save();refreshAll();Sheet.close();toast("Flight deleted")};
+    el.querySelector("#ddel").onclick=()=>deleteFlight(f.id);
   });
 }
+function deleteFlight(id){const f=BYID[id];if(!f)return;
+  if(!confirm(`Delete ${f.flt} ${f.dep}–${f.arr}${f.out?" on "+dayStr(f.out,tzOf(f.dep)):""} from your logbook?`))return;
+  if(f.user)store.add=store.add.filter(x=>x.id!==id);else{store.del=Array.isArray(store.del)?store.del:[];if(!store.del.includes(id))store.del.push(id)}
+  delete store.ov[id];save();refreshAll();Sheet.close();toast("Flight deleted")}
 function editFlight(id){
-  const f=BYID[id];
+  const f=BYID[id];if(!f)return;const tzA=tzOf(f.dep),tzB=tzOf(f.arr),ra=f.repAt||f.dep;
   Sheet.open(`<h2 style="margin-top:6px">Edit ${esc(f.flt)}</h2>
   <div class="form">
+   <label>Flight<input id="e-flt" value="${esc(f.flt)}" autocapitalize="characters" placeholder="EK191"></label>
+   <label>Date, local<input type="date" id="e-date" value="${f.out?esc(ymdIn(f.out,tzA)):esc(f.date)}"></label>
+   <label>From<input id="e-dep" value="${esc(f.dep)}" maxlength="3" autocapitalize="characters"></label>
+   <label>To<input id="e-arr" value="${esc(f.arr)}" maxlength="3" autocapitalize="characters"></label>
+   <label>Out, local<input type="time" id="e-out" value="${f.out?esc(hm(f.out,tzA)):""}"></label>
+   <label>In, local<input type="time" id="e-in" value="${f.inn?esc(hm(f.inn,tzB)):""}"></label>
+   <label class="full">Report, local at ${esc(ra)} (leave empty if none)<input type="time" id="e-rep" value="${f.rep?esc(hm(f.rep,tzOf(ra))):""}"></label>
    <label>Aircraft<input id="e-ac" value="${esc(f.ac)}" placeholder="Boeing 777-300ER"></label>
-   <label>Registration<input id="e-reg" value="${esc(f.reg)}" placeholder="A6-EGA"></label>
+   <label>Registration<input id="e-reg" value="${esc(f.reg)}" placeholder="A6-EGA" autocapitalize="characters"></label>
    <label>Employer<input id="e-emp" value="${esc(f.emp)}" placeholder="Emirates"></label>
    <label>Airline<input id="e-al" value="${esc(f.al)}" placeholder="Emirates"></label>
   </div>
-  <div class="d-acts"><button class="btn pri" id="e-save">Save changes</button><button class="btn" id="e-cancel">Cancel</button></div>`,el=>{
+  <p class="note" id="e-msg"></p>
+  <div class="d-acts"><button class="btn pri" id="e-save">Save changes</button><button class="btn" id="e-cancel">Cancel</button><button class="btn" id="e-del" style="color:var(--x)">Delete flight</button></div>`,el=>{
+    const v=k=>el.querySelector("#e-"+k).value.trim(),msg=el.querySelector("#e-msg");
     el.querySelector("#e-cancel").onclick=()=>openFlight(id);
-    el.querySelector("#e-save").onclick=()=>{setOv(id,{ac:el.querySelector("#e-ac").value.trim(),reg:el.querySelector("#e-reg").value.trim().toUpperCase(),emp:el.querySelector("#e-emp").value.trim(),al:el.querySelector("#e-al").value.trim()});openFlight(id);toast("Changes saved")};
+    el.querySelector("#e-del").onclick=()=>deleteFlight(id);
+    el.querySelector("#e-save").onclick=()=>{
+     const flt=v("flt").toUpperCase().replace(/\s+/g,"")||f.flt,dep=v("dep").toUpperCase(),arr=v("arr").toUpperCase(),date=v("date"),to=v("out"),ti=v("in"),tr=v("rep");
+     if(!/^[A-Z]{3}$/.test(dep)||!/^[A-Z]{3}$/.test(arr)){msg.textContent="Use three-letter airport codes for From and To.";return}
+     if(!date){msg.textContent="Choose the date.";return}
+     if(!to||!ti){msg.textContent="Enter the out and in times, in local time at each airport.";return}
+     const out=zonedToUtc(date,to,tzOf(dep));let inn=zonedToUtc(date,ti,tzOf(arr));while(inn<=out)inn=new Date(+inn+864e5);
+     if((inn-out)/36e5>20){msg.textContent="That block time is over 20 hours. Check the times.";return}
+     let rep=null;if(tr){const at=f.repAt&&f.repAt!==f.dep?f.repAt:dep;rep=zonedToUtc(date,tr,tzOf(at));while(rep>out)rep=new Date(+rep-864e5);if((out-rep)/36e5>6){msg.textContent="The report time is more than 6 hours before departure. Check it.";return}}
+     const P={flt,dep,arr,out:out.toISOString(),inn:inn.toISOString(),ac:v("ac"),reg:v("reg").toUpperCase(),emp:v("emp"),al:v("al")};
+     if(f.user){const a=store.add.find(x=>x.id===id);if(a){Object.assign(a,P,{date:ymdIn(out,tzOf(dep)),rep:rep?rep.toISOString():null,repAt:rep?(f.repAt&&f.repAt!==f.dep?f.repAt:dep):dep});const o=store.ov[id];if(o){for(const k of["flt","dep","arr","out","inn","rep","repAt","ac","reg","emp","al","tko","ldg"])delete o[k]}}}
+     else{const o=store.ov[id]=Object.assign({},store.ov[id]||{},P);if(rep){o.rep=rep.toISOString();o.repAt=f.repAt&&f.repAt!==f.dep?f.repAt:dep}else{o.rep=null;delete o.repAt}
+      // times changed by hand: actual take-off and landing from before no longer belong to this flight
+      if(+out!==+f.out||+inn!==+f.inn){delete o.tko;delete o.ldg}}
+     save();refreshAll();openFlight(id);toast("Changes saved")};
   });
 }
 function setOv(id,patch){store.ov[id]=Object.assign({},store.ov[id]||{},patch);save();refreshAll()}
+
+/* ---------- add a flight from the flight databases ---------- */
+const Find={
+ // AeroDataBox has the schedule for days ahead; Flightradar24 has what flew
+ async legs(no,date){const out=[];let err="";
+  if(ADB.key()){try{const rows=await ADB.get(`/flights/number/${encodeURIComponent(no)}/${date}?dateLocalRole=Departure&withAircraftImage=false&withLocation=false`);
+   for(const r of Array.isArray(rows)?rows:[]){const d=r.departure||{},a=r.arrival||{},dep=(d.airport||{}).iata,arr=(a.airport||{}).iata,o=ADB.utc(d.scheduledTime),i=ADB.utc(a.scheduledTime);
+    if(!dep||!arr||!o)continue;out.push({flt:no,dep,arr,out:new Date(o),inn:i&&i>o?new Date(i):null,ac:(r.aircraft||{}).model||"",reg:(r.aircraft||{}).reg?String(r.aircraft.reg).toUpperCase():"",al:(r.airline||{}).name||"",src:"AeroDataBox",status:r.status||""})}}catch(e){err=e.message}}
+  if(!out.length&&FR24.key()){const t0=Date.parse(date+"T00:00:00Z")-14*36e5,t1=Math.min(Date.now(),t0+38*36e5);
+   if(t0<Date.now()){try{const rows=await FR24.get("/flight-summary/full",{flights:no,flight_datetime_from:FR24.iso(t0),flight_datetime_to:FR24.iso(t1)});
+    for(const r of Array.isArray(rows)?rows:[]){const dep=r.orig_iata,arr=r.dest_iata_actual||r.dest_iata,o=Date.parse(r.datetime_takeoff||""),i=Date.parse(r.datetime_landed||"");if(!dep||!arr||!o)continue;
+     if(ymdIn(new Date(o),tzOf(dep))!==date)continue;out.push({flt:no,dep,arr,out:new Date(o),inn:i>o?new Date(i):null,ac:r.type?FR24.typeName(r.type):"",reg:r.reg?String(r.reg).toUpperCase():"",al:"",src:"Flightradar24, take-off and landing",status:""})}}catch(e){err=err||e.message}}}
+  return{out,err}},
+ emp(){const c=new Map();for(const f of FL)if(f.cat==="O"&&f.emp)c.set(f.emp,(c.get(f.emp)||0)+1);return[...c.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||"Emirates"},
+ open(date,flt){const today=ymdIn(new Date(),tzOf(Cal.home()));date=date||today;let legs=[],pick=0,cat=lsGet("contrail.addcat","O");if(!CATN[cat]||cat==="X")cat="O";
+  const keys=ADB.key()||FR24.key();
+  Sheet.open(`<h2 style="margin-top:6px">Add a flight</h2>
+   <div class="form"><label>Date, local<input type="date" id="af-date" value="${esc(date)}"></label><label>Flight<input id="af-flt" value="${esc(flt||"")}" placeholder="EK191" autocapitalize="characters" autocomplete="off"></label></div>
+   <div class="d-acts"><button class="btn pri" id="af-find"${keys?"":" disabled"}>Find flight</button><button class="btn" id="af-own">Enter it myself</button></div>
+   <p class="note" id="af-msg">${keys?"Looks the flight up: AeroDataBox for the schedule, including days ahead, and Flightradar24 for flights that have flown.":"Add an AeroDataBox or Flightradar24 key in Settings to look flights up, or enter it yourself."}</p>
+   <div id="af-res"></div>`,el=>{
+   const $=q=>el.querySelector(q),msg=$("#af-msg"),res=$("#af-res");
+   const draw=()=>{if(!legs.length){res.innerHTML="";return}
+    res.innerHTML=`<div class="list" style="margin-top:6px">${legs.map((l,i)=>{const tA=tzOf(l.dep),tB=tzOf(l.arr),bh=l.inn?(l.inn-l.out)/36e5:null,nx=l.inn&&ymdIn(l.inn,tB)!==ymdIn(l.out,tA);
+      return`<button class="ag-r af-leg${i===pick?" on":""}" data-i="${i}"><span class="af-dot"></span><span><span class="t">${esc(l.dep+" – "+l.arr)}</span><span class="s">${esc([l.flt,l.ac,l.reg].filter(Boolean).join(" · "))}</span><span class="s">${esc(shortCity(l.dep)+" to "+shortCity(l.arr))}</span></span><span class="tm">${esc(hm(l.out,tA))}L – ${l.inn?esc(hm(l.inn,tB))+"L"+(nx?"<sup>+1</sup>":""):"–"}${bh!=null?`<span class="dur">${HM(bh)} block</span>`:""}</span></button>`}).join("")}</div>
+     <p class="small" style="margin:8px 2px 0">From ${esc(legs[pick].src)}${legs[pick].status?", "+esc(legs[pick].status.toLowerCase()):""}.</p>
+     <h3 style="margin:16px 0 8px;font-size:15px">This flight counts as</h3>
+     <div class="seg" id="af-cat">${["O","D","P"].map(k=>`<button data-c="${k}" class="${k===cat?"on":""}">${CATN[k]}</button>`).join("")}</div>
+     <div class="d-acts" style="margin-top:14px"><button class="btn pri" id="af-add">Add ${esc(legs[pick].dep+" – "+legs[pick].arr)}</button></div>`;
+    res.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{pick=+b.dataset.i;draw()});
+    res.querySelector("#af-cat").onclick=e=>{const b=e.target.closest("[data-c]");if(b){cat=b.dataset.c;lsSet("contrail.addcat",cat);draw()}};
+    res.querySelector("#af-add").onclick=()=>this.add(legs[pick],cat)};
+   const find=async()=>{const no=FR24.fltNo($("#af-flt").value),d=$("#af-date").value;
+    if(!no){msg.textContent="Enter a flight number, like EK191.";return}if(!/^\d{4}-\d\d-\d\d$/.test(d)){msg.textContent="Choose the date.";return}
+    if(navigator.onLine===false){msg.textContent="No internet connection. Enter it yourself, or try again once you're online.";return}
+    $("#af-find").disabled=true;msg.textContent="Looking up "+no+"…";legs=[];pick=0;draw();
+    try{const r=await this.legs(no,d);legs=r.out.sort((a,b)=>a.out-b.out);
+     msg.textContent=legs.length?(legs.length>1?"Choose the leg you're on.":""):r.err?r.err:`No ${no} found departing on that date. Check the date is the local departure day, or enter it yourself.`;draw()}
+    finally{$("#af-find").disabled=!keys}};
+   $("#af-find").onclick=find;$("#af-flt").onkeydown=e=>{if(e.key==="Enter")find()};
+   $("#af-own").onclick=()=>{const d=$("#af-date").value,fl=$("#af-flt").value;Sheet.close();go("add");setTimeout(()=>{const m=document.getElementById("m-date");if(!m)return;if(d)m.value=d;document.getElementById("m-flt").value=FR24.fltNo(fl)||fl;document.getElementById("mform").scrollIntoView({block:"start",behavior:"smooth"})},60)};
+   if(flt&&keys)find()})},
+ add(l,cat){const nf={flt:l.flt,dep:l.dep,arr:l.arr,out:l.out,inn:l.inn,cat,emp:cat==="P"?"":this.emp(),al:l.al,ac:l.ac,reg:l.reg,src:"M",tb:l.src==="AeroDataBox"?"s":"a"};
+  if(!nf.inn){toast("That flight has no arrival time yet. Enter it yourself.");return}
+  const m=findMatch(nf);if(m){toast(`You already have ${m.flt} ${m.dep}–${m.arr}, so nothing was added`);openFlight(m.id);return}
+  addFlights([nf]);const a=store.add[store.add.length-1];
+  Sheet.close();const soon=+nf.out-Date.now()<48*36e5&&+nf.inn>Date.now();
+  toast(`${nf.dep}–${nf.arr} added as ${CATN[cat].toLowerCase()}${soon?". Live updates start 3 hours before departure":""}`);
+  if(soon){go("globe");if(a)Globe.select(a.id,true)}else if(CUR==="log"){Log.ym=ymdIn(nf.out,tzOf(nf.dep)).slice(0,7);Log.sel=ymdIn(nf.out,tzOf(nf.dep));Log.render()}}
+};
 
 /* ---------- navigation ---------- */
 let CUR="globe";
@@ -712,7 +793,7 @@ const Globe={
  },
  cur(){ // live, next or last
   const now=Date.now();let live=null,next=null,last=null;
-  for(const f of FL){if(f.cat==="X"||f.cat==="P"||!f.out||!f.inn)continue;const x=Sched.info(f),o=x?x.dep:+f.out,i=x?x.arr:+f.inn;
+  for(const f of FL){if(f.cat==="X"||!f.out||!f.inn)continue;const x=Sched.info(f),o=x?x.dep:+f.out,i=x?x.arr:+f.inn;
    if(o<=now&&i>=now)live=f;else if(o>now){if(!next||o<(Sched.info(next)||{dep:+next.out}).dep)next=f}else last=f}
   return {live,next,last};
  },
@@ -985,6 +1066,7 @@ const Cal={
    if(prev)rows.push(row(CICO.bed,"Layover in "+esc(shortCity(prev.arr)),next?esc("Next flight "+sf.format(next.out)+", "+hm(next.out,tzOf(next.dep))):"",""))}
   for(const du of x.du){const ci=codeInfo(du.code),k=CALK[ci.kind]||CALK.other;rows.push(row(`<span style="color:${k[1]};display:grid">${CICO[k[0]]}</span>`,esc(ci.label),esc(du.code),""))}
   if(!rows.length)rows.push(`<div class="ag-r"><span></span><span class="s">Nothing on this day</span><span></span></div>`);
+  rows.push(`<button class="ag-r ag-add" data-add="${esc(d)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="color:var(--op)"><path d="M12 5v14M5 12h14"/></svg><span>Add a flight on this day</span><span></span></button>`);
   return h+rows.join("")+`</div>`},
  // month and year at a glance
  pick(){let y=+Log.ym.slice(0,4);const now=this.today(),ys=new Set([+now.slice(0,4)]);for(const f of FL)if(f.cat!=="X"){const k=f.out?f.out.getUTCFullYear():+String(f.date).slice(0,4);if(k>1990&&k<2100)ys.add(k)}
@@ -1016,12 +1098,13 @@ const Log={q:"",cat:"all",view:"month",ym:null,sel:null,
   s.querySelectorAll("button").forEach(b=>b.onclick=()=>{this.cat=b.dataset.k;s.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));this.render()});
   let t;document.getElementById("q").addEventListener("input",e=>{clearTimeout(t);t=setTimeout(()=>{this.q=e.target.value.trim();this.render()},120)});
   document.getElementById("loglist").addEventListener("click",e=>{const b=e.target.closest(".row");if(b)openFlight(b.dataset.id)});
-  this.view=lsGet("contrail.logview","month")==="list"?"list":"month";
+  this.view=lsGet("contrail.logview","month")==="list"?"list":"month";document.getElementById("ladd").onclick=()=>Find.open();
   document.getElementById("lview").onclick=e=>{const b=e.target.closest("[data-v]");if(!b||b.dataset.v===this.view)return;this.view=b.dataset.v;lsSet("contrail.logview",this.view);this.render()};
   const M=document.getElementById("lmonth");let sw=null,swiped=0;
   M.addEventListener("click",e=>{if(Date.now()-swiped<350)return;const t=e.target;
    const d=t.closest("[data-d]");if(d){if(d.dataset.d.slice(0,7)!==this.ym){this.ym=d.dataset.d.slice(0,7)}this.sel=d.dataset.d;this.render();return}
    const f=t.closest("[data-f]");if(f){openFlight(f.dataset.f);return}
+   const ad=t.closest("[data-add]");if(ad){Find.open(ad.dataset.add);return}
    const m=t.closest("[data-m]");if(m){Cal.shift(+m.dataset.m);return}
    if(t.closest("#cal-now")){this.ym=null;this.sel=null;this.render();return}
    if(t.closest("#cal-pick"))Cal.pick()});
@@ -1240,7 +1323,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.19 (23 Oct 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.20 (16 Nov 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -1290,6 +1373,8 @@ const AddUI={rendered:false,pending:null,
   <label class="drop"><input type="file" id="fcsv" accept=".csv,.txt,.ics,text/csv,text/calendar"><b style="color:var(--text)">Choose a RosterBuster, Flighty or calendar file</b><br><span class="small">RosterBuster and Flighty CSV exports and .ics calendar files. Flights and duty days you already have are matched, not doubled.</span></label>
   <div id="cstat" class="live" aria-live="polite"></div><div id="cprev" class="preview"></div>
   <h2>Add a flight</h2>
+  <div class="panel" style="margin-bottom:12px"><p style="margin:0 0 10px">Type the flight number and date and Contrail fills in the rest: route, times, aircraft. Then choose operating, deadhead or personal.</p><div class="d-acts" style="margin-top:0"><button class="btn pri" id="m-find">Find a flight</button></div></div>
+  <p class="small" style="margin:0 2px 8px">Or enter every detail yourself:</p>
   <div class="form" id="mform">
    <label>Date<input type="date" id="m-date"></label><label>Flight<input id="m-flt" placeholder="EK031" autocapitalize="characters"></label>
    <label>From<input id="m-dep" placeholder="DXB" maxlength="3" autocapitalize="characters"></label><label>To<input id="m-arr" placeholder="LHR" maxlength="3" autocapitalize="characters"></label>
@@ -1310,7 +1395,7 @@ const AddUI={rendered:false,pending:null,
   // clearing the picker lets the same file be chosen again
   $("froster").onchange=e=>{const fs=[...e.target.files];e.target.value="";this.roster(fs)};
   $("fcsv").onchange=e=>{const f=e.target.files[0];e.target.value="";this.file(f)};
-  $("m-add").onclick=()=>this.manual();
+  $("m-add").onclick=()=>this.manual();$("m-find").onclick=()=>Find.open($("m-date").value,$("m-flt").value);
   $("ics-save").onclick=()=>exportIcs($("ics-range").value,$("ics-cats").value);
   $("m-date").value=new Date().toISOString().slice(0,10);
   Job.restore();
@@ -1537,7 +1622,7 @@ function findMatch(r){
   return null;
 }
 function addFlights(list,quiet){
-  for(const r of list){const id="u"+Math.random().toString(36).slice(2,9);store.add.push({id,date:r.out?r.out.toISOString().slice(0,10):r.date,flt:r.flt,dep:r.dep,arr:r.arr,out:r.out?r.out.toISOString():null,inn:r.inn?r.inn.toISOString():null,cat:r.cat,emp:r.emp||"",ac:r.ac||"",reg:r.reg||"",src:r.src||"M",tb:r.tb||"m",check:false,note:"",rep:r.rep?r.rep.toISOString():null,repAt:r.repAt||r.dep})}
+  for(const r of list){const id="u"+Math.random().toString(36).slice(2,9);store.add.push({id,date:r.out?r.out.toISOString().slice(0,10):r.date,flt:r.flt,dep:r.dep,arr:r.arr,out:r.out?r.out.toISOString():null,inn:r.inn?r.inn.toISOString():null,cat:r.cat,emp:r.emp||"",al:r.al||"",ac:r.ac||"",reg:r.reg||"",src:r.src||"M",tb:r.tb||"m",check:false,note:"",rep:r.rep?r.rep.toISOString():null,repAt:r.repAt||r.dep})}
   if(!quiet){save();refreshAll()}
 }
 /* CSV */
@@ -2091,7 +2176,7 @@ const Trip={
   const C=(k,v,sub)=>this.cell(k,v,sub);
   Sheet.open(`<div class="d-route"><span class="num">${esc(f.dep)}</span><div class="mid">${esc(f.flt)}<br>${f.bh!=null?HM(f.bh)+" block":""}</div><span class="num">${esc(f.arr)}</span></div>
    <div class="d-city"><span>${esc(city(f.dep))}</span><span>${esc(city(f.arr))}</span></div>
-   <div class="tb-box"><h3>Your duty</h3><div class="tb-grid">
+   <div class="tb-box"><h3>${f.cat==="P"?"Your flight":"Your duty"}</h3><div class="tb-grid">
     ${p?C("Report"+(p.repKnown?"":", estimated"),esc(hm(new Date(p.start),tzOf(p.repAt))),p.start>now?esc(until(p.start)):""):""}
     ${C("Departs",f.out?esc(hm(f.out,tzA)):"–",f.out?esc(dayStr(f.out,tzA)):"")}
     ${C("Lands",f.inn?esc(hm(f.inn,tzB)):"–",f.inn?esc(dayStr(f.inn,tzB)):"")}
@@ -2128,7 +2213,7 @@ const Inbound={
  get(f){return f?this.all()[f.id]||null:null},
  put(f,v){const a=this.all(),keep={};for(const k in a)if(BYID[k]&&BYID[k].out&&+BYID[k].out>Date.now()-864e5)keep[k]=a[k];keep[f.id]=v;lsSet("contrail.inbound",keep)},
  // the next departure, from 24 h before until it leaves
- target(){const now=Date.now();return FL.filter(f=>(f.cat==="O"||f.cat==="D")&&f.out&&+f.out-now<24*36e5&&FR24.fltNo(f.flt)&&(+f.out>now-15*6e4||+f.out>now-12*36e5&&this.waiting(f))).sort((a,b)=>a.t-b.t)[0]||null},
+ target(){const now=Date.now();return FL.filter(f=>(f.cat==="O"||f.cat==="D"||f.cat==="P")&&f.out&&+f.out-now<24*36e5&&FR24.fltNo(f.flt)&&(+f.out>now-15*6e4||+f.out>now-12*36e5&&this.waiting(f))).sort((a,b)=>a.t-b.t)[0]||null},
  // delayed: past the timetable departure, but the flight hasn't left yet
  waiting(f){const now=Date.now(),c=this.get(f),s=Live.mine(f);if(s&&s.flew)return false;
   if(!c)return now<+f.inn;if(c.ourOff)return false;if(c.ourEst)return c.ourEst>now-60*6e4;return now<+f.out+60*6e4},
@@ -2163,7 +2248,7 @@ const Inbound={
    if(!res.reg&&old.reg&&now-old.regT<2*36e5){res.reg=old.reg}
    if(!res.reg){const rows=await ADB.get(q(`/flights/number/${encodeURIComponent(no)}/${ymd}`));
     our=this.pick(rows,r=>(r.departure&&r.departure.airport&&r.departure.airport.iata)===f.dep&&Math.abs(this.sched(r,"departure")-f.out)<6*36e5)[0]||null;
-    if(our&&our.aircraft&&our.aircraft.reg){res.reg=our.aircraft.reg;res.regT=now}}
+    if(our&&our.aircraft&&our.aircraft.reg){res.reg=String(our.aircraft.reg).toUpperCase();res.regT=now}}
    let ib=null;
    if(res.reg){list=await ADB.get(q(`/flights/reg/${encodeURIComponent(res.reg)}/${ymd}`));
     our=our||this.pick(list,r=>(r.departure&&r.departure.airport&&r.departure.airport.iata)===f.dep&&Math.abs(this.sched(r,"departure")-f.out)<6*36e5)[0]||null;
