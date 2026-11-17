@@ -485,7 +485,17 @@ try{matchMedia("(prefers-color-scheme: dark)").addEventListener("change",themeMe
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)themeMeta()});
 
 /* ---------- airports & geo ---------- */
-function ap(c){return store.ap[c]||AP0[c]||null}
+// every airport with scheduled flights (about 5,000) comes from airports.json, loaded once and kept for offline use;
+// your own airports and the built-in list come first, and the ones your logbook uses are kept on the phone
+const Airports={X:lsGet("contrail.apx",{})||{},all:null,p:null,t:0,
+ load(){if(this.all)return Promise.resolve(this.all);if(this.p)return this.p;
+  this.p=fetchT("./airports.json",{},20000).then(r=>{if(!r.ok)throw new Error("no list");return r.json()}).then(j=>{this.all=j&&typeof j==="object"?j:{};return this.all}).catch(()=>{this.p=null;return null});return this.p},
+ keep(){clearTimeout(this.t);this.t=setTimeout(()=>lsSet("contrail.apx",this.X),800)},
+ // codes in the logbook nobody knows yet; once the full list is in, look them up and redraw
+ async scan(){const miss=()=>[...new Set(FL.flatMap(f=>[f.dep,f.arr]))].filter(c=>c&&!ap(c));if(!miss().length&&this.all)return[];
+  const before=miss();await this.load();const left=miss();if(left.length<before.length){for(const k in derived)delete derived[k];refreshAll()}return left}
+};
+function ap(c){const a=store.ap[c]||AP0[c]||Airports.X[c];if(a)return a;const b=Airports.all&&Airports.all[c];if(b&&Array.isArray(b)&&b.length===5){Airports.X[c]=b;Airports.keep();return b}return null}
 const R_KM=6371.0088;
 function hav(a,b){const A=ap(a),B=ap(b);if(!A||!B)return null;const r=Math.PI/180,la1=A[2]*r,la2=B[2]*r,dl=(B[3]-A[3])*r,dp=la2-la1;const h=Math.sin(dp/2)**2+Math.cos(la1)*Math.cos(la2)*Math.sin(dl/2)**2;return 2*R_KM*Math.asin(Math.min(1,Math.sqrt(h)))}
 function ll(c){const A=ap(c);return A?[A[3],A[2]]:null}
@@ -548,6 +558,7 @@ function needsReview(f){return (f.check&&!f.ok)||!ap(f.dep)||!ap(f.arr)}
 const nf0=new Intl.NumberFormat("en-GB",{maximumFractionDigits:0}),nf1=new Intl.NumberFormat("en-GB",{maximumFractionDigits:1,minimumFractionDigits:1});
 function HM(h){if(h==null||isNaN(h))return"–";const m=Math.round(h*60);return nf0.format(Math.floor(m/60))+":"+String(m%60).padStart(2,"0")}
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function cname(cc){if(CN[cc])return CN[cc];try{return new Intl.DisplayNames(["en"],{type:"region"}).of(cc)||cc}catch(e){return cc}}
 function city(c){const A=ap(c);return A?A[0]:c}
 function shortCity(c){const n=city(c);const m={"London Heathrow":"London","London Gatwick":"Gatwick","London Stansted":"Stansted","Paris Orly":"Orly","Istanbul Sabiha":"Sabiha","Warsaw Modlin":"Modlin","Tenerife South":"Tenerife","Tokyo Haneda":"Tokyo","Tokyo Narita":"Narita","Ho Chi Minh City":"Saigon","Thiruvananthapuram":"Trivandrum"};return m[n]||n}
 // a select as wide as the option showing, not the longest one
@@ -1010,7 +1021,7 @@ function openAirport(code){
   const top=[...dests.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6);
   const first=fs[0],last=fs[fs.length-1];
   Sheet.open(`<div class="d-route"><span class="num">${esc(code)}</span></div>
-  <div class="d-city"><span>${esc(A?A[0]:"")}${A?", "+esc(CN[A[1]]||A[1]):""}</span></div>
+  <div class="d-city"><span>${esc(A?A[0]:"")}${A?", "+esc(cname(A[1])):""}</span></div>
   <div class="d-grid">
    <div><span>Operating sectors</span><b>${op.length}</b></div>
    <div><span>All flights</span><b>${fs.length}</b></div>
@@ -1288,7 +1299,7 @@ const Stats={scope:"all",
   </div>`;
   h+=Miles.section(this.scope);
   // countries
-  const cs=[...ctryAll].map(c=>CN[c]||c).sort();
+  const cs=[...ctryAll].map(c=>cname(c)).sort();
   if(cs.length)h+=`<h2>Countries</h2><div class="panel"><p style="margin:0;line-height:1.7">${cs.map(esc).join(", ")}</p></div>`;
   // deadhead & personal
   const sec=(t,arr,col,desc)=>{if(!arr.length)return"";const top=new Map();for(const f of arr){const k=[f.dep,f.arr].sort().join("–");top.set(k,(top.get(k)||0)+1)}const tr=[...top.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]+(x[1]>1?" ("+x[1]+")":"")).join(", ");
@@ -1408,7 +1419,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.27 (17 Nov 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.28 (17 Nov 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -1499,7 +1510,7 @@ const AddUI={rendered:false,pending:null,
  },
  async roster(files){
   if(!files.length)return;if(Job.busy()){toast("Still reading the last file");return}
-  Job.start("roster");
+  Job.start("roster");await Airports.load();
   try{
    let items=[],text="",images=[];const got={flights:[],duties:[],periods:[],names:[],outside:0};
    for(const[n,f]of files.entries()){
@@ -1547,7 +1558,7 @@ ${text.trim()?"Roster text, one printed line per row:\n"+text.slice(0,60000):"Th
  },
  async file(f){
   if(!f)return;if(Job.busy()){toast("Still reading the last file");return}
-  Job.start("file");
+  Job.start("file");await Airports.load();
   try{Job.say(`Opening ${f.name}`);const txt=await f.text();
    if(/BEGIN:VCALENDAR/.test(txt)){const rows=parseIcs(txt);if(!rows.length)throw new Error("No flights recognised in this calendar file.");await this.prepare("file",rows,"file",{});return}
    const head=txt.slice(0,400);
@@ -2136,7 +2147,7 @@ const Year={
     ${row("Busiest month",D.bm?esc(mf.format(new Date(D.bm[0]+"-01T00:00:00Z"))+", "+HM(D.bm[1])+" h"):"")}
     ${row("Most flown aircraft",D.type?esc(D.type[0]+" ("+D.type[1]+")"):"")}
     ${row("Favourite tail",D.reg&&D.reg[1]>1?esc(D.reg[0]+", "+D.reg[1]+" times"):"")}
-    ${row("New countries",D.newCts.length&&D.newCts.length<=8?esc(D.newCts.map(c=>CN[c]||c).join(", ")):"")}
+    ${row("New countries",D.newCts.length&&D.newCts.length<=8?esc(D.newCts.map(c=>cname(c)).join(", ")):"")}
    </div>
    ${D.ms.length?`<h2 style="font-size:17px">${D.all?"Milestones":"Milestones in "+esc(y)}</h2><div class="ms">${D.ms.slice().reverse().slice(0,6).map(m=>Miles.card(m)).join("")}</div>`:""}
    <div class="d-acts" style="margin-top:18px"><button class="btn pri" id="yr-share">Share image</button><button class="btn" id="yr-play"${window.d3&&Globe.ctx?"":" disabled"}>Replay on the globe</button></div>`,el=>{
@@ -2886,7 +2897,7 @@ function boot(){
   build();Log.init();updateBadge();
   if(window.d3){Globe.init();Live.init()}else{document.getElementById("fc").innerHTML=`<div class="fc-state">The globe needs a connection the first time it opens.</div>`}
   initCaps();
-  setTimeout(()=>{Miles.check();Backup.check()},2500);setTimeout(()=>{if(!document.hidden)ADSBDB.fill()},9000);
+  setTimeout(()=>{Miles.check();Backup.check()},2500);setTimeout(()=>{if(!document.hidden)ADSBDB.fill()},9000);setTimeout(()=>Airports.scan(),1200);
   setInterval(()=>{Inbound.tick();Pax.tick()},60000);setInterval(()=>{if((Globe.per==="ahead"||Globe.per==="next")&&Globe.on&&!document.hidden)Globe.rebuild()},60000);setInterval(()=>{if(window.d3)Inbound.follow()},20000);addEventListener("online",()=>{if(window.d3)Inbound.follow();Inbound.tick()});document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(()=>Inbound.tick(),1500)});setTimeout(()=>Inbound.tick(),4000);
   try{if(localStorage.getItem("contrail.job"))setTimeout(()=>toast("An import is waiting for you in Add"),900)}catch(e){}
 }

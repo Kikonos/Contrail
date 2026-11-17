@@ -1,6 +1,6 @@
 // Contrail offline cache. Bump VERSION with every release so phones pick up the new app.
-const VERSION = "contrail-2.27";
-const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png", "./favicon-32.png"];
+const VERSION = "contrail-2.28";
+const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-180.png", "./icon-192.png", "./icon-512.png", "./favicon-32.png", "./airports.json"];
 // libraries the app needs, saved at install so the app works offline from the start
 const LIBS = ["https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js", "https://cdn.jsdelivr.net/npm/echarts@4.9.0/map/js/world.js", "https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap"];
 self.addEventListener("install", e => {
@@ -28,7 +28,7 @@ self.addEventListener("fetch", e => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   // Flight data, weather and exchange rates are always fetched fresh, never from the cache
-  if (["fr24api.flightradar24.com", "aerodatabox.p.rapidapi.com", "api.open-meteo.com", "open.er-api.com"].includes(url.hostname)) return;
+  if (["fr24api.flightradar24.com", "aerodatabox.p.rapidapi.com", "api.open-meteo.com", "open.er-api.com", "api.adsbdb.com"].includes(url.hostname)) return;
   // the app itself: the newest copy from GitHub if it arrives within 3 seconds, otherwise the saved copy
   if (req.mode === "navigate" || (url.origin === location.origin && /\/(index\.html)?$/.test(url.pathname))) {
     const net = fetch(req, { cache: "no-store" }).then(async r => { if (await isApp(r)) { const c = r.clone(); await caches.open(VERSION).then(x => x.put("./index.html", c)); return r; } throw new Error("not the app"); });
