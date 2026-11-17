@@ -137,6 +137,7 @@ nav.bar button.on{color:var(--op)}
 .cal-wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-bottom:5px}
 .cal-band{grid-row:1;border-radius:13px;background:color-mix(in srgb,var(--op) 30%,var(--surface));z-index:0}
 .cal-band.D{background:color-mix(in srgb,var(--dh) 28%,var(--surface))}
+.cal-band.P{background:color-mix(in srgb,var(--pers) 20%,var(--surface))}.cal-band.P.past{background:color-mix(in srgb,var(--pers) 11%,var(--surface))}.cal-band.P.now{background:color-mix(in srgb,var(--pers) 34%,var(--surface));box-shadow:0 6px 18px color-mix(in srgb,var(--pers) 24%,transparent)}
 .cal-band.past{background:color-mix(in srgb,var(--op) 16%,var(--surface))}.cal-band.D.past{background:color-mix(in srgb,var(--dh) 15%,var(--surface))}
 .cal-band.now{background:color-mix(in srgb,var(--op) 55%,var(--surface));box-shadow:0 6px 18px color-mix(in srgb,var(--op) 28%,transparent)}
 .cal-band.cl{border-top-left-radius:0;border-bottom-left-radius:0}.cal-band.cr{border-top-right-radius:0;border-bottom-right-radius:0}
@@ -987,6 +988,8 @@ function openAirport(code){
 // little icons for the calendar
 const CICO={
  plane:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>',
+ up:'<svg viewBox="0 0 24 24" fill="currentColor"><path transform="translate(12 10.4) rotate(58) scale(.8) translate(-12 -12.6)" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/><rect x="2.5" y="20" width="19" height="2" rx="1"/></svg>',
+ land:'<svg viewBox="0 0 24 24" fill="currentColor"><path transform="translate(12 10.6) rotate(122) scale(.8) translate(-12 -12.6)" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/><rect x="2.5" y="20" width="19" height="2" rx="1"/></svg>',
  home:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4h2.9V20h5v-5.6h3V20h5v-8.6h2.9z"/></svg>',
  bed:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h2v7h6V8h7a3 3 0 0 1 3 3v8h-2v-3H5v3H3zm5 6.2a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4z"/></svg>',
  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
@@ -1002,9 +1005,10 @@ const Cal={
  home(){const o=FL.filter(f=>f.cat==="O");return baseOf(o.length?o[o.length-1]:{})},
  // every day that has something: flights by their local departure day, duties, and the trip it belongs to
  data(){const key=FL.length+":"+(store.duties||[]).length+":"+HDUT.length+":"+(store.del||[]).length;if(this._f===FL&&this._k===key)return this._d;
-  const D=new Map(),get=k=>{let x=D.get(k);if(!x){x={fl:[],du:[],trip:null};D.set(k,x)}return x};
+  const D=new Map(),get=k=>{let x=D.get(k);if(!x){x={fl:[],ar:[],du:[],trip:null,band:null};D.set(k,x)}return x};
   const fl=FL.filter(f=>f.cat!=="X"&&(f.out||f.date)).sort((a,b)=>(a.out?+a.out:Date.parse(a.date))-(b.out?+b.out:Date.parse(b.date)));
-  for(const f of fl)get(f.out?ymdIn(f.out,tzOf(f.dep)):f.date).fl.push(f);
+  // a flight that lands on a later local day shows on that day too
+  for(const f of fl){const d0=f.out?ymdIn(f.out,tzOf(f.dep)):f.date;get(d0).fl.push(f);if(f.out&&f.inn){const d1=ymdIn(f.inn,tzOf(f.arr));if(d1>d0)get(d1).ar.push(f)}}
   // a trip leaves base and ends back at base; a long gap or two weeks away starts a new one
   const trips=[];let cur=null;
   for(const f of fl){if(f.cat==="P"||!f.out)continue;const b=baseOf(f);
@@ -1014,22 +1018,29 @@ const Cal={
    t.kind=t.fl.every(f=>f.cat==="D")?"D":"O";t.route=[a.dep];for(const f of t.fl){if(t.route[t.route.length-1]!==f.dep)t.route.push(f.dep);t.route.push(f.arr)}
    t.bh=t.fl.filter(f=>f.cat==="O").reduce((s,f)=>s+(f.bh||0),0);
    for(let d=t.d0,i=0;d<=t.d1&&i<20;d=addDays(d,1),i++)get(d).trip=t}
+  // a flight outside any trip (personal, mostly) that runs overnight gets its own band
+  for(const f of fl){if(!f.out||!f.inn)continue;const a=ymdIn(f.out,tzOf(f.dep)),z=ymdIn(f.inn,tzOf(f.arr));if(z<=a||get(a).trip||get(z).trip)continue;
+   const b={kind:f.cat==='O'?'O':f.cat==='D'?'D':'P',start:+f.out,end:+f.inn,d0:a,d1:z};for(let d=a,i=0;d<=z&&i<4;d=addDays(d,1),i++)if(!get(d).band)get(d).band=b}
   for(const d of allDuties())if(/^\d{4}-\d\d-\d\d$/.test(d.date))get(d.date).du.push(d);
   this._lay=layoversAll();this._f=FL;this._k=key;return this._d=D},
  today(){return ymdIn(new Date(),tzOf(this.home()))},
  shift(n,el){const[y,m]=Log.ym.split("-").map(Number),d=new Date(Date.UTC(y,m-1+n,1));Log.ym=d.toISOString().slice(0,7);Log.sel=null;Log.render();
   const g=document.querySelector("#lmonth .cal-grid");if(g){g.classList.add(n>0?"go-l":"go-r")}},
  cell(d,x){const fl=x.fl;
-  if(fl.length){const a=fl[0],z=fl[fl.length-1],b=baseOf(a);const code=z.arr===b&&a.dep===b&&fl.length>1?a.arr:z.arr;
+  if(fl.length){const a=fl[0],z=fl[fl.length-1],b=baseOf(a);
+   // the day's last flight lands tomorrow: today shows where it leaves from, tomorrow where it lands
+   const over=z.out&&z.inn&&ymdIn(z.inn,tzOf(z.arr))>d,code=over?z.dep:z.arr===b&&a.dep===b&&fl.length>1?a.arr:z.arr;
    const col=x.trip?"currentColor":fl.some(f=>f.cat==="O")?"var(--op)":fl.some(f=>f.cat==="D")?"var(--dh)":"var(--pers)";
-   return`<span class="ic" style="color:${col}">${CICO.plane}</span><span class="c">${esc(code)}</span>`}
+   return`<span class="ic" style="color:${col}">${over?CICO.up:CICO.plane}</span><span class="c">${esc(code)}</span>`}
+  const ar=x.ar||[];if(ar.length){const z=ar[ar.length-1],col=x.trip?"currentColor":z.cat==="O"?"var(--op)":z.cat==="D"?"var(--dh)":"var(--pers)";
+   return`<span class="ic" style="color:${col}">${CICO.land}</span><span class="c">${esc(z.arr)}</span>`}
   if(x.du.length){const ci=codeInfo(x.du[0].code),k=CALK[ci.kind]||CALK.other;return`<span class="ic" style="color:${k[1]}">${CICO[k[0]]}</span><span class="c">${esc(x.du[0].code)}</span>`}
   if(x.trip){const prev=x.trip.fl.filter(f=>ymdIn(f.out,tzOf(f.dep))<d).pop();return`<span class="ic dim">${CICO.bed}</span><span class="c dim">${esc(prev?prev.arr:"")}</span>`}
   return`<span class="ic"></span><span class="c"></span>`},
  render(el){const D=this.data(),now=Date.now(),today=this.today();
   if(!Log.ym)Log.ym=today.slice(0,7);
   const[Y,M]=Log.ym.split("-").map(Number),first=Log.ym+"-01",dow=(new Date(first+"T12:00:00Z").getUTCDay()+6)%7,dim=new Date(Date.UTC(Y,M,0)).getUTCDate(),weeks=Math.ceil((dow+dim)/7),start=addDays(first,-dow);
-  if(!Log.sel||Log.sel.slice(0,7)!==Log.ym){if(today.slice(0,7)===Log.ym)Log.sel=today;else{let s=first;for(let i=0;i<dim;i++){const d=addDays(first,i),x=D.get(d);if(x&&(x.fl.length||x.trip)){s=d;break}}Log.sel=s}}
+  if(!Log.sel||Log.sel.slice(0,7)!==Log.ym){if(today.slice(0,7)===Log.ym)Log.sel=today;else{let s=first;for(let i=0;i<dim;i++){const d=addDays(first,i),x=D.get(d);if(x&&(x.fl.length||(x.ar||[]).length||x.trip)){s=d;break}}Log.sel=s}}
   // the month in numbers
   const inM=f=>(f.out?ymdIn(f.out,tzOf(f.dep)):f.date).slice(0,7)===Log.ym,mf=FL.filter(f=>f.cat!=="X"&&inM(f)),O=mf.filter(f=>f.cat==="O");
   let off=0;for(let i=0;i<dim;i++){const x=D.get(addDays(first,i));if(x&&!x.fl.length&&!x.trip&&x.du.some(d=>codeInfo(d.code).kind==="off"))off++}
@@ -1041,27 +1052,29 @@ const Cal={
    <div class="cal-wd">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>`<span class="${i>4?"we":""}">${d}</span>`).join("")}</div><div class="cal-grid">`;
   const lf=new Intl.DateTimeFormat("en-GB",{weekday:"long",day:"numeric",month:"long",timeZone:"UTC"});
   for(let w=0;w<weeks;w++){const days=[];for(let i=0;i<7;i++)days.push(addDays(start,w*7+i));let r="";
-   for(let i=0;i<7;){const t=(D.get(days[i])||{}).trip;if(!t){i++;continue}let j=i;while(j<6&&(D.get(days[j+1])||{}).trip===t)j++;
+   for(let i=0;i<7;){const X=D.get(days[i])||{},t=X.trip||X.band;if(!t){i++;continue}let j=i;while(j<6){const Y=D.get(days[j+1])||{};if((Y.trip||Y.band)!==t)break;j++}
     r+=`<div class="cal-band ${t.kind}${t.end<now?" past":t.start<=now+12*36e5?" now":""}${days[i]>t.d0?" cl":""}${days[j]<t.d1?" cr":""}" style="grid-column:${i+1}/${j+2}"></div>`;i=j+1}
-   for(let i=0;i<7;i++){const d=days[i],x=D.get(d)||{fl:[],du:[],trip:null};
-    r+=`<button class="cal-d${x.trip?" in":""}${d.slice(0,7)===Log.ym?"":" out"}${d===today?" today":""}${d===Log.sel?" sel":""}" style="grid-column:${i+1}" data-d="${d}" aria-label="${esc(lf.format(new Date(d+"T12:00:00Z")))}"${d===Log.sel?' aria-pressed="true"':""}><span class="n">${+d.slice(8)}</span>${this.cell(d,x)}</button>`}
+   for(let i=0;i<7;i++){const d=days[i],x=D.get(d)||{fl:[],ar:[],du:[],trip:null};
+    r+=`<button class="cal-d${x.trip||x.band?" in":""}${d.slice(0,7)===Log.ym?"":" out"}${d===today?" today":""}${d===Log.sel?" sel":""}" style="grid-column:${i+1}" data-d="${d}" aria-label="${esc(lf.format(new Date(d+"T12:00:00Z")))}"${d===Log.sel?' aria-pressed="true"':""}><span class="n">${+d.slice(8)}</span>${this.cell(d,x)}</button>`}
    h+=`<div class="cal-wk">${r}</div>`}
   h+=`</div>`+this.agenda(Log.sel,D);
   el.innerHTML=h},
  // what happens on one day, like a roster's day view
- agenda(d,D){const x=D.get(d)||{fl:[],du:[],trip:null},t=x.trip;
+ agenda(d,D){const x=D.get(d)||{fl:[],ar:[],du:[],trip:null},t=x.trip,ar=x.ar||[];
   const df=new Intl.DateTimeFormat("en-GB",{weekday:"short",day:"numeric",month:"long",year:"numeric",timeZone:"UTC"}),sf=new Intl.DateTimeFormat("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"});
   const row=(ic,a,b,tm,attr)=>`<${attr?"button":"div"} class="ag-r"${attr||""}>${ic}<span><span class="t">${a}</span>${b?`<span class="s">${b}</span>`:""}</span><span class="tm">${tm||""}</span></${attr?"button":"div"}>`;
-  let h=`<div class="cal-dh"><span>${esc(df.format(new Date(d+"T12:00:00Z")))}</span>${x.fl.length?`<span class="small">L = local time</span>`:""}</div><div class="ag">`;
+  let h=`<div class="cal-dh"><span>${esc(df.format(new Date(d+"T12:00:00Z")))}</span>${x.fl.length||ar.length?`<span class="small">L = local time</span>`:""}</div><div class="ag">`;
   if(t){const n=Math.round((Date.parse(t.d1)-Date.parse(t.d0))/864e5)+1,rf=new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",timeZone:"UTC"});
    h+=`<div class="ag-trip"><b>${esc(t.route.join(" – "))}</b><span>${t.d0===t.d1?esc(rf.format(new Date(t.d0+"T12:00:00Z"))):esc(rf.format(new Date(t.d0+"T12:00:00Z"))+" to "+rf.format(new Date(t.d1+"T12:00:00Z")))}, ${n} day${n===1?"":"s"}${t.bh?", "+HM(t.bh)+" block":""}${t.kind==="D"?", deadhead":""}</span></div>`}
-  const rows=[],fl=x.fl;
+  const rows=[],fl=x.fl,fRow=(f,landing)=>{const tA=tzOf(f.dep),tB=tzOf(f.arr),nx=f.out&&f.inn&&ymdIn(f.inn,tB)!==ymdIn(f.out,tA);
+   return row(`<span style="color:${f.cat==="O"?"var(--op)":f.cat==="D"?"var(--dh)":"var(--pers)"};display:grid">${landing?CICO.land:CICO.plane}</span>`,esc(f.dep+" – "+f.arr),esc([landing?"Lands today":"",f.flt,f.cat==="D"?"Deadhead":f.cat==="P"?"Personal":"",f.ac].filter(Boolean).join(" · ")),
+    (f.out?esc(hm(f.out,tA))+"L"+(landing&&nx?"<sup>−1</sup>":"")+" – "+(f.inn?esc(hm(f.inn,tB))+"L"+(nx&&!landing?"<sup>+1</sup>":""):"–"):"")+(f.bh!=null?`<span class="dur">${CICO.clock}${HM(f.bh)} block</span>`:""),` data-f="${esc(f.id)}"`)};
+  // flights that took off the day before and land today come first
+  for(const f of ar)rows.push(fRow(f,true));
   for(let i=0;i<fl.length;i++){const f=fl[i],p=fl[i-1];
    if(f.rep&&!(p&&p.rep&&+p.rep===+f.rep)){const at=f.repAt||f.dep;rows.push(row(CICO.clock,"Report",esc(shortCity(at)+" ("+at+")"),esc(hm(f.rep,tzOf(at)))+"L"))}
-   const tA=tzOf(f.dep),tB=tzOf(f.arr),nx=f.out&&f.inn&&ymdIn(f.inn,tB)!==ymdIn(f.out,tA);
-   rows.push(row(`<span style="color:${f.cat==="O"?"var(--op)":f.cat==="D"?"var(--dh)":"var(--pers)"};display:grid">${CICO.plane}</span>`,esc(f.dep+" – "+f.arr),esc([f.flt,f.cat==="D"?"Deadhead":f.cat==="P"?"Personal":"",f.ac].filter(Boolean).join(" · ")),
-    (f.out?esc(hm(f.out,tA))+"L – "+(f.inn?esc(hm(f.inn,tB))+"L"+(nx?"<sup>+1</sup>":""):"–"):"")+(f.bh!=null?`<span class="dur">${CICO.clock}${HM(f.bh)} block</span>`:""),` data-f="${esc(f.id)}"`))}
-  if(fl.length){const z=fl[fl.length-1],L=z.inn&&(this._lay||[]).find(l=>l.from===+z.inn);if(L)rows.push(row(CICO.bed,"Layover in "+esc(shortCity(L.st)),esc("Until "+sf.format(new Date(L.to))+", "+hm(new Date(L.to),tzOf(L.st))),esc(durText(L.h))))}
+   rows.push(fRow(f,false))}
+  if(fl.length||ar.length){const z=fl.length?fl[fl.length-1]:ar[ar.length-1],L=z.inn&&(this._lay||[]).find(l=>l.from===+z.inn);if(L)rows.push(row(CICO.bed,"Layover in "+esc(shortCity(L.st)),esc("Until "+sf.format(new Date(L.to))+", "+hm(new Date(L.to),tzOf(L.st))),esc(durText(L.h))))}
   else if(t){const prev=t.fl.filter(f=>ymdIn(f.out,tzOf(f.dep))<d).pop(),next=t.fl.find(f=>ymdIn(f.out,tzOf(f.dep))>d);
    if(prev)rows.push(row(CICO.bed,"Layover in "+esc(shortCity(prev.arr)),next?esc("Next flight "+sf.format(next.out)+", "+hm(next.out,tzOf(next.dep))):"",""))}
   for(const du of x.du){const ci=codeInfo(du.code),k=CALK[ci.kind]||CALK.other;rows.push(row(`<span style="color:${k[1]};display:grid">${CICO[k[0]]}</span>`,esc(ci.label),esc(du.code),""))}
@@ -1323,7 +1336,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.20 (16 Nov 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.21 (17 Nov 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
