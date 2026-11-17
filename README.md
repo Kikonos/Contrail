@@ -43,7 +43,8 @@ A second source for Fill in, through RapidAPI. Its free Basic plan reaches back 
 ## Crew tools
 
 - **Trip brief:** Brief on the globe card, or Trip brief in a flight's details. Report time, duty, rest, time difference, layover, weather at the destination with icons (Open-Meteo), sunrise and sunset, and the local currency with a rough exchange rate.
-- **Inbound aircraft:** with an AeroDataBox key, Contrail finds the aircraft for your next flight and the flight bringing it in, from 3 hours before departure, with live landing times and the airline's estimate for your departure.
+- **Inbound aircraft:** with an AeroDataBox key, Contrail finds the aircraft for your next flight and the flight bringing it in, from 12 hours before departure, with live landing times and the airline's estimate for your departure. While the inbound aircraft flies, Flightradar24 follows it about once a minute.
+- **Passenger and deadhead flights:** the next-flight card shows the terminal, check-in desk, gate, a typical boarding time and the flight's status (boarding, gate closed, cancelled). In the air it shows the arrival terminal, gate and baggage belt. The brief has all of it in an At the airport box.
 - **Duty and rest:** Stats shows rolling block and duty hours against the limits in Settings, the peak your roster reaches, and your rest before the next report. Flight details show each duty and the rest before it.
 - **Aircraft:** every registration you've flown, how often and when. With an AeroDataBox key, its age and details.
 - **Milestones and year in review:** milestones as you reach them, and a summary of each year or of all time. Share it as a full-screen picture (1080 × 1920, the size of an iPhone screen and Instagram stories) on the globe or a flat map, with a preview first, or replay it on the globe.
