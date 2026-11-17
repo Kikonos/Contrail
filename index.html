@@ -119,6 +119,7 @@ nav.bar button.on{color:var(--op)}
 .lhead{display:flex;align-items:center;justify-content:space-between;gap:12px}.lhead-r{display:flex;align-items:center;gap:8px}
 .ladd{width:36px;height:36px;border-radius:12px;border:0;background:var(--op);color:#fff;display:grid;place-items:center;flex:0 0 auto}.ladd svg{width:18px;height:18px}
 .ag-add{color:var(--op);font-weight:700}
+.acph{display:flex;align-items:center;gap:12px;color:inherit;text-decoration:none;background:var(--surface-2);border-radius:14px;padding:8px;overflow:hidden}.acph img{width:112px;height:72px;object-fit:cover;border-radius:9px;flex:none;background:var(--hair)}.acph b{display:block;font-size:15px}.acph .small{display:block}
 #dp-list .ag-r[hidden]{display:none}#dp-list .tm{color:var(--op)}
 .af-leg{grid-template-columns:18px 1fr auto}.af-leg .af-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--hair);align-self:center}.af-leg.on .af-dot{border:5px solid var(--op)}
 .lhead .seg{flex:0 0 auto}.lhead .seg button{padding:6px 14px}
@@ -595,6 +596,7 @@ function openFlight(id){
 
    ${f.tko||f.ldg?`<div><span>Take-off, UTC</span><b>${f.tko?esc(hm(f.tko,"UTC")):"–"}</b></div><div><span>Landing, UTC</span><b>${f.ldg?esc(hm(f.ldg,"UTC")):"–"}</b></div>`:""}
   </div>
+  ${f.reg?`<div data-ph="${esc(Tails.norm(f.reg))}" style="margin:4px 0 10px"></div>`:""}
   <p class="small">Source: ${esc(srcN)}${tb?". Times: "+esc(tb):""}.</p>
   ${f.note?`<div class="d-note">${esc(f.note)}</div>`:""}
   <div class="d-acts">
@@ -611,7 +613,7 @@ function openFlight(id){
     el.querySelector("#dedit").onclick=()=>editFlight(f.id);
     el.querySelector("#dshare").onclick=()=>shareFlight(f.id);
     const br=el.querySelector("#dbrief");if(br)br.onclick=()=>Trip.open(f.id);
-    el.querySelectorAll("[data-tail]").forEach(b=>b.onclick=()=>Tails.open(b.dataset.tail));
+    el.querySelectorAll("[data-tail]").forEach(b=>b.onclick=()=>Tails.open(b.dataset.tail));ADSBDB.mount(el);
 
     el.querySelector("#ddel").onclick=()=>deleteFlight(f.id);
   });
@@ -673,11 +675,11 @@ const Find={
   return{out,err}},
  emp(){const c=new Map();for(const f of FL)if(f.cat==="O"&&f.emp)c.set(f.emp,(c.get(f.emp)||0)+1);return[...c.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0]||"Emirates"},
  open(date,flt){const today=ymdIn(new Date(),tzOf(Cal.home()));date=date||today;let legs=[],pick=0,cat=lsGet("contrail.addcat","O");if(!CATN[cat]||cat==="X")cat="O";
-  const keys=ADB.key()||FR24.key();
+  const keys=ADB.key()||FR24.key();let usual=null;
   Sheet.open(`<h2 style="margin-top:6px">Add a flight</h2>
    <div class="form"><label>Date, local<input type="date" id="af-date" value="${esc(date)}"></label><label>Flight<input id="af-flt" value="${esc(flt||"")}" placeholder="EK191" autocapitalize="characters" autocomplete="off"></label></div>
-   <div class="d-acts"><button class="btn pri" id="af-find"${keys?"":" disabled"}>Find flight</button><button class="btn" id="af-own">Enter it myself</button></div>
-   <p class="note" id="af-msg">${keys?"Looks the flight up: AeroDataBox for the schedule, including days ahead, and Flightradar24 for flights that have flown.":"Add an AeroDataBox or Flightradar24 key in Settings to look flights up, or enter it yourself."}</p>
+   <div class="d-acts"><button class="btn pri" id="af-find">Find flight</button><button class="btn" id="af-own">Enter it myself</button></div>
+   <p class="note" id="af-msg">${keys?"Looks the flight up: AeroDataBox for the schedule, including days ahead, and Flightradar24 for flights that have flown.":"Without an AeroDataBox or Flightradar24 key, Contrail finds the route the flight usually flies, and you add the times."}</p>
    <div id="af-res"></div>`,el=>{
    const $=q=>el.querySelector(q),msg=$("#af-msg"),res=$("#af-res");
    const draw=()=>{if(!legs.length){res.innerHTML="";return}
@@ -694,12 +696,18 @@ const Find={
     if(!no){msg.textContent="Enter a flight number, like EK191.";return}if(!/^\d{4}-\d\d-\d\d$/.test(d)){msg.textContent="Choose the date.";return}
     if(navigator.onLine===false){msg.textContent="No internet connection. Enter it yourself, or try again once you're online.";return}
     $("#af-find").disabled=true;msg.textContent="Looking up "+no+"…";legs=[];pick=0;draw();
-    try{const r=await this.legs(no,d);legs=r.out.sort((a,b)=>a.out-b.out);
-     msg.textContent=legs.length?(legs.length>1?"Choose the leg you're on.":""):r.err?r.err:`No ${no} found departing on that date. Check the date is the local departure day, or enter it yourself.`;draw()}
-    finally{$("#af-find").disabled=!keys}};
+    try{const r=await this.legs(no,d);legs=r.out.sort((a,b)=>a.out-b.out);usual=null;
+     if(!legs.length){usual=await ADSBDB.route(no);if(usual)usual.no=no}
+     if(legs.length)msg.textContent=legs.length>1?"Choose the leg you're on.":"";
+     else if(usual){msg.innerHTML=`${esc(no)} usually flies <b>${esc(usual.dep)} – ${esc(usual.arr)}</b>, ${esc(shortCity(usual.dep))} to ${esc(shortCity(usual.arr))}${usual.al?", "+esc(usual.al):""}. ${keys?"No schedule was found for that date, so":"Without a key there are no times, so"} add the times yourself. <button class="lnk" id="af-usual">Use this route</button><span class="small" style="display:block;margin-top:4px">Route from adsbdb.com. Flights with stops show one leg only.</span>`;$("#af-usual").onclick=()=>own()}
+     else msg.textContent=r.err?r.err:`No ${no} found departing on that date. Check the date is the local departure day, or enter it yourself.`;draw()}
+    finally{$("#af-find").disabled=false}};
    $("#af-find").onclick=find;$("#af-flt").onkeydown=e=>{if(e.key==="Enter")find()};
-   $("#af-own").onclick=()=>{const d=$("#af-date").value,fl=$("#af-flt").value;Sheet.close();go("add");setTimeout(()=>{const m=document.getElementById("m-date");if(!m)return;if(d)m.value=d;document.getElementById("m-flt").value=FR24.fltNo(fl)||fl;document.getElementById("mform").scrollIntoView({block:"start",behavior:"smooth"})},60)};
-   if(flt&&keys)find()})},
+   const own=()=>{const d=$("#af-date").value,fl=$("#af-flt").value,no=FR24.fltNo(fl)||fl,u=usual&&usual.no===FR24.fltNo(fl)?usual:null;Sheet.close();go("add");setTimeout(()=>{const m=document.getElementById("m-date");if(!m)return;if(d)m.value=d;document.getElementById("m-flt").value=no;
+    if(u){document.getElementById("m-dep").value=u.dep;document.getElementById("m-arr").value=u.arr;document.getElementById("m-cat").value=cat;if(cat==="P")document.getElementById("m-emp").value=""}
+    document.getElementById("mform").scrollIntoView({block:"start",behavior:"smooth"})},60)};
+   $("#af-own").onclick=own;
+   if(flt)find()})},
  add(l,cat){const nf={flt:l.flt,dep:l.dep,arr:l.arr,out:l.out,inn:l.inn,cat,emp:cat==="P"?"":this.emp(),al:l.al,ac:l.ac,reg:l.reg,src:"M",tb:l.src==="AeroDataBox"?"s":"a"};
   if(!nf.inn){toast("That flight has no arrival time yet. Enter it yourself.");return}
   const m=findMatch(nf);if(m){toast(`You already have ${m.flt} ${m.dep}–${m.arr}, so nothing was added`);openFlight(m.id);return}
@@ -991,8 +999,8 @@ function openAirport(code){
 // little icons for the calendar
 const CICO={
  plane:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>',
- up:'<svg viewBox="0 0 24 24" fill="currentColor"><path transform="translate(12 10.4) rotate(58) scale(.8) translate(-12 -12.6)" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/><rect x="2.5" y="20" width="19" height="2" rx="1"/></svg>',
- land:'<svg viewBox="0 0 24 24" fill="currentColor"><path transform="translate(12 10.6) rotate(122) scale(.8) translate(-12 -12.6)" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/><rect x="2.5" y="20" width="19" height="2" rx="1"/></svg>',
+ up:'<svg viewBox="0 0 24 24" fill="currentColor"><path transform="rotate(-24 12 12) translate(0 .3)" d="M8.2 10.6H19.4C21 10.6 22.4 11.2 22.4 11.9S21 13.2 19.4 13.2H14.6L10.1 19.2H8.1L10.6 13.2H5.4C4.3 13.2 3.5 12.7 3.1 11.9L2.1 5.2H4.3Z M5.6 12.4L3.6 15.4H2.3L3.4 12.4Z"/></svg>',
+ land:'<svg viewBox="0 0 24 24" fill="currentColor"><path transform="rotate(24 12 12) translate(0 -1.2)" d="M8.2 10.6H19.4C21 10.6 22.4 11.2 22.4 11.9S21 13.2 19.4 13.2H14.6L10.1 19.2H8.1L10.6 13.2H5.4C4.3 13.2 3.5 12.7 3.1 11.9L2.1 5.2H4.3Z M5.6 12.4L3.6 15.4H2.3L3.4 12.4Z"/></svg>',
  home:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.2 2.6 11.4h2.9V20h5v-5.6h3V20h5v-8.6h2.9z"/></svg>',
  bed:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h2v7h6V8h7a3 3 0 0 1 3 3v8h-2v-3H5v3H3zm5 6.2a2.2 2.2 0 1 1 0-4.4 2.2 2.2 0 0 1 0 4.4z"/></svg>',
  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
@@ -1364,6 +1372,7 @@ const Settings={open:{},render(){
    <div class="live" id="adb-tst"></div>${ADB.key()?`<div class="quota" id="adb-q">${Quota.adbHtml()}</div>`:""}</div>
   ${FR24.key()||ADB.key()?(()=>{const m=FR24.missing().length;return`<div class="set" style="margin-top:10px"><div class="it"><span class="lab">Fill in past flights<small>${m?nf0.format(m)+" past flights are missing the aircraft, registration or airline":"Nothing left that your keys can look up"}</small></span>${FR24.run?`<button class="btn sm" id="fr-stop">Stop</button>`:`<button class="btn sm pri" id="fr-fill" ${m?"":"disabled"}>Fill in</button>`}</div><div class="it col" style="border-bottom:0;min-height:0;padding-top:0"><div class="live${FR24.state?" "+FR24.state:""}" id="fr-stat" style="margin-top:0">${esc(FR24.status)}</div></div>${(()=>{const n=FR24.pending().length;return n&&!FR24.run?`<div class="it"><span class="lab">Found, not saved yet<small>${nf0.format(n)} flights with new details</small></span><button class="btn sm" id="fr-rev">Review</button></div>`:""})()}</div>`})():""}
   <p class="note">Flightradar24 follows your flight live on the globe. Fill in tries Flightradar24 first, as far back as your plan allows, then AeroDataBox for the rest of the last year (its free plan allows about 200 flights a month). You can leave Settings while it works. Keys stay on this phone and aren't included in backups.</p>
+  <div class="panel" style="margin-top:10px"><h3 style="margin-bottom:6px">adsbdb</h3><p style="margin:0">Free, no key needed. Fills in the aircraft type from the registration, shows aircraft photos, and finds the route a flight number usually flies. ${(()=>{const c=ADSBDB.c(),n=Object.keys(c).filter(k=>k[0]==="a"&&c[k].v).length;return n?esc(nf0.format(n))+" aircraft looked up so far.":""})()}</p></div>
   <h2>Inbound aircraft</h2>
   ${Tools.inbound()}
   <h2>Backup</h2>
@@ -1372,7 +1381,7 @@ const Settings={open:{},render(){
    <div class="d-acts" style="margin-top:0"><button class="btn" id="bk-json">Save backup</button><button class="btn" id="bk-csv">Save logbook as CSV</button><label class="btn" style="display:inline-block">Restore backup<input type="file" id="bk-in" accept=".json,application/json" hidden></label></div>
    <p class="small" style="margin:10px 0 0">${esc(Backup.line())}</p>
   </div>
-  <p class="note" style="margin-top:30px">Contrail, version 2.23 (17 Nov 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
+  <p class="note" style="margin-top:30px">Contrail, version 2.24 (17 Nov 2026). Your logbook and settings are saved on this device${dbDoc?" and to your Claude account":""}. Save a backup now and then, and to move to another version of Contrail.</p>`;
   const W=document.getElementById("setwrap");
   const lwp=()=>{const e=document.getElementById("lwp");if(e){e.style.height=Math.max(1,disp().lw*1.6)+"px";e.style.opacity=disp().op}};lwp();
   const upd=()=>{save();Globe._C=null;if(Globe.ctx)Globe.kick()};
@@ -2010,7 +2019,7 @@ const Tails={
  info(reg){return(lsGet("contrail.acinfo",{})||{})[reg]||null},
  async fetchInfo(reg){if(!ADB.key())return null;try{const a=await ADB.get("/aircrafts/reg/"+encodeURIComponent(reg));
    const c=lsGet("contrail.acinfo",{})||{};c[reg]={t:Date.now(),a:(Array.isArray(a)?a[0]:a)||{}};lsSet("contrail.acinfo",c);return c[reg]}catch(e){return{err:e.message}}},
- infoHtml(I){if(!I)return ADB.key()?`<p class="note">Looking up this aircraft on AeroDataBox…</p>`:`<p class="note">Add an AeroDataBox key in Settings to see the aircraft's age and details.</p>`;
+ infoHtml(I){if(!I)return ADB.key()?`<p class="note">Looking up this aircraft on AeroDataBox…</p>`:`<p class="note">An AeroDataBox key in Settings adds the aircraft's age, seats and engines.</p>`;
   if(I.err)return`<p class="note">${esc(I.err)}</p>`;const a=I.a||{};
   const d=s=>{const t=Date.parse(s||"");return t?new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"}).format(new Date(t)):null};
   const born=Date.parse(a.firstFlightDate||a.deliveryDate||a.rolloutDate||""),age=born?(Date.now()-born)/(365.25*864e5):a.ageYears;
@@ -2021,9 +2030,43 @@ const Tails={
   const paint=I=>{const e=document.getElementById("tl-info");if(e)e.innerHTML=this.infoHtml(I)};
   Sheet.open(`<h2 style="margin-top:6px">${esc(reg)}</h2><p class="sub">${esc(x&&x.type||fl[0]&&fl[0].ac||"")}</p>
    ${x?`<div class="kv" style="margin-top:0"><div><span class="num">${x.n}</span><span>${x.n===1?"time":"times"} flown</span></div><div><span class="num">${HM(x.h)}</span><span>block hours</span></div><div><span class="num" style="font-size:18px">${esc(this.when(x.first))}</span><span>first time</span></div><div><span class="num" style="font-size:18px">${esc(this.when(x.last))}</span><span>most recent</span></div></div>`:""}
+   <div data-ph="${esc(reg)}" style="margin-top:12px"></div>
    <div id="tl-info" style="margin-top:14px"></div>
    <h2 style="font-size:17px">Flights on ${esc(reg)}</h2><div class="list">${fl.map(flightRow).join("")}</div>`,()=>{
-   const I=this.info(reg);paint(I);if(!I&&ADB.key())this.fetchInfo(reg).then(paint)})}
+   ADSBDB.mount(document.getElementById("sheetc"));const I=this.info(reg);paint(I);if(!I&&ADB.key())this.fetchInfo(reg).then(paint)})}
+};
+
+// adsbdb.com: free and keyless. Aircraft by registration (type, owner, photo) and the usual route for a flight number.
+const ADSBDB={
+ c(){return lsGet("contrail.adsbdb",{})||{}},
+ keep(k,v){const c=this.c();c[k]=v;const ks=Object.keys(c);if(ks.length>800)ks.sort((a,b)=>c[a].t-c[b].t).slice(0,ks.length-800).forEach(x=>delete c[x]);lsSet("contrail.adsbdb",c)},
+ q:Promise.resolve(),
+ // one request at a time, spaced out, to be kind to a free service
+ get(path){const run=async()=>{try{const r=await fetchT("https://api.adsbdb.com/v0/"+path,{cache:"no-store"},10000);if(r.status===404)return null;if(!r.ok)throw new Error("adsbdb replied with an error ("+r.status+").");const j=await r.json();return j&&typeof j.response==="object"?j.response:null}
+   finally{await new Promise(z=>setTimeout(z,400))}};
+  const p=this.q.then(run,run);this.q=p.catch(()=>{});return p},
+ cached(k,days){const o=this.c()[k];return o&&Date.now()-o.t<(o.v?days:7)*864e5?o:null},
+ async aircraft(reg){reg=Tails.norm(reg);if(!/^[A-Z0-9-]{3,10}$/.test(reg))return null;const k="a:"+reg,o=this.cached(k,90);if(o)return o.v;
+  if(navigator.onLine===false)return null;
+  try{const r=await this.get("aircraft/"+encodeURIComponent(reg)),a=r&&r.aircraft,https=u=>/^https:\/\//.test(u||"")?u:"";let v=null;
+   if(a){const model=[a.manufacturer,a.type].filter(Boolean).join(" "),t=FR24.typeName(a.icao_type);
+    v={type:t&&t!==String(a.icao_type||"").toUpperCase()?t:model,model,icao:a.icao_type||"",owner:a.registered_owner||"",country:a.registered_owner_country_name||"",hex:a.mode_s||"",photo:https(a.url_photo),thumb:https(a.url_photo_thumbnail)}}
+   this.keep(k,{t:Date.now(),v});return v}catch(e){return null}},
+ // the route a flight number usually flies; one leg only, and no times
+ async route(no){no=FR24.fltNo(no);if(!no)return null;const k="r:"+no,o=this.cached(k,14);if(o)return o.v;
+  try{const r=await this.get("callsign/"+encodeURIComponent(no)),x=r&&r.flightroute;let v=null;
+   if(x&&x.origin&&x.destination&&x.origin.iata_code&&x.destination.iata_code)v={dep:x.origin.iata_code,arr:x.destination.iata_code,al:(x.airline||{}).name||""};
+   this.keep(k,{t:Date.now(),v});return v}catch(e){return null}},
+ strip(v,reg){if(!v)return"";const img=v.thumb?`<img src="${esc(v.thumb)}" alt="${esc(reg)}" loading="lazy">`:"";const inner=`${img}<span><b>${esc(v.type||reg)}</b><span class="small">${esc([reg,v.owner].filter(Boolean).join(" · "))}</span>${v.photo?`<span class="small">Photo: airport-data.com</span>`:""}</span>`;
+  return v.photo?`<a class="acph" href="${esc(v.photo)}" target="_blank" rel="noopener">${inner}</a>`:`<div class="acph">${inner}</div>`},
+ // fill every [data-ph] placeholder under root with the aircraft's photo and type
+ mount(root){if(!root)return;root.querySelectorAll("[data-ph]").forEach(async el=>{const reg=el.dataset.ph;el.removeAttribute("data-ph");const v=await this.aircraft(reg);if(!v||!el.isConnected)return;
+  el.innerHTML=this.strip(v,reg);const im=el.querySelector("img");if(im)im.addEventListener("error",()=>im.remove())})},
+ // fill in the aircraft type on flights that have a registration but no type, a few at a time, once a day
+ async fill(){if(navigator.onLine===false||Date.now()-(lsGet("contrail.adsbfill",0)||0)<864e5)return;lsSet("contrail.adsbfill",Date.now());
+  const want=new Map();for(const f of FL){if(f.cat==="X"||!f.reg||f.ac)continue;const r=Tails.norm(f.reg);if(!want.has(r))want.set(r,[]);want.get(r).push(f.id)}
+  let n=0;for(const[reg,ids]of[...want.entries()].slice(0,40)){const v=await this.aircraft(reg);if(!v||!v.type)continue;for(const id of ids){store.ov[id]=Object.assign({},store.ov[id]||{},{ac:v.type});n++}}
+  if(n){save();refreshAll()}}
 };
 
 // nights away: time between arriving somewhere other than base and flying on from there
@@ -2365,11 +2408,12 @@ const Inbound={
    if(I){const st=I.landed?"Landed":I.departed?"In the air":"Not departed yet";
     h+=C((c.guess?"Probably ":"")+"Inbound flight",esc(I.no),"from "+esc(I.fromName||I.from))+C(I.landed?"Landed":"Lands",esc(hm(new Date(I.est),tz)),`<span style="color:${this.col(I.landed?0:c.late||0)}">${esc(c.late==null?st:st+" · "+this.lateText(c.late))}</span><br>${esc(I.src||"AeroDataBox")}`)}
    h+=`</div>`;
+   if(c.reg)h+=`<div data-ph="${esc(Tails.norm(c.reg))}" style="margin-top:12px"></div>`;
    if(!I)h+=`<p class="small" style="margin:10px 0 0">${c.reg?"No flight found bringing this aircraft in. It may already be on the ground.":"The inbound flight shows up once the aircraft is known."}</p>`;
    if(c.err)h+=`<p class="small" style="margin:10px 0 0;color:var(--x)">${esc(c.err)}</p>`;
    h+=`<p class="small" style="margin:10px 0 0">Checked ${esc(agoText(c.t))}. ${c.ib&&!c.ib.sched?"Inbound flight from Flightradar24; AeroDataBox had no schedule for it":`Aircraft and flights from AeroDataBox${c.ib&&c.ib.src==="Flightradar24"?", landing time from Flightradar24":""}`}.</p>`}
   h+=`<div class="d-acts" style="margin-top:10px"><button class="btn sm" id="ib-go"${this.busy?" disabled":""}>${this.busy?"Checking…":"Check now"}</button><button class="btn sm" id="ib-reg">${f.ibReg?"Change aircraft":"I know the aircraft"}</button></div></div>`;
-  box.innerHTML=h;
+  box.innerHTML=h;ADSBDB.mount(box);
   box.querySelector("#ib-go").onclick=()=>{this.check(f);this.paint(f)};
   box.querySelector("#ib-reg").onclick=()=>{const r=prompt("Registration of the aircraft for "+f.flt+" (leave empty to clear):",f.ibReg||"");if(r==null)return;
    setOv(f.id,{ibReg:Tails.norm(r)});const g=BYID[f.id];this.put(g,{t:0});this.check(g).then(()=>this.paint(BYID[f.id]))}},
@@ -2798,7 +2842,7 @@ function boot(){
   build();Log.init();updateBadge();
   if(window.d3){Globe.init();Live.init()}else{document.getElementById("fc").innerHTML=`<div class="fc-state">The globe needs a connection the first time it opens.</div>`}
   initCaps();
-  setTimeout(()=>{Miles.check();Backup.check()},2500);
+  setTimeout(()=>{Miles.check();Backup.check()},2500);setTimeout(()=>{if(!document.hidden)ADSBDB.fill()},9000);
   setInterval(()=>{Inbound.tick();Pax.tick()},60000);setInterval(()=>{if(Globe.per==="ahead"&&Globe.on&&!document.hidden)Globe.rebuild()},60000);setInterval(()=>{if(window.d3)Inbound.follow()},20000);addEventListener("online",()=>{if(window.d3)Inbound.follow();Inbound.tick()});document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(()=>Inbound.tick(),1500)});setTimeout(()=>Inbound.tick(),4000);
   try{if(localStorage.getItem("contrail.job"))setTimeout(()=>toast("An import is waiting for you in Add"),900)}catch(e){}
 }
