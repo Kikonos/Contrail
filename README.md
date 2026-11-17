@@ -44,6 +44,7 @@ A second source for Fill in, through RapidAPI. Its free Basic plan reaches back 
 
 - **Trip brief:** Brief on the globe card, or Trip brief in a flight's details. Report time, duty, rest, time difference, layover, weather at the destination with icons (Open-Meteo), sunrise and sunset, and the local currency with a rough exchange rate.
 - **Inbound aircraft:** with an AeroDataBox key, Contrail finds the aircraft for your next flight and the flight bringing it in, from 12 hours before departure, with live landing times and the airline's estimate for your departure. While the inbound aircraft flies, Flightradar24 follows it about once a minute.
+- **Live flight path:** the solid line behind your aircraft follows the path it actually flies (Flightradar24's track, fetched once per flight, then each live report), not the shortest route, so detours around closed airspace show as flown. The dashed line is the rest of the way.
 - **Passenger and deadhead flights:** the next-flight card shows the terminal, check-in desk, gate, a typical boarding time and the flight's status (boarding, gate closed, cancelled). In the air it shows the arrival terminal, gate and baggage belt. The brief has all of it in an At the airport box.
 - **Duty and rest:** Stats shows rolling block and duty hours against the limits in Settings, the peak your roster reaches, and your rest before the next report. Flight details show each duty and the rest before it.
 - **Aircraft:** every registration you've flown, how often and when. With an AeroDataBox key, its age and details.
